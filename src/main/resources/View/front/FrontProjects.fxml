@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Mes projets" styleClass="page-title"/>
+        <Label text="Projets académiques, livrables, suivi et collaboration (template)." styleClass="page-subtitle"/>
+    </VBox>
+
+    <HBox spacing="10">
+        <TextField promptText="Rechercher (projet, équipe...)" styleClass="field" HBox.hgrow="ALWAYS"/>
+        <Button text="Trier" styleClass="btn-ghost"/>
+        <Button text="Nouveau projet" styleClass="btn-primary"/>
+    </HBox>
+
+    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
+        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+        <Label text="Table des projets" styleClass="stat-title"/>
+        <Label text="Ici: TableView / Cards (titre, équipe, deadline, avancement, actions)." styleClass="page-subtitle" wrapText="true"/>
+	    <VBox alignment="CENTER" spacing="10" VBox.vgrow="ALWAYS" styleClass="empty-state">
+	        <Label text="Aucun projet pour le moment" styleClass="empty-title"/>
+	        <Label text="Créez votre premier projet et suivez l’avancement, les livrables et l’équipe."
+	               wrapText="true" textAlignment="CENTER" styleClass="empty-subtitle"/>
+	        <Button text="Créer un projet" styleClass="btn-primary"/>
+	    </VBox>
+	    </VBox>
+	</VBox>
