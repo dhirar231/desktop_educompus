@@ -30,7 +30,7 @@ public final class DbAuthService {
 
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "SELECT email, name, last_name, image_url, roles, password FROM `user` WHERE email = ? LIMIT 1"
+                     "SELECT id, email, name, last_name, image_url, roles, password FROM `user` WHERE email = ? LIMIT 1"
              )) {
             ps.setString(1, mail);
             try (ResultSet rs = ps.executeQuery()) {
@@ -38,6 +38,7 @@ public final class DbAuthService {
                     return null;
                 }
 
+                int id = rs.getInt("id");
                 String dbEmail = rs.getString("email");
                 String name = rs.getString("name");
                 String lastName = rs.getString("last_name");
@@ -49,9 +50,10 @@ public final class DbAuthService {
                     return null;
                 }
 
-                boolean admin = hasRole(roles, "ROLE_ADMIN") || hasRole(roles, "ROLE_TEACHER");
+                boolean admin = hasRole(roles, "ROLE_ADMIN");
+                boolean teacher = hasRole(roles, "ROLE_TEACHER");
                 String displayName = buildDisplayName(name, lastName, dbEmail);
-                return new AuthUser(dbEmail, displayName, imageUrl, admin);
+                return new AuthUser(id, dbEmail, displayName, imageUrl, admin, teacher);
             }
         } catch (Exception e) {
             throw new IllegalStateException("DB authentication failed: " + safeMessage(e), e);

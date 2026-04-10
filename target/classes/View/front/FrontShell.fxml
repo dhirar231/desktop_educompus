@@ -171,7 +171,7 @@
 		                            <Image url="@/assets/images/app-icon.png"/>
 		                        </image>
 		                    </ImageView>
-		                    <Label text="EduCampus" styleClass="topbar-brand-text"/>
+                            <Label fx:id="topbarBrandLabel" text="EduCampus" styleClass="topbar-brand-text"/>
 		                </HBox>
 		                <Region HBox.hgrow="ALWAYS"/>
 		                <Button fx:id="userMenuBtn" onAction="#toggleUserMenu" styleClass="user-menu">
