@@ -218,7 +218,14 @@ public final class FrontLoginController {
             return;
         }
 
-        AppState.setRole(user.admin() ? AppState.Role.ADMIN : AppState.Role.USER);
+        if (user.admin()) {
+            AppState.setRole(AppState.Role.ADMIN);
+        } else if (user.teacher()) {
+            AppState.setRole(AppState.Role.TEACHER);
+        } else {
+            AppState.setRole(AppState.Role.USER);
+        }
+        AppState.setUserId(user.id());
         AppState.setUserEmail(user.email());
         AppState.setUserDisplayName(user.displayName());
         AppState.setUserImageUrl(user.imageUrl());
@@ -226,7 +233,7 @@ public final class FrontLoginController {
         persistRememberMe(mail);
 
         try {
-            Navigator.goRoot(user.admin() ? "View/back/BackShell.fxml" : "View/front/FrontShell.fxml");
+            Navigator.goRoot((user.admin() || user.teacher()) ? "View/back/BackShell.fxml" : "View/front/FrontShell.fxml");
         } catch (Exception e) {
             showError("Erreur interface: " + summarizeThrowable(e));
             e.printStackTrace();

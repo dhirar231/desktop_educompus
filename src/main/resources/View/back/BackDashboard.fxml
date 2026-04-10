@@ -27,7 +27,7 @@
         </columnConstraints>
 
         <VBox GridPane.columnIndex="0" spacing="4">
-            <Label text="Administration" styleClass="page-title"/>
+            <Label fx:id="pageTitleLabel" text="Administration" styleClass="page-title"/>
             <Label text="Vue synthèse: KPI, activité, revenus, engagement." styleClass="page-subtitle"/>
         </VBox>
 

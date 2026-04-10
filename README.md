@@ -4,19 +4,25 @@ Ce dossier contient des **templates UI** en **FXML** + une feuille **CSS**, avec
 
 ## Contenu
 
-- `View/front/*.fxml` (Front Office)
-- `View/back/*.fxml` (Back Office)
+- `src/main/resources/View/front/*.fxml` (Front Office)
+- `src/main/resources/View/back/*.fxml` (Back Office)
 - `styles/educompus.css` (style/couleurs eduCompus)
-- `src/main/java/...` (controllers simples pour navigation + thème)
+- `src/main/java/...` (controllers + navigation + thème)
 
 ## Tester (Preview avec Maven)
 
-Pré-requis : **Java 17+** et **Maven**.
+Pré-requis : **Java 17+** et **Maven** (ou Maven Wrapper).
 
 Depuis `eduCompus-javafx` :
 
 ```bash
 mvn javafx:run
+```
+
+Ou (sans Maven installé) :
+
+```bash
+./mvnw.cmd javafx:run
 ```
 
 Prévisualiser une vue spécifique :
@@ -25,25 +31,15 @@ Prévisualiser une vue spécifique :
 mvn javafx:run -Dfxml=View/front/FrontDashboard.fxml
 ```
 
-Désactiver le splash screen :
-
-```bash
-mvn javafx:run -Dsplash=false
-```
-
-Utiliser un autre splash FXML :
-
-```bash
-mvn javafx:run -DsplashFxml=View/front/Splash.fxml
-```
-
 Mode sombre rapide :
 
 ```bash
 mvn javafx:run -Dfxml=View/back/BackShell.fxml -Dtheme=dark
 ```
 
-## Intégration (exemple)
+## Schéma DB (Projets)
 
-- Charger le FXML avec `FXMLLoader`
-- Ajouter `styles/educompus.css` à ta `Scene.getStylesheets()`
+Le schéma minimal pour **Project / ProjectSubmission / KanbanTask** est dans :
+
+- `src/main/resources/sql/projects_schema.sql`
+

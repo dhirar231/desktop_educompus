@@ -26,11 +26,12 @@ public final class BackLoginController {
 
         try {
             var user = DbAuthService.authenticate(mail, pass);
-            if (user == null || !user.admin()) {
+            if (user == null || (!user.admin() && !user.teacher())) {
                 Navigator.goRoot("View/front/FrontLogin.fxml");
                 return;
             }
-            AppState.setRole(AppState.Role.ADMIN);
+            AppState.setRole(user.admin() ? AppState.Role.ADMIN : AppState.Role.TEACHER);
+            AppState.setUserId(user.id());
             AppState.setUserEmail(user.email());
             AppState.setUserDisplayName(user.displayName());
             AppState.setUserImageUrl(user.imageUrl());

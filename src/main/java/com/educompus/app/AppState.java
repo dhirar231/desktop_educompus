@@ -3,11 +3,13 @@ package com.educompus.app;
 public final class AppState {
     public enum Role {
         USER,
-        ADMIN
+        ADMIN,
+        TEACHER
     }
 
     private static Role role = Role.USER;
     private static boolean dark = false;
+    private static int userId = 0;
     private static String userEmail = "";
     private static String userDisplayName = "";
     private static String userImageUrl = "";
@@ -27,12 +29,24 @@ public final class AppState {
         return role == Role.ADMIN;
     }
 
+    public static boolean isTeacher() {
+        return role == Role.TEACHER;
+    }
+
     public static boolean isDark() {
         return dark;
     }
 
     public static void setDark(boolean value) {
         dark = value;
+    }
+
+    public static int getUserId() {
+        return userId;
+    }
+
+    public static void setUserId(int id) {
+        userId = Math.max(0, id);
     }
 
     public static String getUserEmail() {

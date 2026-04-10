@@ -21,6 +21,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
+import javafx.scene.image.ImageView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -37,6 +38,9 @@ public final class BackShellController {
 
     private static final String ICON_ADMIN =
             "M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1Z";
+    private static final String ICON_TEACHER =
+            "M12 2L1 7L12 12L21 7.91V13H23V7L12 2Z"
+                    + "M6 10.55V15.5C6 17.99 8.69 20 12 20S18 17.99 18 15.5V10.55L12 13.28L6 10.55Z";
 
     @FXML
     private BorderPane shell;
@@ -55,6 +59,9 @@ public final class BackShellController {
 
     @FXML
     private Label userNameLabel;
+
+    @FXML
+    private Label topbarBrandLabel;
 
     private ContextMenu userMenuPopup;
     private Label headerEmailLabel;
@@ -106,7 +113,7 @@ public final class BackShellController {
 
     @FXML
     private void initialize() {
-        if (!AppState.isAdmin()) {
+        if (!(AppState.isAdmin() || AppState.isTeacher())) {
             Platform.runLater(() -> {
                 try {
                     Navigator.goRoot("View/front/FrontLogin.fxml");
@@ -122,12 +129,15 @@ public final class BackShellController {
         }
 
         String display = AppState.getUserDisplayName();
-        display = display == null || display.isBlank() ? toDisplayName(mail, "Admin") : display;
+        String fallbackLabel = AppState.isTeacher() ? "Teacher" : "Admin";
+        display = display == null || display.isBlank() ? toDisplayName(mail, fallbackLabel) : display;
 
         if (userNameLabel != null) {
             userNameLabel.setText(display);
         }
-
+        if (topbarBrandLabel != null && AppState.isTeacher()) {
+            topbarBrandLabel.setText("Teachers EduCampus");
+        }
         applyAvatarIcon();
 
         buildUserMenuPopup(display, mail);
@@ -312,14 +322,38 @@ public final class BackShellController {
         if (userAvatarSvg == null) {
             return;
         }
-
         boolean isAdmin = AppState.isAdmin();
-        userAvatarSvg.setContent(isAdmin ? ICON_ADMIN : ICON_USER);
+        boolean isTeacher = AppState.isTeacher();
+        String imageUrl = AppState.getUserImageUrl();
+
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            try {
+                ImageView iv = new ImageView(new javafx.scene.image.Image(imageUrl, 30, 30, true, true));
+                iv.setFitWidth(30);
+                iv.setFitHeight(30);
+                userAvatar.getChildren().setAll(iv);
+            } catch (Exception ignored) {
+                // fallback to SVG
+            }
+        } else {
+            if (isAdmin) {
+                userAvatarSvg.setContent(ICON_ADMIN);
+            } else if (isTeacher) {
+                userAvatarSvg.setContent(ICON_TEACHER);
+            } else {
+                userAvatarSvg.setContent(ICON_USER);
+            }
+            if (!userAvatar.getChildren().contains(userAvatarSvg)) {
+                userAvatar.getChildren().setAll(userAvatarSvg);
+            }
+        }
 
         if (userAvatar != null) {
-            userAvatar.getStyleClass().remove("admin");
+            userAvatar.getStyleClass().removeAll("admin", "teacher");
             if (isAdmin) {
                 userAvatar.getStyleClass().add("admin");
+            } else if (isTeacher) {
+                userAvatar.getStyleClass().add("teacher");
             }
         }
     }
@@ -332,7 +366,8 @@ public final class BackShellController {
         Label iconUser = new Label("\u25CF");
         iconUser.getStyleClass().add("menu-icon");
 
-        Label title = new Label(displayName == null || displayName.isBlank() ? "Admin" : displayName);
+        String fallbackTitle = AppState.isTeacher() ? "Teacher" : "Admin";
+        Label title = new Label(displayName == null || displayName.isBlank() ? fallbackTitle : displayName);
         title.getStyleClass().add("user-menu-title");
 
         headerEmailLabel = new Label(email == null ? "" : email);

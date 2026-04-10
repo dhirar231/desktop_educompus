@@ -24,6 +24,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.css.PseudoClass;
 import javafx.scene.shape.SVGPath;
+import javafx.scene.image.ImageView;
 import javafx.util.Duration;
 
 import java.util.ArrayList;
@@ -36,6 +37,9 @@ public final class FrontShellController {
 
     private static final String ICON_ADMIN =
             "M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1Z";
+    private static final String ICON_TEACHER =
+            "M12 2L1 7L12 12L21 7.91V13H23V7L12 2Z"
+                    + "M6 10.55V15.5C6 17.99 8.69 20 12 20S18 17.99 18 15.5V10.55L12 13.28L6 10.55Z";
 
     @FXML
     private BorderPane shell;
@@ -54,6 +58,9 @@ public final class FrontShellController {
 
     @FXML
     private SVGPath userAvatarSvg;
+
+    @FXML
+    private Label topbarBrandLabel;
 
     private ContextMenu userMenuPopup;
     private Label headerEmailLabel;
@@ -94,8 +101,9 @@ public final class FrontShellController {
     @FXML
     private void initialize() {
         if (adminDashboardBtn != null) {
-            adminDashboardBtn.setVisible(AppState.isAdmin());
-            adminDashboardBtn.setManaged(AppState.isAdmin());
+            boolean hasAdminAccess = AppState.isAdmin() || AppState.isTeacher();
+            adminDashboardBtn.setVisible(hasAdminAccess);
+            adminDashboardBtn.setManaged(hasAdminAccess);
         }
 
         navButtons.add(navDashboardBtn);
@@ -119,67 +127,69 @@ public final class FrontShellController {
         if (userNameLabel != null) {
             userNameLabel.setText(display);
         }
-
+        if (topbarBrandLabel != null && AppState.isTeacher()) {
+            topbarBrandLabel.setText("Teachers EduCampus");
+        }
         applyAvatarIcon();
 
         buildUserMenuPopup(display, mail);
 
         Theme.apply(shell);
-        setContent(Navigator.load("View/front/FrontDashboard.fxml"));
+        setContent(safeLoad("View/front/FrontDashboard.fxml"));
         setActive(navDashboardBtn);
     }
 
     @FXML
     private void navDashboard(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontDashboard.fxml"));
+        setContent(safeLoad("View/front/FrontDashboard.fxml"));
         setActive(navDashboardBtn);
     }
 
     @FXML
     private void navMyCourses(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontCourses.fxml"));
+        setContent(safeLoad("View/front/FrontCourses.fxml"));
         setActive(navMyCoursesBtn);
     }
 
     @FXML
     private void navExams(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontExams.fxml"));
+        setContent(safeLoad("View/front/FrontExams.fxml"));
         setActive(navExamsBtn);
     }
 
     @FXML
     private void navProjects(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontProjects.fxml"));
+        setContent(safeLoad("View/front/FrontProjects.fxml"));
         setActive(navProjectsBtn);
     }
 
     @FXML
     private void navClubs(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontClubs.fxml"));
+        setContent(safeLoad("View/front/FrontClubs.fxml"));
         setActive(navClubsBtn);
     }
 
     @FXML
     private void navEvents(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontEvents.fxml"));
+        setContent(safeLoad("View/front/FrontEvents.fxml"));
         setActive(navEventsBtn);
     }
 
     @FXML
     private void navMarketplace(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontMarketplace.fxml"));
+        setContent(safeLoad("View/front/FrontMarketplace.fxml"));
         setActive(navMarketplaceBtn);
     }
 
     @FXML
     private void navCalendar(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontCalendar.fxml"));
+        setContent(safeLoad("View/front/FrontCalendar.fxml"));
         setActive(navCalendarBtn);
     }
 
     @FXML
     private void navProfile(ActionEvent event) {
-        setContent(Navigator.load("View/front/FrontProfile.fxml"));
+        setContent(safeLoad("View/front/FrontProfile.fxml"));
         setActive(navProfileBtn);
     }
 
@@ -198,6 +208,26 @@ public final class FrontShellController {
         ft.setFromValue(0.0);
         ft.setToValue(1.0);
         ft.play();
+    }
+
+    private Node safeLoad(String fxmlPath) {
+        try {
+            return Navigator.load(fxmlPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            Label title = new Label("Erreur interface");
+            title.getStyleClass().addAll("page-title");
+
+            Label details = new Label(String.valueOf(e.getMessage()));
+            details.getStyleClass().addAll("page-subtitle");
+            details.setWrapText(true);
+
+            VBox box = new VBox(10, title, details);
+            box.getStyleClass().add("content");
+            box.setPadding(new Insets(22));
+            return box;
+        }
     }
 
     @FXML
@@ -264,14 +294,38 @@ public final class FrontShellController {
         if (userAvatarSvg == null) {
             return;
         }
-
         boolean isAdmin = AppState.isAdmin();
-        userAvatarSvg.setContent(isAdmin ? ICON_ADMIN : ICON_USER);
+        boolean isTeacher = AppState.isTeacher();
+        String imageUrl = AppState.getUserImageUrl();
+
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            try {
+                ImageView iv = new ImageView(new javafx.scene.image.Image(imageUrl, 30, 30, true, true));
+                iv.setFitWidth(30);
+                iv.setFitHeight(30);
+                userAvatar.getChildren().setAll(iv);
+            } catch (Exception ignored) {
+                // fallback to SVG below
+            }
+        } else {
+            if (isAdmin) {
+                userAvatarSvg.setContent(ICON_ADMIN);
+            } else if (isTeacher) {
+                userAvatarSvg.setContent(ICON_TEACHER);
+            } else {
+                userAvatarSvg.setContent(ICON_USER);
+            }
+            if (!userAvatar.getChildren().contains(userAvatarSvg)) {
+                userAvatar.getChildren().setAll(userAvatarSvg);
+            }
+        }
 
         if (userAvatar != null) {
-            userAvatar.getStyleClass().remove("admin");
+            userAvatar.getStyleClass().removeAll("admin", "teacher");
             if (isAdmin) {
                 userAvatar.getStyleClass().add("admin");
+            } else if (isTeacher) {
+                userAvatar.getStyleClass().add("teacher");
             }
         }
     }
