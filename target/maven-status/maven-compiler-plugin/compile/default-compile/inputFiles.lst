@@ -1,29 +1,29 @@
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\app\AppState.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\app\DebugFxmlLoad.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\app\PreviewApp.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\back\BackDashboardController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\back\BackKanbanController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\back\BackLoginController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\back\BackProjectsController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\back\BackShellController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\front\FrontDashboardController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\front\FrontLoginController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\front\FrontProjectsController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\front\FrontShellController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\controller\front\SplashController.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\model\AuthUser.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\model\KanbanStatus.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\model\KanbanTask.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\model\Project.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\model\ProjectSubmission.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\model\ProjectSubmissionView.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\nav\Navigator.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\repository\EducompusDB.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\repository\KanbanTaskRepository.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\repository\ProjectRepository.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\repository\ProjectSubmissionRepository.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\service\DbAuthService.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\util\AvatarGenerator.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\util\Dialogs.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\util\ProjectRules.java
-D:\Gestion projets\eduCompus-javafx\src\main\java\com\educompus\util\Theme.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\app\AppState.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\app\DebugFxmlLoad.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\app\PreviewApp.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackDashboardController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackKanbanController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackLoginController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackProjectsController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackShellController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\FrontDashboardController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\FrontLoginController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\FrontProjectsController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\FrontShellController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\SplashController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\AuthUser.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\KanbanStatus.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\KanbanTask.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\Project.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\ProjectSubmission.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\ProjectSubmissionView.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\nav\Navigator.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\repository\EducompusDB.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\repository\KanbanTaskRepository.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\repository\ProjectRepository.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\repository\ProjectSubmissionRepository.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\service\DbAuthService.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\util\AvatarGenerator.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\util\Dialogs.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\util\ProjectRules.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\util\Theme.java
