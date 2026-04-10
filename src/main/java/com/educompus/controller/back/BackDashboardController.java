@@ -1,10 +1,12 @@
 package com.educompus.controller.back;
 
+import com.educompus.app.AppState;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 
 public final class BackDashboardController {
     @FXML
@@ -14,7 +16,14 @@ public final class BackDashboardController {
     private ComboBox<String> periodCombo;
 
     @FXML
+    private Label pageTitleLabel;
+
+    @FXML
     private void initialize() {
+        if (pageTitleLabel != null && AppState.isTeacher()) {
+            pageTitleLabel.setText("Teacher Dashboard");
+        }
+
         if (periodCombo != null) {
             periodCombo.setItems(FXCollections.observableArrayList("Ce mois", "Mois dernier", "3 derniers mois", "Année 2026"));
             periodCombo.getSelectionModel().selectFirst();
