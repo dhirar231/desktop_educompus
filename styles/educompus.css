@@ -1349,3 +1349,101 @@
   -fx-background-radius: 12px;
   -fx-padding: 8 0 8 0;
 }
+
+/* ── Marketplace front : cartes produits ─────────────────────────────── */
+.marketplace-scroll {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+}
+
+.marketplace-scroll .viewport {
+  -fx-background-color: transparent;
+}
+
+.produit-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 16px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 16px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
+  -fx-cursor: hand;
+}
+
+.produit-card:hover {
+  -fx-border-color: linear-gradient(to right,
+    rgba(0, 210, 255, 0.65),
+    rgba(6, 106, 201, 0.65),
+    rgba(106, 17, 203, 0.65));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.16), 26, 0.20, 0, 7);
+}
+
+.produit-card-img-wrap {
+  -fx-background-radius: 14px 14px 0 0;
+  -fx-background-color: derive(-edu-surface, -4%);
+}
+
+.produit-card-title {
+  -fx-font-size: 14px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+}
+
+.produit-card-type {
+  -fx-font-size: 11.5px;
+  -fx-text-fill: -edu-text-muted;
+}
+
+.produit-card-prix {
+  -fx-font-size: 15px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-primary;
+}
+
+.produit-card-stock {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-text-muted;
+}
+
+.produit-card-stock-rupture {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-danger;
+  -fx-font-weight: 700;
+}
+
+/* ── Détail produit ──────────────────────────────────────────────────── */
+.detail-topbar {
+  -fx-background-color: -edu-card;
+  -fx-border-color: transparent transparent -edu-border transparent;
+  -fx-border-width: 0 0 1 0;
+}
+
+.detail-img-wrap {
+  -fx-background-color: derive(-edu-surface, -4%);
+  -fx-background-radius: 14px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 14px;
+  -fx-border-width: 1;
+  -fx-alignment: CENTER;
+}
+
+.detail-prix {
+  -fx-font-size: 22px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-primary;
+}
+
+/* ── Étoiles avis ────────────────────────────────────────────────────── */
+.star-label {
+  -fx-font-size: 24px;
+  -fx-text-fill: -edu-text-muted;
+  -fx-cursor: hand;
+}
+
+/* ── Validation formulaire ───────────────────────────────────────────── */
+.field-error {
+  -fx-text-fill: #e74c3c;
+  -fx-font-size: 11px;
+  -fx-font-weight: 600;
+  -fx-padding: 1 0 0 2;
+}
