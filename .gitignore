@@ -1,0 +1,10 @@
+# Ignore build output
+target/
+
+# IDE and OS files
+.idea/
+*.iml
+*.class
+*.log
+/.mvn/
+.DS_Store
