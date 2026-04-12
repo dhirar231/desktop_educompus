@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.ColumnConstraints?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackStatistiquesController"
+      styleClass="content" spacing="18">
+    <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Statistiques Marketplace" styleClass="page-title"/>
+            <Label text="Vue analytique des produits, avis et chiffre d'affaires."
+                   styleClass="page-subtitle"/>
+        </VBox>
+        <Button text="↻  Actualiser" styleClass="btn-ghost" onAction="#onActualiser"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                styleClass="catalog-scroll">
+        <content>
+            <VBox spacing="20">
+                <padding><Insets top="2" right="2" bottom="10" left="2"/></padding>
+
+                <!-- Section 1 : KPI globaux -->
+                <GridPane hgap="14" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25"/>
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25"/>
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25"/>
+                        <ColumnConstraints hgrow="ALWAYS" percentWidth="25"/>
+                    </columnConstraints>
+
+                    <VBox GridPane.columnIndex="0" styleClass="card" spacing="6">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Total produits" styleClass="stat-title"/>
+                        <Label fx:id="kpiTotalProduits" text="—" styleClass="stat-value"/>
+                        <Label text="dans le catalogue" styleClass="page-subtitle"/>
+                    </VBox>
+
+                    <VBox GridPane.columnIndex="1" styleClass="card" spacing="6">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Valeur du stock" styleClass="stat-title"/>
+                        <Label fx:id="kpiValeurStock" text="—" styleClass="stat-value"/>
+                        <Label text="prix × quantité" styleClass="page-subtitle"/>
+                    </VBox>
+
+                    <VBox GridPane.columnIndex="2" styleClass="card" spacing="6">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Ruptures de stock" styleClass="stat-title"/>
+                        <Label fx:id="kpiRuptures" text="—" styleClass="stat-value"
+                               style="-fx-text-fill: #e74c3c;"/>
+                        <Label text="produits à 0" styleClass="page-subtitle"/>
+                    </VBox>
+
+                    <VBox GridPane.columnIndex="3" styleClass="card" spacing="6">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Note moyenne" styleClass="stat-title"/>
+                        <Label fx:id="kpiNoteMoyenne" text="—" styleClass="stat-value"
+                               style="-fx-text-fill: #f7c32e;"/>
+                        <Label text="sur 5 étoiles" styleClass="page-subtitle"/>
+                    </VBox>
+                </GridPane>
+
+                <!-- Section 2 + 4 : BarChart catégories + PieChart avis -->
+                <HBox spacing="14">
+                    <!-- BarChart : produits par catégorie -->
+                    <VBox styleClass="card" spacing="10" HBox.hgrow="ALWAYS">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Produits par catégorie" styleClass="stat-title"/>
+                        <BarChart fx:id="chartCategories" animated="true"
+                                  legendVisible="false" prefHeight="260">
+                            <xAxis><CategoryAxis label="Catégorie"/></xAxis>
+                            <yAxis><NumberAxis label="Nb produits"/></yAxis>
+                        </BarChart>
+                    </VBox>
+
+                    <!-- PieChart : répartition des avis par note -->
+                    <VBox styleClass="card" spacing="10" prefWidth="300" minWidth="280">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Répartition des avis" styleClass="stat-title"/>
+                        <PieChart fx:id="chartAvis" animated="true"
+                                  legendVisible="true" prefHeight="260"/>
+                    </VBox>
+                </HBox>
+
+                <!-- Section 3 : Top 5 produits notés -->
+                <VBox styleClass="card" spacing="10">
+                    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                    <Label text="Top 5 produits les mieux notés" styleClass="stat-title"/>
+                    <TableView fx:id="tableTop5" prefHeight="200"
+                               style="-fx-background-color: transparent; -fx-border-color: transparent;">
+                        <columns>
+                            <TableColumn fx:id="colTopNom"      text="Produit"    prefWidth="260"/>
+                            <TableColumn fx:id="colTopCat"      text="Catégorie"  prefWidth="150"/>
+                            <TableColumn fx:id="colTopNote"     text="Note moy."  prefWidth="110" style="-fx-alignment: CENTER;"/>
+                            <TableColumn fx:id="colTopNbAvis"   text="Nb avis"    prefWidth="90"  style="-fx-alignment: CENTER;"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="Aucun avis enregistré." styleClass="page-subtitle"/>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+
+                <!-- Section 5 : CA par catégorie -->
+                <VBox styleClass="card" spacing="10">
+                    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                    <Label text="Chiffre d'affaires par catégorie (TND)" styleClass="stat-title"/>
+                    <BarChart fx:id="chartCA" animated="true"
+                              legendVisible="false" prefHeight="240">
+                        <xAxis><CategoryAxis label="Catégorie"/></xAxis>
+                        <yAxis><NumberAxis label="CA (TND)"/></yAxis>
+                    </BarChart>
+                </VBox>
+
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>
