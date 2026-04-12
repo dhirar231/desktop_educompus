@@ -359,8 +359,8 @@ public final class FrontLoginController {
             boolean exists = DbAuthService.emailExists(mail);
             if (forgotInfoLabel != null) {
                 forgotInfoLabel.setText(exists
-                        ? "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony)."
-                        : "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony).");
+                        ? "Si ce compte existe, un lien de rÃ©initialisation sera envoyÃ© (Ã  brancher sur Symfony)."
+                        : "Si ce compte existe, un lien de rÃ©initialisation sera envoyÃ© (Ã  brancher sur Symfony).");
                 forgotInfoLabel.setManaged(true);
                 forgotInfoLabel.setVisible(true);
             }
@@ -380,8 +380,17 @@ public final class FrontLoginController {
 
     @FXML
     private void signUp(ActionEvent event) {
+        String fullName = signupName == null ? "" : String.valueOf(signupName.getText()).trim();
+        String mail = signupEmail == null ? "" : String.valueOf(signupEmail.getText()).trim().toLowerCase();
         String p1 = signupPassword == null ? "" : String.valueOf(signupPassword.getText());
         String p2 = signupPassword2 == null ? "" : String.valueOf(signupPassword2.getText());
+        if (fullName.isBlank() || mail.isBlank() || p1.isBlank() || p2.isBlank()) {
+            if (signupInfoLabel != null) {
+                signupInfoLabel.setText("Veuillez remplir tous les champs.");
+            }
+            shake(cardPane);
+            return;
+        }
         if (!p1.equals(p2)) {
             if (signupInfoLabel != null) {
                 signupInfoLabel.setText("Les mots de passe ne correspondent pas.");
@@ -389,8 +398,30 @@ public final class FrontLoginController {
             shake(cardPane);
             return;
         }
+        if (p1.length() < 6) {
+            if (signupInfoLabel != null) {
+                signupInfoLabel.setText("Le mot de passe doit contenir au moins 6 caracteres.");
+            }
+            shake(cardPane);
+            return;
+        }
+        try {
+            DbAuthService.registerUser(fullName, mail, p1);
+        } catch (Exception e) {
+            if (signupInfoLabel != null) {
+                signupInfoLabel.setText("Inscription impossible: " + summarizeThrowable(e));
+            }
+            shake(cardPane);
+            return;
+        }
         if (signupInfoLabel != null) {
-            signupInfoLabel.setText("Compte créé (template). Vous pouvez vous connecter.");
+            signupInfoLabel.setText("Compte cree en base. Vous pouvez vous connecter.");
+        }
+        if (email != null) {
+            email.setText(mail);
+        }
+        if (password != null) {
+            password.clear();
         }
         showLogin(event);
     }
@@ -625,3 +656,4 @@ public final class FrontLoginController {
         pt.play();
     }
 }
+
