@@ -5,10 +5,7 @@ import com.educompus.repository.CourseManagementRepository;
 
 import java.util.List;
 
-/**
- * Couche service pour les Vidéos Explicatives.
- * Centralise la logique métier : validation + appel au repository.
- */
+
 public final class VideoExplicatifService {
 
     private final CourseManagementRepository repository;
@@ -17,14 +14,14 @@ public final class VideoExplicatifService {
         this.repository = new CourseManagementRepository();
     }
 
-    // ── Lecture ──────────────────────────────────────────────────────────────
+    //  Lecture
 
-    /** Retourne toutes les vidéos, filtrées par terme de recherche. */
+
     public List<VideoExplicative> listerToutes(String recherche) {
         return repository.listVideos(recherche == null ? "" : recherche);
     }
 
-    /** Retourne les vidéos d'un cours donné. */
+
     public List<VideoExplicative> listerParCours(int coursId) {
         if (coursId <= 0) {
             throw new IllegalArgumentException("ID du cours invalide.");
@@ -32,23 +29,17 @@ public final class VideoExplicatifService {
         return repository.listVideosByCoursId(coursId);
     }
 
-    // ── Création ─────────────────────────────────────────────────────────────
+    //  Création
 
-    /**
-     * Valide puis crée une vidéo.
-     * @throws IllegalArgumentException si la validation échoue
-     */
+
     public void creer(VideoExplicative video) {
         valider(video);
         repository.createVideo(video);
     }
 
-    // ── Modification ─────────────────────────────────────────────────────────
+    //  Modification
 
-    /**
-     * Valide puis met à jour une vidéo existante.
-     * @throws IllegalArgumentException si la validation échoue
-     */
+
     public void modifier(VideoExplicative video) {
         if (video.getId() <= 0) {
             throw new IllegalArgumentException("ID de la vidéo invalide pour la modification.");
@@ -57,12 +48,9 @@ public final class VideoExplicatifService {
         repository.updateVideo(video);
     }
 
-    // ── Suppression ──────────────────────────────────────────────────────────
+    // Suppression
 
-    /**
-     * Supprime une vidéo par son ID.
-     * @throws IllegalArgumentException si l'ID est invalide
-     */
+
     public void supprimer(int videoId) {
         if (videoId <= 0) {
             throw new IllegalArgumentException("ID de la vidéo invalide.");
@@ -72,10 +60,7 @@ public final class VideoExplicatifService {
 
     // ── Validation ───────────────────────────────────────────────────────────
 
-    /**
-     * Valide une vidéo (titre, URL, chapitre).
-     * @throws IllegalArgumentException avec le détail des erreurs si invalide
-     */
+
     public void valider(VideoExplicative video) {
         ValidationResult result = validerSansException(video);
         if (!result.isValid()) {
@@ -83,7 +68,7 @@ public final class VideoExplicatifService {
         }
     }
 
-    /** Retourne le résultat de validation sans lever d'exception. */
+
     public ValidationResult validerSansException(VideoExplicative video) {
         ValidationResult r = new ValidationResult();
         if (video == null) {
@@ -95,7 +80,7 @@ public final class VideoExplicatifService {
         ValidationResult titreResult = CoursValidationService.validateVideoTitre(video.getTitre());
         titreResult.getErrors().forEach(r::addError);
 
-        // URL (obligatoire)
+        // URL
         ValidationResult urlResult = CoursValidationService.validateVideoUrl(video.getUrlVideo());
         urlResult.getErrors().forEach(r::addError);
 
@@ -108,7 +93,7 @@ public final class VideoExplicatifService {
             r.addError("Veuillez sélectionner un cours.");
         }
 
-        // Description (optionnelle mais si présente, min 10 chars)
+        // Description
         String desc = video.getDescription();
         if (desc != null && !desc.isBlank() && desc.trim().length() < 10) {
             r.addError("La description doit contenir au moins 10 caractères si elle est renseignée.");

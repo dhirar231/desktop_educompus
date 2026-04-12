@@ -30,6 +30,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -682,12 +683,18 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        addRow(grid, 0, "Titre *", titreField);
-        addRow(grid, 1, "Description *", descriptionArea);
-        addRow(grid, 2, "Niveau *", niveauCombo);
-        addRow(grid, 3, "Domaine *", domaineCombo);
-        addRow(grid, 4, "Nom du formateur *", formateurField);
-        addRow(grid, 5, "Duree totale (heures) *", dureeField);
+        Label errTitre = addRow(grid, 0, "Titre *", titreField);
+        Label errDesc = addRow(grid, 1, "Description *", descriptionArea);
+        Label errNiveau = addRow(grid, 2, "Niveau *", niveauCombo);
+        Label errDomaine = addRow(grid, 3, "Domaine *", domaineCombo);
+        Label errFormateur = addRow(grid, 4, "Nom du formateur *", formateurField);
+        Label errDuree = addRow(grid, 5, "Duree totale (heures) *", dureeField);
+
+        liveValidate(titreField, errTitre, () -> CoursValidationService.validateChapitreTitre(titreField.getText()));
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+        liveValidate(formateurField, errFormateur, () -> { ValidationResult r = new ValidationResult(); String v = formateurField.getText().trim(); if (v.isBlank()) r.addError("Le nom du formateur est obligatoire."); else if (v.chars().anyMatch(Character::isDigit)) r.addError("Le nom ne doit pas contenir de chiffres."); return r; });
+        liveValidate(dureeField, errDuree, () -> CoursValidationService.validateDureeStr(dureeField.getText()));
+
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer un cours" : "Modifier un cours", grid);
         Optional<ButtonType> answer = dialog.showAndWait();
@@ -782,13 +789,19 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        addRow(grid, 0, "Cours *", coursCombo);
-        addRow(grid, 1, "Titre *", titreField);
-        addRow(grid, 2, "Ordre *", ordreField);
-        addRow(grid, 3, "Description *", descriptionArea);
-        addRow(grid, 4, "Fichier PDF *", fichierBox);
-        addRow(grid, 5, "Niveau *", niveauCombo);
-        addRow(grid, 6, "Domaine *", domaineCombo);
+        Label errCours = addRow(grid, 0, "Cours *", coursCombo);
+        Label errTitre = addRow(grid, 1, "Titre *", titreField);
+        Label errOrdre = addRow(grid, 2, "Ordre *", ordreField);
+        Label errDesc = addRow(grid, 3, "Description *", descriptionArea);
+        Label errFichier = addRow(grid, 4, "Fichier PDF *", fichierBox);
+        Label errNiveau = addRow(grid, 5, "Niveau *", niveauCombo);
+        Label errDomaine = addRow(grid, 6, "Domaine *", domaineCombo);
+
+        liveValidate(titreField, errTitre, () -> CoursValidationService.validateChapitreTitre(titreField.getText()));
+        liveValidate(ordreField, errOrdre, () -> CoursValidationService.validateChapitreOrdre(ordreField.getText()));
+        liveValidate(fichierField, errFichier, () -> { ValidationResult r = new ValidationResult(); String v = fichierField.getText().trim(); if (v.isBlank()) r.addError("Le fichier PDF est obligatoire."); else if (!v.toLowerCase().endsWith(".pdf")) r.addError("Doit etre un fichier .pdf"); return r; });
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer un chapitre" : "Modifier un chapitre", grid);
         Optional<ButtonType> answer = dialog.showAndWait();
@@ -890,13 +903,18 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        addRow(grid, 0, "Cours *", coursCombo);
-        addRow(grid, 1, "Chapitre *", chapitreCombo);
-        addRow(grid, 2, "Titre *", titreField);
-        addRow(grid, 3, "Description *", descriptionArea);
-        addRow(grid, 4, "Fichier PDF *", fichierBox);
-        addRow(grid, 5, "Niveau *", niveauCombo);
-        addRow(grid, 6, "Domaine *", domaineCombo);
+        Label errCours = addRow(grid, 0, "Cours *", coursCombo);
+        Label errChapitre = addRow(grid, 1, "Chapitre *", chapitreCombo);
+        Label errTitre = addRow(grid, 2, "Titre *", titreField);
+        Label errDesc = addRow(grid, 3, "Description *", descriptionArea);
+        Label errFichier = addRow(grid, 4, "Fichier PDF *", fichierBox);
+        Label errNiveau = addRow(grid, 5, "Niveau *", niveauCombo);
+        Label errDomaine = addRow(grid, 6, "Domaine *", domaineCombo);
+
+        liveValidate(titreField, errTitre, () -> CoursValidationService.validateTdTitre(titreField.getText()));
+        liveValidate(fichierField, errFichier, () -> { ValidationResult r = new ValidationResult(); String v = fichierField.getText().trim(); if (v.isBlank()) r.addError("Le fichier PDF est obligatoire."); else if (!v.toLowerCase().endsWith(".pdf")) r.addError("Doit etre un fichier .pdf"); return r; });
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer un TD" : "Modifier un TD", grid);
         Optional<ButtonType> answer = dialog.showAndWait();
@@ -983,13 +1001,18 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        addRow(grid, 0, "Cours *", coursCombo);
-        addRow(grid, 1, "Chapitre *", chapitreCombo);
-        addRow(grid, 2, "Titre *", titreField);
-        addRow(grid, 3, "Url video", urlField);
-        addRow(grid, 4, "Description *", descriptionArea);
-        addRow(grid, 5, "Niveau *", niveauCombo);
-        addRow(grid, 6, "Domaine *", domaineCombo);
+        Label errCours = addRow(grid, 0, "Cours *", coursCombo);
+        Label errChapitre = addRow(grid, 1, "Chapitre *", chapitreCombo);
+        Label errTitre = addRow(grid, 2, "Titre *", titreField);
+        Label errUrl = addRow(grid, 3, "Url video *", urlField);
+        Label errDesc = addRow(grid, 4, "Description *", descriptionArea);
+        Label errNiveau = addRow(grid, 5, "Niveau *", niveauCombo);
+        Label errDomaine = addRow(grid, 6, "Domaine *", domaineCombo);
+
+        liveValidate(titreField, errTitre, () -> CoursValidationService.validateVideoTitre(titreField.getText()));
+        liveValidate(urlField, errUrl, () -> CoursValidationService.validateVideoUrl(urlField.getText()));
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer une video" : "Modifier une video", grid);
         Optional<ButtonType> answer = dialog.showAndWait();
@@ -1023,7 +1046,7 @@ public final class BackCoursesController {
     private Dialog<ButtonType> buildFormDialog(String title, Node content) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle(title);
-        dialog.setHeaderText(title + " - date de creation automatique.");
+        dialog.setHeaderText(title + "");
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         dialog.getDialogPane().setPrefWidth(760);
@@ -1034,19 +1057,41 @@ public final class BackCoursesController {
     private GridPane formGrid() {
         GridPane grid = new GridPane();
         grid.setHgap(14);
-        grid.setVgap(12);
+        grid.setVgap(4);
         return grid;
     }
 
-    private void addRow(GridPane grid, int row, String label, Node node) {
+    private Label addRow(GridPane grid, int row, String label, Node node) {
         Label formLabel = new Label(label);
         formLabel.getStyleClass().add("form-label");
-        grid.add(formLabel, 0, row);
-        grid.add(node, 1, row);
+        grid.add(formLabel, 0, row * 2);
+        grid.add(node, 1, row * 2);
         if (node instanceof Region region) {
             region.setMaxWidth(Double.MAX_VALUE);
             GridPane.setHgrow(region, Priority.ALWAYS);
         }
+        Label errLabel = new Label("");
+        errLabel.setStyle("-fx-text-fill: #d6293e; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 0 0 4 2;");
+        errLabel.setWrapText(true);
+        errLabel.setMaxWidth(400);
+        grid.add(errLabel, 1, row * 2 + 1);
+        return errLabel;
+    }
+
+    private void liveValidate(TextInputControl field, Label errLabel, java.util.function.Supplier<ValidationResult> validator) {
+        field.textProperty().addListener((obs, o, n) -> {
+            ValidationResult r = validator.get();
+            if (r.isValid()) { errLabel.setText(""); FormValidator.clearError(field); }
+            else { errLabel.setText("⚠ " + r.firstError()); FormValidator.markError(field, r.firstError()); }
+        });
+    }
+
+    private <T> void liveValidateCombo(ComboBox<T> combo, Label errLabel, java.util.function.Supplier<ValidationResult> validator) {
+        combo.valueProperty().addListener((obs, o, n) -> {
+            ValidationResult r = validator.get();
+            if (r.isValid()) { errLabel.setText(""); FormValidator.clearError(combo); }
+            else { errLabel.setText("⚠ " + r.firstError()); FormValidator.markError(combo, r.firstError()); }
+        });
     }
 
     private TextField field() {

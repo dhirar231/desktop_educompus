@@ -4,10 +4,7 @@ import com.educompus.model.Cours;
 
 import java.util.List;
 
-/**
- * Validation logique pour les entités Cours, Chapitre, TD et Vidéo.
- * Vérifie que les valeurs ont du sens, pas seulement qu'elles ne sont pas vides.
- */
+
 public final class CoursValidationService {
 
     private static final int TITRE_MIN = 3;
@@ -30,7 +27,7 @@ public final class CoursValidationService {
 
     private CoursValidationService() {}
 
-    // ── Cours ────────────────────────────────────────────────────────────────
+    // Cours
 
     public static ValidationResult validateCours(Cours cours) {
         ValidationResult r = new ValidationResult();
@@ -49,7 +46,7 @@ public final class CoursValidationService {
         return r;
     }
 
-    // ── Chapitre ─────────────────────────────────────────────────────────────
+    //  Chapitre
 
     public static ValidationResult validateChapitreTitre(String titre) {
         ValidationResult r = new ValidationResult();
@@ -71,7 +68,7 @@ public final class CoursValidationService {
         return r;
     }
 
-    // ── TD ───────────────────────────────────────────────────────────────────
+    //  TD
 
     public static ValidationResult validateTdTitre(String titre) {
         ValidationResult r = new ValidationResult();
@@ -87,7 +84,7 @@ public final class CoursValidationService {
         return r;
     }
 
-    // ── Vidéo ────────────────────────────────────────────────────────────────
+    //  Vidéo
 
     public static ValidationResult validateVideoTitre(String titre) {
         ValidationResult r = new ValidationResult();
@@ -122,7 +119,7 @@ public final class CoursValidationService {
         return r;
     }
 
-    // ── Règles communes ──────────────────────────────────────────────────────
+    //  Règles communes
 
     private static void validateTitre(String titre, String label, ValidationResult r) {
         if (titre == null || titre.isBlank()) {
@@ -237,7 +234,7 @@ public final class CoursValidationService {
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    //  Helpers
 
     private static boolean isAllDigits(String s) {
         return s.chars().allMatch(Character::isDigit);
