@@ -9,6 +9,7 @@ import de.mkammerer.argon2.Argon2Factory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 
 public final class DbAuthService {
     private DbAuthService() {
@@ -76,6 +77,46 @@ public final class DbAuthService {
             }
         } catch (Exception e) {
             throw new IllegalStateException("DB check failed: " + safeMessage(e), e);
+        }
+    }
+
+    public static void registerUser(String fullName, String email, String plainPassword) {
+        String name = fullName == null ? "" : fullName.trim();
+        String mail = email == null ? "" : email.trim().toLowerCase();
+        String pass = plainPassword == null ? "" : plainPassword;
+
+        if (name.isBlank()) {
+            throw new IllegalArgumentException("Le nom est obligatoire.");
+        }
+        if (mail.isBlank()) {
+            throw new IllegalArgumentException("L'email est obligatoire.");
+        }
+        if (pass.isBlank()) {
+            throw new IllegalArgumentException("Le mot de passe est obligatoire.");
+        }
+        if (emailExists(mail)) {
+            throw new IllegalStateException("Cet email existe deja.");
+        }
+
+        String hash = BCrypt.withDefaults().hashToString(12, pass.toCharArray());
+        String roles = "[\"ROLE_USER\"]";
+
+        String sql = """
+                INSERT INTO `user` (email, roles, password, name, last_name, image_url)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, mail);
+            ps.setString(2, roles);
+            ps.setString(3, hash);
+            ps.setString(4, name);
+            ps.setString(5, "");
+            ps.setString(6, null);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            throw new IllegalStateException("DB inscription impossible: " + safeMessage(e), e);
         }
     }
 

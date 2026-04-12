@@ -5,6 +5,9 @@ import com.educompus.model.Project;
 import com.educompus.model.ProjectSubmissionView;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
+import com.educompus.service.FormValidator;
+import com.educompus.service.ProjectValidationService;
+import com.educompus.service.ValidationResult;
 import com.educompus.util.Theme;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -648,16 +651,15 @@ public final class BackProjectsController {
     private void saveProject(ActionEvent event) {
         Project p = editingProject == null ? new Project() : editingProject;
         p.setTitle(text(titleField));
-        // build deadline string from DatePicker + time field when available
+
+        // build deadline string from DatePicker + time field
         if (deadlineDatePicker != null && deadlineTimeField != null) {
             java.time.LocalDate ld = deadlineDatePicker.getValue();
             String timePart = safe(deadlineTimeField.getText());
             if (ld == null) {
                 p.setDeadline("");
             } else {
-                if (timePart.isBlank()) {
-                    timePart = "00:00:00";
-                }
+                if (timePart.isBlank()) timePart = "00:00:00";
                 p.setDeadline(ld.toString() + " " + timePart);
             }
         } else {
@@ -667,22 +669,28 @@ public final class BackProjectsController {
         p.setDescription(text(descriptionArea));
         p.setPublished(publishedCheck != null && publishedCheck.isSelected());
 
-        if (p.getTitle() == null || p.getTitle().isBlank()) {
-            info("Titre requis", "Veuillez saisir un titre de projet.");
-            return;
+        // ── Validation logique via service ──
+        ValidationResult result = ProjectValidationService.validateProject(p);
+
+        // Marquer les champs en erreur visuellement
+        FormValidator fv = new FormValidator();
+        fv.check(titleField, ProjectValidationService.validateTitreProjet(p.getTitle()));
+        if (deadlineDatePicker != null) {
+            fv.check(deadlineDatePicker, ProjectValidationService.validateDeadlineStr(p.getDeadline()));
+        }
+        if (descriptionArea != null) {
+            ValidationResult descR = new ValidationResult();
+            // description optionnelle mais si renseignée doit avoir du sens
+            String desc = p.getDescription();
+            if (desc != null && !desc.isBlank() && desc.trim().length() < 10) {
+                descR.addError("La description doit contenir au moins 10 caractères si elle est renseignée.");
+            }
+            fv.check(descriptionArea, descR);
         }
 
-        String deadline = safe(p.getDeadline());
-        if (!deadline.isBlank()) {
-            LocalDate d = parseIsoDate(deadline);
-            if (d == null) {
-                info("Deadline invalide", "Format attendu: YYYY-MM-DD (ex: 2026-04-30).");
-                return;
-            }
-            if (d.isBefore(LocalDate.now())) {
-                info("Deadline invalide", "La deadline ne peut pas être dans le passé.");
-                return;
-            }
+        if (!result.isValid()) {
+            FormValidator.showErrorAlert("Projet invalide", result);
+            return;
         }
 
         try {
@@ -690,21 +698,14 @@ public final class BackProjectsController {
                 p.setCreatedById(AppState.getUserId());
                 projectRepo.create(p);
                 projects.add(0, p);
-                if (projectsTable != null) {
-                    projectsTable.getSelectionModel().select(p);
-                }
-                // update admin catalogue
+                if (projectsTable != null) projectsTable.getSelectionModel().select(p);
                 renderAdminCards();
             } else {
                 projectRepo.update(p);
-                if (projectsTable != null) {
-                    projectsTable.refresh();
-                }
-                // update admin catalogue after edit
+                if (projectsTable != null) projectsTable.refresh();
                 renderAdminCards();
             }
             info("Projet enregistré", "Le projet a été enregistré.");
-            // clear form for next addition as requested
             newProject(null);
         } catch (Exception e) {
             error("Erreur", e);
@@ -929,5 +930,12 @@ public final class BackProjectsController {
             f = new java.io.File(new java.io.File("..", "eduCompus-javafx"), "styles/educompus.css");
         }
         return f.exists() ? f.toURI().toString() : "";
+    }
+
+    private static boolean containsDigit(String value) {
+        for (char c : safe(value).toCharArray()) {
+            if (Character.isDigit(c)) return true;
+        }
+        return false;
     }
 }

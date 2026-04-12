@@ -499,6 +499,48 @@
   -fx-background-color: -edu-bg;
 }
 
+.field-invalid,
+.field.field-invalid,
+.combo-box.field-invalid,
+.text-area.field-invalid,
+.text-field.field-invalid,
+.date-picker.field-invalid {
+  -fx-border-color: #d6293e;
+  -fx-border-width: 2;
+  -fx-effect: dropshadow(three-pass-box, rgba(214, 41, 62, 0.22), 14, 0.18, 0, 2);
+}
+
+.field-invalid .content,
+.text-area.field-invalid .content {
+  -fx-background-color: rgba(214, 41, 62, 0.03);
+}
+
+.course-stat-card {
+  -fx-min-width: 140px;
+}
+
+.table-actions {
+  -fx-alignment: CENTER_LEFT;
+}
+
+.form-label {
+  -fx-text-fill: -edu-text;
+  -fx-font-weight: 700;
+}
+
+.front-course-card {
+  -fx-spacing: 14;
+}
+
+.front-course-media {
+  -fx-min-height: 120px;
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.12), rgba(6, 106, 201, 0.12));
+  -fx-background-radius: 14px;
+  -fx-border-radius: 14px;
+  -fx-border-color: rgba(6, 106, 201, 0.12);
+  -fx-padding: 12;
+}
+
 .tabs {
   -fx-background-color: transparent;
 }
@@ -1431,4 +1473,120 @@
   -fx-background-insets: 0;
   -fx-background-radius: 12px;
   -fx-padding: 8 0 8 0;
+}
+
+/* ── Course Detail Page ── */
+.detail-topbar {
+  -fx-background-color: -edu-bg;
+  -fx-border-color: transparent transparent -edu-border transparent;
+  -fx-border-width: 0 0 1 0;
+}
+
+.course-hero-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 16px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 16px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
+}
+
+.course-hero-banner {
+  -fx-background-color: linear-gradient(to bottom right, rgba(6, 106, 201, 0.88), rgba(106, 17, 203, 0.82));
+  -fx-background-radius: 16px 16px 0 0;
+}
+
+.course-hero-title {
+  -fx-font-size: 22px;
+  -fx-font-weight: 900;
+  -fx-text-fill: white;
+  -fx-wrap-text: true;
+}
+
+.course-hero-desc {
+  -fx-text-fill: rgba(255, 255, 255, 0.82);
+  -fx-font-size: 13px;
+  -fx-max-width: 680px;
+}
+
+.course-hero-meta {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 0 0 16px 16px;
+  -fx-border-color: -edu-border transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+}
+
+.meta-icon {
+  -fx-fill: -edu-primary;
+  -fx-scale-x: 0.75;
+  -fx-scale-y: 0.75;
+  -fx-min-width: 18px;
+  -fx-min-height: 18px;
+}
+
+.meta-text {
+  -fx-text-fill: -edu-text;
+  -fx-font-weight: 600;
+}
+
+/* Chapitre accordion card */
+.chapitre-header {
+  -fx-background-color: -edu-surface;
+  -fx-background-radius: 14px;
+  -fx-border-radius: 14px;
+}
+
+.chapitre-header:hover {
+  -fx-background-color: -edu-primary-soft-2;
+}
+
+.chapitre-num {
+  -fx-min-width: 28px;
+  -fx-min-height: 28px;
+  -fx-max-width: 28px;
+  -fx-max-height: 28px;
+  -fx-alignment: CENTER;
+  -fx-background-color: -edu-primary;
+  -fx-background-radius: 999px;
+  -fx-text-fill: white;
+  -fx-font-weight: 900;
+  -fx-font-size: 12px;
+}
+
+.chapitre-title {
+  -fx-font-size: 14px;
+  -fx-font-weight: 700;
+  -fx-text-fill: -edu-text;
+}
+
+.chapitre-chevron {
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-weight: 900;
+  -fx-font-size: 14px;
+}
+
+.chapitre-section-label {
+  -fx-font-size: 11px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text-muted;
+  -fx-padding: 8 0 4 0;
+}
+
+/* Resource rows (TD / vidéo) */
+.resource-row {
+  -fx-background-color: -edu-surface;
+  -fx-background-radius: 10px;
+  -fx-border-radius: 10px;
+  -fx-border-color: -edu-border;
+  -fx-border-width: 1;
+}
+
+.resource-row:hover {
+  -fx-background-color: -edu-primary-soft-2;
+  -fx-border-color: derive(-edu-primary, 72%);
+}
+
+.resource-name {
+  -fx-font-weight: 700;
+  -fx-text-fill: -edu-text;
 }

@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.front.FrontCoursesController"
       styleClass="content" spacing="16">
     <padding>
         <Insets top="22" right="22" bottom="22" left="22"/>
@@ -15,24 +16,24 @@
 
     <VBox spacing="4">
         <Label text="Mes cours" styleClass="page-title"/>
-        <Label text="Liste des cours inscrits / progression (template)." styleClass="page-subtitle"/>
     </VBox>
 
-    <VBox styleClass="card" spacing="10">
-        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-        <HBox spacing="10">
-            <Label text="Cours recommandés" styleClass="stat-title"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Rechercher" styleClass="btn-primary"/>
-        </HBox>
-        <Label text="Ici: TableView / Tiles (cours, niveaux, tags, durée, etc.)." styleClass="page-subtitle" wrapText="true"/>
-    </VBox>
+    <HBox spacing="12">
+        <VBox styleClass="card course-stat-card" spacing="6">
+            <padding><Insets top="14" right="18" bottom="14" left="18"/></padding>
+            <Label text="Cours disponibles" styleClass="stat-title"/>
+            <Label fx:id="totalCoursesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+    </HBox>
 
-    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
-        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-        <Label text="Mes inscriptions" styleClass="stat-title"/>
-        <Label text="Ici: list des cours + progression + accès contenu." styleClass="page-subtitle" wrapText="true"/>
-        <Region VBox.vgrow="ALWAYS"/>
-    </VBox>
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="catalog-scroll">
+        <content>
+            <VBox fx:id="cardsBox" spacing="14" styleClass="project-catalog">
+                <padding>
+                    <Insets top="2" right="2" bottom="2" left="2"/>
+                </padding>
+            </VBox>
+        </content>
+    </ScrollPane>
 </VBox>
-
