@@ -1,5 +1,0 @@
-# Created at 2026-04-11T23:49:26.324
-Boot Manifest-JAR contains absolute paths in classpath 'D:\Gestion projets\eduCompus-javafx\target\test-classes'
-Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-'other' has different root
-
