@@ -270,6 +270,11 @@ public final class BackExamQuestionsController {
 
         try {
             if (answer.getId() <= 0) {
+                // client-side guard: prevent adding if already 4 answers
+                if (question.getAnswers() != null && question.getAnswers().size() >= 4) {
+                    info("Reponse", "Chaque question ne peut avoir que 4 réponses maximum.");
+                    return;
+                }
                 repository.addAnswer(answer, question.getId());
                 info("Reponse", "Reponse ajoutee.");
             } else {
