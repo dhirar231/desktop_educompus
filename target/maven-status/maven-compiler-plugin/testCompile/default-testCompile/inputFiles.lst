@@ -1,5 +1,7 @@
-D:\Gestion projets\eduCompus-javafx\src\test\java\com\educompus\repository\ExamRepositoryTest.java
-D:\Gestion projets\eduCompus-javafx\src\test\java\com\educompus\repository\ExamRepositoryDbTest.java
-D:\Gestion projets\eduCompus-javafx\src\test\java\com\educompus\repository\ProjectRepositoryTest.java
-D:\Gestion projets\eduCompus-javafx\src\test\java\com\educompus\repository\ProjectSubmissionRepositoryTest.java
-D:\Gestion projets\eduCompus-javafx\src\test\java\com\educompus\util\ProjectRulesTest.java
+C:\Users\ABDOU\desktop_educompus\src\test\java\com\educompus\service\ServiceExamQuestionLimitTest.java
+C:\Users\ABDOU\desktop_educompus\src\test\java\com\educompus\service\ServiceKanbanTest.java
+C:\Users\ABDOU\desktop_educompus\src\test\java\com\educompus\repository\TestMySqlHelper.java
+C:\Users\ABDOU\desktop_educompus\src\test\java\com\educompus\service\ServiceExamQuestionTest.java
+C:\Users\ABDOU\desktop_educompus\src\test\java\com\educompus\service\ServiceProjectSubmissionTest.java
+C:\Users\ABDOU\desktop_educompus\src\test\java\com\educompus\service\ServiceExamTest.java
+C:\Users\ABDOU\desktop_educompus\src\test\java\com\educompus\service\ServiceProjectTest.java

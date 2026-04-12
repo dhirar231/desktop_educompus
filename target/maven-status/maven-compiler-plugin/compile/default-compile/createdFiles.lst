@@ -12,6 +12,7 @@ com\educompus\app\AppState.class
 com\educompus\controller\back\BackExamsController.class
 com\educompus\util\ProjectRules.class
 com\educompus\controller\back\BackKanbanController.class
+com\educompus\controller\back\TeacherResponsesController.class
 com\educompus\controller\front\FrontExamsController.class
 com\educompus\controller\back\BackLoginController.class
 com\educompus\model\AuthUser.class
