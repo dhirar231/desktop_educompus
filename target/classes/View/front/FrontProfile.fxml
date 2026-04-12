@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Profil" styleClass="page-title"/>
+        <Label text="Informations utilisateur + paramètres (template)." styleClass="page-subtitle"/>
+    </VBox>
+
+    <VBox styleClass="card" spacing="10">
+        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+        <Label text="Nom complet" styleClass="stat-title"/>
+        <TextField promptText="Votre nom" styleClass="field"/>
+        <Label text="Téléphone" styleClass="stat-title"/>
+        <TextField promptText="+216 ..." styleClass="field"/>
+        <HBox spacing="10">
+            <Button text="Enregistrer" styleClass="btn-primary"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Changer mot de passe" styleClass="btn-ghost"/>
+        </HBox>
+    </VBox>
+
+    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
+        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+        <Label text="Préférences" styleClass="stat-title"/>
+        <Label text="Ici: notifications, langue, thème, etc." styleClass="page-subtitle" wrapText="true"/>
+        <Region VBox.vgrow="ALWAYS"/>
+    </VBox>
+</VBox>
+
