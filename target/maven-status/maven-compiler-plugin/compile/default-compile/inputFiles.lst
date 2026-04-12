@@ -10,6 +10,7 @@ C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\edu
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\controller\back\BackMarketplaceModifController.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\controller\back\BackProjectsController.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\controller\back\BackShellController.java
+C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\controller\back\BackStatistiquesController.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\controller\front\FrontCommandeController.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\controller\front\FrontDashboardController.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\controller\front\FrontLoginController.java
@@ -44,6 +45,7 @@ C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\edu
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\service\ServiceLivraison.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\service\ServicePanier.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\service\ServiceProduit.java
+C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\service\ServiceStatistiques.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\util\AvatarGenerator.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\util\Dialogs.java
 C:\Users\rania\Desktop\projet javafx2026\desktop_educompus\src\main\java\com\educompus\util\ProduitValidator.java

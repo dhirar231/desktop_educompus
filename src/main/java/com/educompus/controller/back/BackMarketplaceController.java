@@ -149,6 +149,39 @@ public class BackMarketplaceController {
     }
 
     @FXML
+    private void onVoirStatistiques(ActionEvent event) {
+        try {
+            FXMLLoader loader = Navigator.loader("View/back/BackStatistiques.fxml");
+            Node statsView = loader.load();
+
+            StackPane container = getContentWrap();
+            if (container == null) return;
+
+            Node marketplaceView = container.getChildren().get(0);
+
+            javafx.scene.layout.VBox wrapper = new javafx.scene.layout.VBox();
+            javafx.scene.layout.VBox.setVgrow(statsView, javafx.scene.layout.Priority.ALWAYS);
+
+            Button btnRetour = new Button("← Retour au catalogue");
+            btnRetour.getStyleClass().add("btn-ghost");
+            btnRetour.setOnAction(e -> container.getChildren().setAll(marketplaceView));
+            btnRetour.setStyle("-fx-padding: 10 16 10 16;");
+
+            HBox topBar = new HBox(btnRetour);
+            topBar.setStyle("-fx-background-color: -edu-card;" +
+                    "-fx-border-color: transparent transparent -edu-border transparent;" +
+                    "-fx-border-width: 0 0 1 0; -fx-padding: 8 18 8 18;");
+
+            wrapper.getChildren().addAll(topBar, statsView);
+            wrapper.setStyle("-fx-background-color: -edu-surface-2;");
+
+            container.getChildren().setAll(wrapper);
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur", e.getMessage());
+        }
+    }
+
+    @FXML
     private void onVoirCommandes(ActionEvent event) {
         try {
             FXMLLoader loader = Navigator.loader("View/back/BackCommandes.fxml");
