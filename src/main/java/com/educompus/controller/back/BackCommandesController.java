@@ -6,10 +6,13 @@ import com.educompus.model.Livraison;
 import com.educompus.service.ServiceCommande;
 import com.educompus.service.ServiceLigneCommande;
 import com.educompus.service.ServiceLivraison;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -17,6 +20,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -24,13 +28,14 @@ import java.util.Map;
 
 public class BackCommandesController {
 
-    @FXML private TableView<Commande>            tableCommandes;
-    @FXML private TableColumn<Commande, String>  colId, colDate, colTotal, colUserId,
-                                                  colAdresse, colVille, colPhone,
-                                                  colStatut, colActions;
-    @FXML private TextField                      searchField;
-    @FXML private ComboBox<String>               filterStatut;
-    @FXML private Label                          lblCount;
+    @FXML private TableView<Commande>                  tableCommandes;
+    @FXML private TableColumn<Commande, LocalDateTime> colDate;
+    @FXML private TableColumn<Commande, Double>        colTotal;
+    @FXML private TableColumn<Commande, String>        colAdresse, colVille, colPhone,
+                                                        colStatut, colActions;
+    @FXML private TextField                            searchField;
+    @FXML private ComboBox<String>                     filterStatut;
+    @FXML private Label                                lblCount;
 
     private final ServiceCommande      serviceCommande      = new ServiceCommande();
     private final ServiceLivraison     serviceLivraison     = new ServiceLivraison();
@@ -38,6 +43,7 @@ public class BackCommandesController {
 
     private final ObservableList<Commande> data     = FXCollections.observableArrayList();
     private FilteredList<Commande>         filtered;
+    private SortedList<Commande>           sorted;
 
     // Cache livraisons par commande_id
     private final Map<Integer, Livraison> livraisonsMap = new HashMap<>();
@@ -55,21 +61,34 @@ public class BackCommandesController {
         configurerColonnes();
 
         filtered = new FilteredList<>(data, c -> true);
-        tableCommandes.setItems(filtered);
+        sorted   = new SortedList<>(filtered);
+        sorted.comparatorProperty().bind(tableCommandes.comparatorProperty());
+        tableCommandes.setItems(sorted);
 
         chargerDonnees();
     }
 
     private void configurerColonnes() {
-        colId    .setCellValueFactory(c -> new SimpleStringProperty(
-                String.valueOf(c.getValue().getId())));
-        colDate  .setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().getDateCommande() != null
-                        ? c.getValue().getDateCommande().format(FMT) : "—"));
-        colTotal .setCellValueFactory(c -> new SimpleStringProperty(
-                String.format("%.2f", c.getValue().getTotal())));
-        colUserId.setCellValueFactory(c -> new SimpleStringProperty(
-                String.valueOf(c.getValue().getUserId())));
+        // Date : type LocalDateTime → tri chronologique natif
+        colDate.setCellValueFactory(c ->
+                new SimpleObjectProperty<>(c.getValue().getDateCommande()));
+        colDate.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(LocalDateTime item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.format(FMT));
+            }
+        });
+
+        // Total : type Double → tri numérique natif
+        colTotal.setCellValueFactory(c ->
+                new SimpleDoubleProperty(c.getValue().getTotal()).asObject());
+        colTotal.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : String.format("%.2f", item));
+                setStyle("-fx-alignment: CENTER-RIGHT;");
+            }
+        });
 
         // Colonnes issues de la livraison associée
         colAdresse.setCellValueFactory(c -> {

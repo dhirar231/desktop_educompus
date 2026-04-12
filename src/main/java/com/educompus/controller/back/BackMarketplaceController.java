@@ -3,10 +3,13 @@ package com.educompus.controller.back;
 import com.educompus.model.Produit;
 import com.educompus.nav.Navigator;
 import com.educompus.service.ServiceProduit;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -25,25 +28,45 @@ import java.util.Optional;
 
 public class BackMarketplaceController {
 
-    @FXML private TableView<Produit>          tableProduits;
-    @FXML private TableColumn<Produit,String> colId, colNom, colCategorie, colType, colPrix, colStock, colActions;
-    @FXML private TextField                   searchField;
-    @FXML private ComboBox<String>            filterCategorie;
-    @FXML private Label                       lblCount;
+    @FXML private TableView<Produit>             tableProduits;
+    @FXML private TableColumn<Produit, String>   colNom, colCategorie, colType, colActions;
+    @FXML private TableColumn<Produit, Double>   colPrix;
+    @FXML private TableColumn<Produit, Integer>  colStock;
+    @FXML private TextField                      searchField;
+    @FXML private ComboBox<String>               filterCategorie;
+    @FXML private Label                          lblCount;
 
     private final ServiceProduit service = new ServiceProduit();
     private final ObservableList<Produit> data = FXCollections.observableArrayList();
     private FilteredList<Produit> filtered;
+    private SortedList<Produit>   sorted;
 
     @FXML
     private void initialize() {
         // Colonnes texte
-        colId        .setCellValueFactory(c -> new SimpleStringProperty(String.valueOf(c.getValue().getId())));
-        colNom       .setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNom()));
-        colCategorie .setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCategorie()));
-        colType      .setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getType()));
-        colPrix      .setCellValueFactory(c -> new SimpleStringProperty(String.format("%.2f", c.getValue().getPrix())));
-        colStock     .setCellValueFactory(c -> new SimpleStringProperty(String.valueOf(c.getValue().getStock())));
+        colNom      .setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNom()));
+        colCategorie.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCategorie()));
+        colType     .setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getType()));
+
+        // Colonnes numériques — tri natif correct (pas alphabétique)
+        colPrix .setCellValueFactory(c -> new SimpleDoubleProperty(c.getValue().getPrix()).asObject());
+        colStock.setCellValueFactory(c -> new SimpleIntegerProperty(c.getValue().getStock()).asObject());
+
+        // Affichage formaté pour le prix
+        colPrix.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : String.format("%.2f", item));
+                setStyle("-fx-alignment: CENTER-RIGHT;");
+            }
+        });
+        colStock.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Integer item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : String.valueOf(item));
+                setStyle("-fx-alignment: CENTER;");
+            }
+        });
 
         // Colonne actions
         colActions.setCellFactory(col -> new TableCell<>() {
@@ -74,9 +97,11 @@ public class BackMarketplaceController {
             }
         });
 
-        // Filtre
+        // Filtre + tri liés au tableau
         filtered = new FilteredList<>(data, p -> true);
-        tableProduits.setItems(filtered);
+        sorted   = new SortedList<>(filtered);
+        sorted.comparatorProperty().bind(tableProduits.comparatorProperty());
+        tableProduits.setItems(sorted);
 
         chargerDonnees();
     }
