@@ -194,7 +194,7 @@ public final class BackShellController {
 
     @FXML
     private void navExams(ActionEvent event) {
-        setContent(safeLoad("View/back/BackExams.fxml"));
+        setContent(safeLoad("View/back/BackExamsCatalogue.fxml"));
         setActive(navExamsBtn);
     }
 

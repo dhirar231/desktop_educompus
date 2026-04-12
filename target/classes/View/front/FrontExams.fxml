@@ -2,34 +2,104 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.front.FrontExamsController"
       styleClass="content" spacing="16">
     <padding>
         <Insets top="22" right="22" bottom="22" left="22"/>
     </padding>
 
     <VBox spacing="4">
-        <Label text="Mes examens" styleClass="page-title"/>
-        <Label text="Planning, convocations, résultats et révisions (template)." styleClass="page-subtitle"/>
+        <Label text="Catalogue des examens" styleClass="page-title"/>
+        <Label text="Choisissez un cours, consultez la fiche du quiz, puis lancez l'examen dans une page dediee." styleClass="page-subtitle" wrapText="true"/>
     </VBox>
 
     <HBox spacing="10">
-        <TextField promptText="Rechercher (module, date...)" styleClass="field" HBox.hgrow="ALWAYS"/>
-        <Button text="Filtrer" styleClass="btn-ghost"/>
-        <Button text="Voir calendrier" styleClass="btn-primary"/>
+        <TextField fx:id="searchField" promptText="Rechercher un cours, un quiz ou un niveau..." styleClass="field" HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="sortCombo" prefWidth="170" styleClass="combo-rgb"/>
+        <Label fx:id="sourceLabel" text="Base de donnees" styleClass="chip chip-info"/>
     </HBox>
 
-    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
-        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-        <Label text="Liste des examens" styleClass="stat-title"/>
-        <Label text="Ici: TableView (module, date, salle, statut, note) + actions." styleClass="page-subtitle" wrapText="true"/>
-        <Region VBox.vgrow="ALWAYS"/>
-    </VBox>
-</VBox>
+    <HBox spacing="12">
+        <VBox styleClass="card exam-stat-card" spacing="4">
+            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+            <Label text="Cours" styleClass="stat-title"/>
+            <Label fx:id="totalCoursesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="card exam-stat-card" spacing="4">
+            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+            <Label text="Examens" styleClass="stat-title"/>
+            <Label fx:id="totalExamsLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="card exam-stat-card" spacing="4">
+            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+            <Label text="Questions" styleClass="stat-title"/>
+            <Label fx:id="totalQuestionsLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+    </HBox>
 
+    <StackPane fx:id="viewStack" VBox.vgrow="ALWAYS">
+        <VBox fx:id="cataloguePane" spacing="12" StackPane.alignment="TOP_LEFT">
+            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" hbarPolicy="NEVER" styleClass="catalog-scroll">
+                <content>
+                    <FlowPane fx:id="catalogueFlow" hgap="14" vgap="14" prefWrapLength="900" styleClass="project-catalog"/>
+                </content>
+            </ScrollPane>
+        </VBox>
+
+        <VBox fx:id="detailPane" spacing="12" visible="false" managed="false" StackPane.alignment="TOP_LEFT">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button text="&#x2190; Catalogue" onAction="#backToCatalogue" styleClass="btn-rgb-outline"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="startExamButton" text="Passer examen" styleClass="btn-rgb" onAction="#startSelectedExam"/>
+                    <Button fx:id="downloadCertButton" text="Telecharger certificat" styleClass="btn-rgb-outline" visible="false" managed="false" onAction="#downloadCertificate"/>
+            </HBox>
+
+            <VBox styleClass="card" spacing="12" VBox.vgrow="ALWAYS">
+                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                <Label fx:id="selectedCourseLabel" text="Cours" styleClass="stat-value" wrapText="true"/>
+                <Label fx:id="selectedExamLabel" text="Examen" styleClass="exam-card-subtitle" wrapText="true"/>
+                <Label fx:id="selectedMetaLabel" text="Informations" styleClass="page-subtitle" wrapText="true"/>
+                <Label fx:id="selectedDescLabel" text="Description" styleClass="page-subtitle" wrapText="true"/>
+                <HBox spacing="8">
+                    <Label fx:id="selectedLevelChip" text="Niveau" styleClass="chip chip-info"/>
+                    <Label fx:id="selectedDomainChip" text="Domaine" styleClass="chip chip-outline"/>
+                    <Label fx:id="selectedQuestionChip" text="0 question" styleClass="chip chip-warning"/>
+                    <Label fx:id="selectedDurationChip" text="0 min" styleClass="chip chip-success"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <VBox fx:id="quizPane" spacing="12" visible="false" managed="false" StackPane.alignment="TOP_LEFT">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button text="&#x2190; Fiche examen" onAction="#backToDetail" styleClass="btn-rgb-outline"/>
+                <Region HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <VBox styleClass="card" spacing="12" VBox.vgrow="ALWAYS">
+                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                <Label fx:id="quizTitleLabel" text="Quiz" styleClass="stat-value" wrapText="true"/>
+                <Label fx:id="quizProgressLabel" text="Question 1/1" styleClass="page-subtitle"/>
+                <Label fx:id="questionTextLabel" text="Question" styleClass="exam-question" wrapText="true"/>
+                <VBox fx:id="answersBox" spacing="10" VBox.vgrow="ALWAYS"/>
+                <Label fx:id="quizResultLabel" text="Selectionnez une reponse pour continuer." styleClass="page-subtitle" wrapText="true"/>
+                <HBox spacing="10">
+                    <Button fx:id="prevQuestionButton" text="Precedent" styleClass="btn-rgb-outline" onAction="#previousQuestion"/>
+                    <Button fx:id="nextQuestionButton" text="Suivant" styleClass="btn-rgb" onAction="#nextQuestion"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="submitQuizButton" text="Valider" styleClass="btn-rgb" onAction="#submitQuiz"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </StackPane>
+</VBox>
