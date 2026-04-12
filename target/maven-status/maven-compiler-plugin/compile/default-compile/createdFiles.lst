@@ -1,3 +1,4 @@
+com\educompus\controller\back\BackMarketplaceController$3.class
 com\educompus\model\Produit.class
 com\educompus\controller\front\FrontCommandeController$Regle.class
 com\educompus\service\ServicePanier.class
@@ -15,6 +16,7 @@ com\educompus\util\ProduitValidator$Regle.class
 com\educompus\controller\front\FrontMesCommandesController.class
 com\educompus\controller\back\BackCommandesController$1.class
 com\educompus\controller\front\FrontPanierController.class
+com\educompus\controller\back\BackCommandesController$4.class
 com\educompus\model\Livraison.class
 com\educompus\controller\back\BackMarketplaceAjoutController.class
 com\educompus\controller\front\FrontMarketplaceController.class
@@ -26,4 +28,6 @@ com\educompus\controller\back\BackMarketplaceController$1.class
 com\educompus\controller\front\FrontProduitDetailController.class
 com\educompus\controller\back\BackCommandesController.class
 com\educompus\service\ServiceCommande.class
+com\educompus\controller\back\BackMarketplaceController$2.class
+com\educompus\controller\back\BackCommandesController$5.class
 com\educompus\service\ServiceAvis.class

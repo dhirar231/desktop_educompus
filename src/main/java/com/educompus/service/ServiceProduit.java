@@ -9,6 +9,11 @@ import java.util.ArrayList;
 public class ServiceProduit {
 
     public void ajouter(Produit produit) throws SQLException {
+        // Test d'unicité : même nom + type + catégorie
+        if (existeDeja(produit.getNom(), produit.getType(), produit.getCategorie(), -1)) {
+            throw new SQLException(
+                "Un produit avec le même nom, type et catégorie existe déjà.");
+        }
         String sql = "INSERT INTO produit (nom, description, prix, type, categorie, image, user_id, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         Connection conn = EducompusDB.getConnection();
         PreparedStatement ps = conn.prepareStatement(sql);
@@ -29,6 +34,11 @@ public class ServiceProduit {
     }
 
     public void update(Produit produit) throws SQLException {
+        // Test d'unicité en excluant le produit lui-même (par son id)
+        if (existeDeja(produit.getNom(), produit.getType(), produit.getCategorie(), produit.getId())) {
+            throw new SQLException(
+                "Un autre produit avec le même nom, type et catégorie existe déjà.");
+        }
         String sql = "UPDATE produit SET nom=?, description=?, prix=?, type=?, categorie=?, image=?, stock=? WHERE id=?";
         Connection conn = EducompusDB.getConnection();
         PreparedStatement ps = conn.prepareStatement(sql);
@@ -112,6 +122,35 @@ public class ServiceProduit {
             int rows = ps.executeUpdate();
             if (rows == 0) {
                 throw new SQLException("Stock insuffisant pour le produit #" + produitId);
+            }
+        } finally {
+            ps.close();
+            conn.close();
+        }
+    }
+
+    /**
+     * Vérifie si un produit avec le même nom (insensible à la casse), type et catégorie
+     * existe déjà en base. Le paramètre excludeId permet d'exclure le produit en cours
+     * de modification (passer -1 pour un ajout).
+     */
+    private boolean existeDeja(String nom, String type, String categorie, int excludeId)
+            throws SQLException {
+        String sql = "SELECT COUNT(*) FROM produit " +
+                     "WHERE LOWER(nom)=LOWER(?) AND LOWER(type)=LOWER(?) " +
+                     "AND LOWER(categorie)=LOWER(?) AND id <> ?";
+        Connection conn = EducompusDB.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql);
+        try {
+            ps.setString(1, nom.trim());
+            ps.setString(2, type.trim());
+            ps.setString(3, categorie.trim());
+            ps.setInt(4, excludeId);
+            ResultSet rs = ps.executeQuery();
+            try {
+                return rs.next() && rs.getInt(1) > 0;
+            } finally {
+                rs.close();
             }
         } finally {
             ps.close();
