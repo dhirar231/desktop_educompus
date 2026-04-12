@@ -9,6 +9,7 @@ C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\Bac
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackLoginController.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackProjectsController.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\BackShellController.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\back\TeacherResponsesController.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\FrontDashboardController.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\FrontExamsController.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\FrontLoginController.java
@@ -17,6 +18,7 @@ C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\Fr
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\controller\front\SplashController.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\AuthUser.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\ExamAnswer.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\ExamAttemptRecord.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\ExamCatalogueItem.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\ExamQuestion.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\model\KanbanStatus.java
@@ -31,6 +33,11 @@ C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\repository\KanbanTa
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\repository\ProjectRepository.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\repository\ProjectSubmissionRepository.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\service\DbAuthService.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\service\ServiceExam.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\service\ServiceExamQuestion.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\service\ServiceKanban.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\service\ServiceProject.java
+C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\service\ServiceProjectSubmission.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\util\AvatarGenerator.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\util\Dialogs.java
 C:\Users\ABDOU\desktop_educompus\src\main\java\com\educompus\util\ProjectRules.java
