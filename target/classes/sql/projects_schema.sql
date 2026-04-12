@@ -35,3 +35,29 @@ CREATE TABLE IF NOT EXISTS kanban_task (
     KEY idx_kanban_scope (project_id, student_id, status, position)
 );
 
+CREATE TABLE IF NOT EXISTS exam (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    niveau VARCHAR(64) NULL,
+    domaine VARCHAR(128) NULL,
+    cours_id INT NOT NULL,
+    is_published TINYINT(1) NOT NULL DEFAULT 0,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS question (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    texte TEXT NOT NULL,
+    duree INT NOT NULL DEFAULT 45,
+    exam_id INT NOT NULL,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reponse (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    texte TEXT NOT NULL,
+    correcte TINYINT(1) NOT NULL DEFAULT 0,
+    question_id INT NOT NULL,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
