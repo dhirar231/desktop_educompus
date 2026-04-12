@@ -17,6 +17,8 @@
             <Label text="Gestion Marketplace" styleClass="page-title"/>
             <Label text="Catalogue des produits éducatifs — ajout, modification, suppression." styleClass="page-subtitle"/>
         </VBox>
+        <Button text="📊  Statistiques" styleClass="btn-ghost"
+                onAction="#onVoirStatistiques"/>
         <Button text="📋  Voir les commandes" styleClass="btn-ghost"
                 onAction="#onVoirCommandes"/>
         <Button fx:id="btnAjouter" text="＋  Ajouter un produit" styleClass="btn-primary"
