@@ -62,7 +62,7 @@
                         </HBox>
                         <TableView fx:id="coursTable" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="colCoursId" text="ID" prefWidth="60"/>
+                                <TableColumn fx:id="colCoursId" text="ID" prefWidth="60" visible="false"/>
                                 <TableColumn fx:id="colCoursTitre" text="Titre" prefWidth="190"/>
                                 <TableColumn fx:id="colCoursNiveau" text="Niveau" prefWidth="90"/>
                                 <TableColumn fx:id="colCoursDomaine" text="Domaine" prefWidth="140"/>
@@ -86,7 +86,7 @@
                         </HBox>
                         <TableView fx:id="chapitreTable" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="colChapitreId" text="ID" prefWidth="70"/>
+                                <TableColumn fx:id="colChapitreId" text="ID" prefWidth="70" visible="false"/>
                                 <TableColumn fx:id="colChapitreTitre" text="Titre" prefWidth="200"/>
                                 <TableColumn fx:id="colChapitreCours" text="Cours" prefWidth="180"/>
                                 <TableColumn fx:id="colChapitreNiveau" text="Niveau" prefWidth="90"/>
@@ -112,7 +112,7 @@
                         </HBox>
                         <TableView fx:id="tdTable" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="colTdId" text="ID" prefWidth="70"/>
+                                <TableColumn fx:id="colTdId" text="ID" prefWidth="70" visible="false"/>
                                 <TableColumn fx:id="colTdTitre" text="Titre" prefWidth="220"/>
                                 <TableColumn fx:id="colTdCours" text="Cours" prefWidth="170"/>
                                 <TableColumn fx:id="colTdChapitre" text="Chapitre" prefWidth="170"/>
@@ -136,7 +136,7 @@
                         </HBox>
                         <TableView fx:id="videoTable" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="colVideoId" text="ID" prefWidth="70"/>
+                                <TableColumn fx:id="colVideoId" text="ID" prefWidth="70" visible="false"/>
                                 <TableColumn fx:id="colVideoTitre" text="Titre" prefWidth="190"/>
                                 <TableColumn fx:id="colVideoCours" text="Cours" prefWidth="150"/>
                                 <TableColumn fx:id="colVideoChapitre" text="Chapitre" prefWidth="150"/>

@@ -5,10 +5,7 @@ import com.educompus.repository.CourseManagementRepository;
 
 import java.util.List;
 
-/**
- * Couche service pour les Chapitres.
- * Centralise la logique métier : validation + appel au repository.
- */
+
 public final class ChapitreService {
 
     private final CourseManagementRepository repository;
@@ -17,14 +14,14 @@ public final class ChapitreService {
         this.repository = new CourseManagementRepository();
     }
 
-    // ── Lecture ──────────────────────────────────────────────────────────────
+    //  Lecture
 
-    /** Retourne tous les chapitres, filtrés par terme de recherche. */
+
     public List<Chapitre> listerTous(String recherche) {
         return repository.listChapitres(recherche == null ? "" : recherche);
     }
 
-    /** Retourne les chapitres d'un cours donné. */
+
     public List<Chapitre> listerParCours(int coursId) {
         if (coursId <= 0) {
             throw new IllegalArgumentException("ID du cours invalide.");
@@ -32,23 +29,17 @@ public final class ChapitreService {
         return repository.listChapitresByCoursId(coursId);
     }
 
-    // ── Création ─────────────────────────────────────────────────────────────
+    //  Création
 
-    /**
-     * Valide puis crée un chapitre.
-     * @throws IllegalArgumentException si la validation échoue
-     */
+
     public void creer(Chapitre chapitre) {
         valider(chapitre);
         repository.createChapitre(chapitre);
     }
 
-    // ── Modification ─────────────────────────────────────────────────────────
+    //  Modification
 
-    /**
-     * Valide puis met à jour un chapitre existant.
-     * @throws IllegalArgumentException si la validation échoue
-     */
+
     public void modifier(Chapitre chapitre) {
         if (chapitre.getId() <= 0) {
             throw new IllegalArgumentException("ID du chapitre invalide pour la modification.");
@@ -57,12 +48,9 @@ public final class ChapitreService {
         repository.updateChapitre(chapitre);
     }
 
-    // ── Suppression ──────────────────────────────────────────────────────────
+    // Suppression
 
-    /**
-     * Supprime un chapitre par son ID.
-     * @throws IllegalArgumentException si l'ID est invalide
-     */
+
     public void supprimer(int chapitreId) {
         if (chapitreId <= 0) {
             throw new IllegalArgumentException("ID du chapitre invalide.");
@@ -70,12 +58,9 @@ public final class ChapitreService {
         repository.deleteChapitre(chapitreId);
     }
 
-    // ── Validation ───────────────────────────────────────────────────────────
+    // Validation
 
-    /**
-     * Valide un chapitre (titre, ordre, coursId).
-     * @throws IllegalArgumentException avec le détail des erreurs si invalide
-     */
+
     public void valider(Chapitre chapitre) {
         ValidationResult result = validerSansException(chapitre);
         if (!result.isValid()) {
@@ -83,7 +68,7 @@ public final class ChapitreService {
         }
     }
 
-    /** Retourne le résultat de validation sans lever d'exception. */
+
     public ValidationResult validerSansException(Chapitre chapitre) {
         ValidationResult r = new ValidationResult();
         if (chapitre == null) {
@@ -105,7 +90,7 @@ public final class ChapitreService {
         ValidationResult coursResult = CoursValidationService.validateChapitreCoursId(chapitre.getCoursId());
         coursResult.getErrors().forEach(r::addError);
 
-        // Fichier PDF (obligatoire)
+        // Fichier PDF
         if (chapitre.getFichierC() == null || chapitre.getFichierC().isBlank()) {
             r.addError("Le fichier PDF du chapitre est obligatoire.");
         } else if (!chapitre.getFichierC().trim().toLowerCase().endsWith(".pdf")) {
