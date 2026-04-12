@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.educompus.controller.back.TeacherResponsesController">
+    <children>
+        <VBox spacing="8" AnchorPane.topAnchor="8" AnchorPane.leftAnchor="8" AnchorPane.rightAnchor="8" AnchorPane.bottomAnchor="8">
+                <HBox spacing="8" styleClass="responses-filter">
+                    <Label text="Filtrer:" />
+                    <ChoiceBox fx:id="filterChoice" prefWidth="200" styleClass="combo-rgb" />
+                    <Region HBox.hgrow="ALWAYS" />
+                </HBox>
+                <!-- controls are not needed in Responses view (use Table view controls) -->
+            <TableView fx:id="responsesTable" prefHeight="600">
+                <columns>
+                        <TableColumn fx:id="colEmail" text="Email" />
+                        <TableColumn fx:id="colCourse" text="Cours" />
+                        <TableColumn fx:id="colAttempts" text="Tentatives" />
+                        <TableColumn fx:id="colPassed" text="Certif" />
+                        <TableColumn fx:id="colCertificate" text="Chemin certificat" />
+                </columns>
+            </TableView>
+        </VBox>
+    </children>
+</AnchorPane>
