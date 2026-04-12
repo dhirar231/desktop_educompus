@@ -23,7 +23,7 @@
 
     <!-- Filtres -->
     <HBox spacing="10">
-        <TextField fx:id="searchField" promptText="Rechercher par ID commande, ville…"
+        <TextField fx:id="searchField" promptText="Rechercher par ville,Téléphone…"
                    styleClass="field" HBox.hgrow="ALWAYS" onKeyReleased="#onSearch"/>
         <ComboBox fx:id="filterStatut" promptText="Statut livraison" prefWidth="180"
                   styleClass="field" onAction="#onSearch"/>
