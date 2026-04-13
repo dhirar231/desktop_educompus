@@ -23,6 +23,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.Control;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -69,6 +70,7 @@ public final class BackCoursesController {
     @FXML private Label statsChapitreLabel;
     @FXML private Label statsTdLabel;
     @FXML private Label statsVideoLabel;
+    @FXML private TabPane mainTabPane;
 
     @FXML private TextField coursSearchField;
     @FXML private ComboBox<String> coursSortCombo;
@@ -190,6 +192,7 @@ public final class BackCoursesController {
             repository.createChapitre(result.value());
             info("✅ Chapitre ajouté", "Le chapitre « " + safe(result.value().getTitre()) + " » a été ajouté avec succès.");
             refreshAll();
+            if (mainTabPane != null) mainTabPane.getSelectionModel().select(1);
         } catch (Exception e) {
             error("Erreur ajout chapitre", e);
         }
@@ -197,21 +200,40 @@ public final class BackCoursesController {
 
     private void openTdVideoChoice(Chapitre chapitre) {
         if (chapitre == null) return;
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Ajouter contenu");
-        alert.setHeaderText("Ajouter un TD ou une video pour le chapitre '" + safe(chapitre.getTitre()) + "'? ");
-        alert.setContentText("Choisissez l'action souhaitée.");
-        ButtonType tdButton = new ButtonType("Creer TD");
-        ButtonType videoButton = new ButtonType("Creer video");
-        ButtonType cancelButton = ButtonType.CANCEL;
-        alert.getButtonTypes().setAll(tdButton, videoButton, cancelButton);
-        Optional<ButtonType> choice = alert.showAndWait();
-        if (choice.isEmpty() || choice.get() == cancelButton) return;
-        if (choice.get() == tdButton) {
-            createTdForChapitre(chapitre);
-        } else if (choice.get() == videoButton) {
-            createVideoForChapitre(chapitre);
-        }
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Ajouter du contenu");
+        dialog.setHeaderText(null);
+        Dialogs.style(dialog);
+        Label titre = new Label("Chapitre : " + safe(chapitre.getTitre()));
+        titre.getStyleClass().add("project-card-title");
+        titre.setWrapText(true);
+        Label subtitle = new Label("Que souhaitez-vous ajouter ?");
+        subtitle.getStyleClass().add("page-subtitle");
+        Button btnTd = new Button("Creer un TD");
+        btnTd.getStyleClass().add("btn-rgb");
+        btnTd.setMaxWidth(Double.MAX_VALUE);
+        btnTd.setPrefHeight(44);
+        Button btnVideo = new Button("Creer une video");
+        btnVideo.getStyleClass().add("btn-rgb-outline");
+        btnVideo.setMaxWidth(Double.MAX_VALUE);
+        btnVideo.setPrefHeight(44);
+        Button btnCancel = new Button("Annuler");
+        btnCancel.getStyleClass().add("btn-ghost");
+        btnCancel.setMaxWidth(Double.MAX_VALUE);
+        VBox content = new VBox(12, titre, subtitle, new javafx.scene.control.Separator(), btnTd, btnVideo, btnCancel);
+        content.setPadding(new javafx.geometry.Insets(18));
+        content.setPrefWidth(340);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+        dialog.getDialogPane().lookupButton(ButtonType.CANCEL).setVisible(false);
+        dialog.getDialogPane().lookupButton(ButtonType.CANCEL).setManaged(false);
+        final String[] res = {null};
+        btnTd.setOnAction(e -> { res[0] = "td"; dialog.close(); });
+        btnVideo.setOnAction(e -> { res[0] = "video"; dialog.close(); });
+        btnCancel.setOnAction(e -> dialog.close());
+        dialog.showAndWait();
+        if ("td".equals(res[0])) createTdForChapitre(chapitre);
+        else if ("video".equals(res[0])) createVideoForChapitre(chapitre);
     }
 
     private void createTdForChapitre(Chapitre chapitre) {
@@ -537,6 +559,7 @@ public final class BackCoursesController {
             repository.updateChapitre(result.value());
             info("✅ Chapitre modifié", "Le chapitre « " + safe(result.value().getTitre()) + " » a été modifié avec succès.");
             refreshAll();
+            if (mainTabPane != null) mainTabPane.getSelectionModel().select(1);
         } catch (Exception e) {
             error("Erreur — Modification chapitre", e);
         }
@@ -695,12 +718,12 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        Label errTitre = addRow(grid, 0, "Titre *", titreField);
-        Label errDesc = addRow(grid, 1, "Description *", descriptionArea);
-        Label errNiveau = addRow(grid, 2, "Niveau *", niveauCombo);
-        Label errDomaine = addRow(grid, 3, "Domaine *", domaineCombo);
-        Label errFormateur = addRow(grid, 4, "Nom du formateur *", formateurField);
-        Label errDuree = addRow(grid, 5, "Duree totale (heures) *", dureeField);
+        Label errTitre = addRow(grid, 0, "Titre", titreField);
+        Label errDesc = addRow(grid, 1, "Description", descriptionArea);
+        Label errNiveau = addRow(grid, 2, "Niveau", niveauCombo);
+        Label errDomaine = addRow(grid, 3, "Domaine", domaineCombo);
+        Label errFormateur = addRow(grid, 4, "Nom du formateur", formateurField);
+        Label errDuree = addRow(grid, 5, "Duree totale (heures)", dureeField);
         Label errImage = addRow(grid, 6, "Image (png/jpg)", imageBox);
         niveauCombo.valueProperty().addListener((obs, o, n) -> { if (n == null) { niveauCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errNiveau.setText("⚠ Veuillez selectionner un niveau."); } else { niveauCombo.setStyle(""); errNiveau.setText(""); } });
         domaineCombo.valueProperty().addListener((obs, o, n) -> { if (n == null) { domaineCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errDomaine.setText("⚠ Veuillez selectionner un domaine."); } else { domaineCombo.setStyle(""); errDomaine.setText(""); } });
@@ -818,13 +841,13 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        Label errCours = addRow(grid, 0, "Cours *", coursCombo);
-        Label errTitre = addRow(grid, 1, "Titre *", titreField);
-        Label errOrdre = addRow(grid, 2, "Ordre *", ordreField);
-        Label errDesc = addRow(grid, 3, "Description *", descriptionArea);
-        Label errFichier = addRow(grid, 4, "Fichier PDF *", fichierBox);
-        Label errNiveau = addRow(grid, 5, "Niveau *", niveauCombo);
-        Label errDomaine = addRow(grid, 6, "Domaine *", domaineCombo);
+        Label errCours = addRow(grid, 0, "Cours", coursCombo);
+        Label errTitre = addRow(grid, 1, "Titre", titreField);
+        Label errOrdre = addRow(grid, 2, "Ordre", ordreField);
+        Label errDesc = addRow(grid, 3, "Description", descriptionArea);
+        Label errFichier = addRow(grid, 4, "Fichier PDF", fichierBox);
+        Label errNiveau = addRow(grid, 5, "Niveau", niveauCombo);
+        Label errDomaine = addRow(grid, 6, "Domaine", domaineCombo);
 
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateChapitreTitre(titreField.getText()));
         liveValidate(ordreField, errOrdre, () -> CoursValidationService.validateChapitreOrdre(ordreField.getText()));
@@ -940,13 +963,13 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        Label errCours = addRow(grid, 0, "Cours *", coursCombo);
-        Label errChapitre = addRow(grid, 1, "Chapitre *", chapitreCombo);
-        Label errTitre = addRow(grid, 2, "Titre *", titreField);
-        Label errDesc = addRow(grid, 3, "Description *", descriptionArea);
-        Label errFichier = addRow(grid, 4, "Fichier PDF *", fichierBox);
-        Label errNiveau = addRow(grid, 5, "Niveau *", niveauCombo);
-        Label errDomaine = addRow(grid, 6, "Domaine *", domaineCombo);
+        Label errCours = addRow(grid, 0, "Cours", coursCombo);
+        Label errChapitre = addRow(grid, 1, "Chapitre", chapitreCombo);
+        Label errTitre = addRow(grid, 2, "Titre", titreField);
+        Label errDesc = addRow(grid, 3, "Description", descriptionArea);
+        Label errFichier = addRow(grid, 4, "Fichier PDF", fichierBox);
+        Label errNiveau = addRow(grid, 5, "Niveau", niveauCombo);
+        Label errDomaine = addRow(grid, 6, "Domaine", domaineCombo);
 
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateTdTitre(titreField.getText()));
         liveValidate(fichierField, errFichier, () -> { ValidationResult r = new ValidationResult(); String v = fichierField.getText().trim(); if (v.isBlank()) r.addError("Le fichier PDF est obligatoire."); else if (!v.toLowerCase().endsWith(".pdf")) r.addError("Doit etre un fichier .pdf"); return r; });
@@ -1046,13 +1069,13 @@ public final class BackCoursesController {
         }
 
         GridPane grid = formGrid();
-        Label errCours = addRow(grid, 0, "Cours *", coursCombo);
-        Label errChapitre = addRow(grid, 1, "Chapitre *", chapitreCombo);
-        Label errTitre = addRow(grid, 2, "Titre *", titreField);
-        Label errUrl = addRow(grid, 3, "Url video *", urlField);
-        Label errDesc = addRow(grid, 4, "Description *", descriptionArea);
-        Label errNiveau = addRow(grid, 5, "Niveau *", niveauCombo);
-        Label errDomaine = addRow(grid, 6, "Domaine *", domaineCombo);
+        Label errCours = addRow(grid, 0, "Cours", coursCombo);
+        Label errChapitre = addRow(grid, 1, "Chapitre", chapitreCombo);
+        Label errTitre = addRow(grid, 2, "Titre", titreField);
+        Label errUrl = addRow(grid, 3, "Url video", urlField);
+        Label errDesc = addRow(grid, 4, "Description", descriptionArea);
+        Label errNiveau = addRow(grid, 5, "Niveau", niveauCombo);
+        Label errDomaine = addRow(grid, 6, "Domaine", domaineCombo);
 
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateVideoTitre(titreField.getText()));
         liveValidate(urlField, errUrl, () -> CoursValidationService.validateVideoUrl(urlField.getText()));

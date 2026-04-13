@@ -37,6 +37,7 @@ public final class FrontCourseDetailController {
     @FXML private Label chapitresTotal;
     @FXML private Label dateLabel;
     @FXML private Label breadcrumb;
+    @FXML private Label niveauInfoLabel;
     @FXML private VBox chapitresBox;
 
     private final CourseManagementRepository repo = new CourseManagementRepository();
@@ -62,6 +63,7 @@ public final class FrontCourseDetailController {
         formateurLabel.setText(safe(cours.getNomFormateur()).isBlank() ? "Non renseigné" : safe(cours.getNomFormateur()));
         dureeLabel.setText(cours.getDureeTotaleHeures() + "h de contenu");
         breadcrumb.setText(safe(cours.getTitre()));
+        if (niveauInfoLabel != null) niveauInfoLabel.setText(safe(cours.getNiveau()).isBlank() ? "Tous niveaux" : safe(cours.getNiveau()));
 
         if (cours.getDateCreation() != null) {
             dateLabel.setText("Créé le " + cours.getDateCreation().toString().substring(0, 10));
@@ -136,9 +138,9 @@ public final class FrontCourseDetailController {
             badges.getChildren().add(vidBadge);
         }
         if (ch.getFichierC() != null && !ch.getFichierC().isBlank()) {
-            Button pdfBtn = new Button("PDF");
+            Button pdfBtn = new Button("⬇ Chapitre");
             pdfBtn.getStyleClass().add("btn-rgb-compact");
-            pdfBtn.setOnAction(e -> openFile(ch.getFichierC()));
+            pdfBtn.setOnAction(e -> downloadFile(ch.getFichierC(), "chapitre_" + ch.getOrdre() + ".pdf"));
             badges.getChildren().add(pdfBtn);
         }
 
@@ -176,9 +178,11 @@ public final class FrontCourseDetailController {
         footer.setPadding(new Insets(0, 18, 14, 18));
         footer.setAlignment(Pos.CENTER_RIGHT);
 
-        Button doneBtn = new Button(isCompleted ? "✓ Lu" : "Marquer comme lu");
-        doneBtn.getStyleClass().add(isCompleted ? "btn-ghost" : "btn-primary");
-        if (isCompleted) doneBtn.setStyle("-fx-text-fill: #0cbc87; -fx-font-weight: 700;");
+        Button doneBtn = new Button(isCompleted ? "✓  Lu" : "○  Marquer comme lu");
+        doneBtn.getStyleClass().add(isCompleted ? "btn-done-active" : "btn-done");
+        doneBtn.setStyle(isCompleted
+            ? "-fx-background-color: rgba(12,188,135,0.12); -fx-text-fill: #0cbc87; -fx-font-weight: 800; -fx-border-color: #0cbc87; -fx-border-width: 1; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 16 8 16;"
+            : "-fx-background-color: transparent; -fx-text-fill: -edu-primary; -fx-font-weight: 700; -fx-border-color: -edu-primary; -fx-border-width: 1; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 16 8 16;");
 
         doneBtn.setOnAction(e -> {
             boolean nowCompleted = !completedIds.contains(ch.getId());
@@ -193,18 +197,14 @@ public final class FrontCourseDetailController {
                 card.setStyle("-fx-border-color: #0cbc87; -fx-border-width: 2;");
                 num.setText("✓");
                 num.setStyle("-fx-background-color: #0cbc87; -fx-text-fill: white;");
-                doneBtn.setText("✓ Lu");
-                doneBtn.getStyleClass().remove("btn-primary");
-                if (!doneBtn.getStyleClass().contains("btn-ghost")) doneBtn.getStyleClass().add("btn-ghost");
-                doneBtn.setStyle("-fx-text-fill: #0cbc87; -fx-font-weight: 700;");
+                doneBtn.setText("✓  Lu");
+                doneBtn.setStyle("-fx-background-color: rgba(12,188,135,0.12); -fx-text-fill: #0cbc87; -fx-font-weight: 800; -fx-border-color: #0cbc87; -fx-border-width: 1; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 16 8 16;");
             } else {
                 card.setStyle("");
                 num.setText(String.valueOf(ch.getOrdre()));
                 num.setStyle("");
-                doneBtn.setText("Marquer comme lu");
-                doneBtn.getStyleClass().remove("btn-ghost");
-                if (!doneBtn.getStyleClass().contains("btn-primary")) doneBtn.getStyleClass().add("btn-primary");
-                doneBtn.setStyle("");
+                doneBtn.setText("○  Marquer comme lu");
+                doneBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -edu-primary; -fx-font-weight: 700; -fx-border-color: -edu-primary; -fx-border-width: 1; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 16 8 16;");
             }
         });
 
@@ -240,11 +240,11 @@ public final class FrontCourseDetailController {
         desc.setWrapText(true);
         if (!desc.getText().isBlank()) info.getChildren().add(desc);
         info.getChildren().add(0, name);
-        Button openBtn = new Button("Ouvrir");
+        Button openBtn = new Button("⬇ Télécharger");
         openBtn.getStyleClass().add("btn-rgb-compact");
         boolean hasFile = td.getFichier() != null && !td.getFichier().isBlank();
         openBtn.setDisable(!hasFile);
-        if (hasFile) openBtn.setOnAction(e -> openFile(td.getFichier()));
+        if (hasFile) openBtn.setOnAction(e -> downloadFile(td.getFichier(), "td_" + safe(td.getTitre()).replaceAll("[^a-zA-Z0-9]", "_") + ".pdf"));
         row.getChildren().addAll(icon, info, openBtn);
         return row;
     }
@@ -279,7 +279,23 @@ public final class FrontCourseDetailController {
 
     @FXML
     private void onBack() {
-        Navigator.goRoot("View/front/FrontCourses.fxml");
+        // Revenir à la liste des cours dans le contentWrap du shell
+        try {
+            javafx.scene.Node current = chapitresBox;
+            while (current != null) {
+                if (current instanceof javafx.scene.layout.StackPane sp
+                        && "contentWrap".equals(sp.getId())) {
+                    javafx.scene.Parent coursesRoot = Navigator.load("View/front/FrontCourses.fxml");
+                    sp.getChildren().setAll(coursesRoot);
+                    return;
+                }
+                current = current.getParent();
+            }
+            // fallback
+            Navigator.goRoot("View/front/FrontCourses.fxml");
+        } catch (Exception e) {
+            Navigator.goRoot("View/front/FrontCourses.fxml");
+        }
     }
 
     private void openFile(String path) {
@@ -288,6 +304,40 @@ public final class FrontCourseDetailController {
             File file = new File(path);
             if (file.exists()) Desktop.getDesktop().open(file);
         } catch (Exception ignored) {}
+    }
+
+    /** Ouvre le fichier avec l'application par défaut (lecture/téléchargement). */
+    private void downloadFile(String path, String suggestedName) {
+        if (path == null || path.isBlank()) return;
+        File file = new File(path);
+        if (!file.exists()) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Fichier introuvable");
+            alert.setHeaderText(null);
+            alert.setContentText("Le fichier est introuvable :\n" + path);
+            alert.showAndWait();
+            return;
+        }
+        try {
+            // Ouvrir avec l'application par défaut (PDF viewer, etc.)
+            Desktop.getDesktop().open(file);
+        } catch (Exception e) {
+            // Fallback : copier dans le dossier Téléchargements
+            try {
+                File dest = new File(System.getProperty("user.home") + "/Downloads/" + suggestedName);
+                java.nio.file.Files.copy(file.toPath(), dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("Téléchargement");
+                alert.setHeaderText(null);
+                alert.setContentText("Fichier copié dans :\n" + dest.getAbsolutePath());
+                alert.showAndWait();
+            } catch (Exception ex) {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Erreur");
+                alert.setContentText("Impossible d'ouvrir le fichier : " + ex.getMessage());
+                alert.showAndWait();
+            }
+        }
     }
 
     private void openUrl(String url) {
