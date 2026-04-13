@@ -15,9 +15,11 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
@@ -28,15 +30,7 @@ public final class BackExamQuestionsController {
     @FXML
     private Label examContextLabel;
     @FXML
-    private TableView<ExamQuestion> questionsTable;
-    @FXML
-    private TableColumn<ExamQuestion, Number> colQuestionId;
-    @FXML
-    private TableColumn<ExamQuestion, String> colQuestionText;
-    @FXML
-    private TableColumn<ExamQuestion, Number> colQuestionDuration;
-    @FXML
-    private TableColumn<ExamQuestion, Number> colQuestionAnswers;
+    private ListView<ExamQuestion> questionsList;
     @FXML
     private TextArea questionTextArea;
     @FXML
@@ -44,11 +38,7 @@ public final class BackExamQuestionsController {
     @FXML
     private Label selectedQuestionLabel;
     @FXML
-    private TableView<ExamAnswer> answersTable;
-    @FXML
-    private TableColumn<ExamAnswer, String> colAnswerText;
-    @FXML
-    private TableColumn<ExamAnswer, String> colAnswerCorrect;
+    private ListView<ExamAnswer> answersList;
     @FXML
     private TextField answerTextField;
     @FXML
@@ -69,8 +59,8 @@ public final class BackExamQuestionsController {
 
     @FXML
     private void initialize() {
-        setupQuestionsTable();
-        setupAnswersTable();
+        setupQuestionsList();
+        setupAnswersList();
         fillQuestionForm(null);
     }
 
@@ -84,54 +74,74 @@ public final class BackExamQuestionsController {
         loadQuestions();
     }
 
-    private void setupQuestionsTable() {
-        questionsTable.setItems(questions);
-        colQuestionId.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getId()));
-        colQuestionText.setCellValueFactory(data -> new SimpleStringProperty(summarize(data.getValue().getText(), 110)));
-        colQuestionDuration.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getDurationSeconds()));
-        colQuestionAnswers.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getAnswers().size()));
-        colQuestionId.setVisible(false);
-        colQuestionDuration.setCellFactory(col -> new TableCell<>() {
+    
+
+    private void setupQuestionsList() {
+        questionsList.setItems(questions);
+        questionsList.setCellFactory(lv -> new ListCell<>() {
+            private final Label textLabel = new Label();
+            private final Label meta = new Label();
+            private final HBox box = new HBox(8);
+            {
+                VBox v = new VBox(4, textLabel, meta);
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+                box.getChildren().addAll(v, spacer);
+            }
+
             @Override
-            protected void updateItem(Number item, boolean empty) {
+            protected void updateItem(ExamQuestion item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.intValue() + " s");
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+                textLabel.setText(summarize(item.getText(), 120));
+                meta.setText(item.getDurationSeconds() + " s • " + (item.getAnswers() == null ? 0 : item.getAnswers().size()) + " réponses");
+                setGraphic(box);
+                setText(null);
             }
         });
 
-        questionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+        questionsList.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             editingQuestion = newValue;
             fillQuestionForm(newValue);
         });
     }
 
-    private void setupAnswersTable() {
-        answersTable.setItems(answers);
-        colAnswerText.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getText()));
-        colAnswerCorrect.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().isCorrect() ? "Oui" : "Non"));
-        colAnswerCorrect.setCellFactory(col -> new TableCell<>() {
+    private void setupAnswersList() {
+        answersList.setItems(answers);
+        answersList.setCellFactory(lv -> new ListCell<>() {
+            private final Label lbl = new Label();
             private final Label badge = new Label();
+            private final HBox box = new HBox(8);
             {
                 badge.getStyleClass().add("chip");
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+                box.getChildren().addAll(lbl, spacer, badge);
             }
 
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(ExamAnswer item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null || item.isBlank()) {
-                    setGraphic(null);
+                if (empty || item == null) {
                     setText(null);
+                    setGraphic(null);
                     return;
                 }
-                badge.setText(item);
+                lbl.setText(item.getText());
+                String s = item.isCorrect() ? "Oui" : "Non";
+                badge.setText(s);
                 badge.getStyleClass().removeAll("chip-success", "chip-outline");
-                badge.getStyleClass().add("Oui".equalsIgnoreCase(item) ? "chip-success" : "chip-outline");
-                setGraphic(badge);
+                badge.getStyleClass().add("Oui".equalsIgnoreCase(s) ? "chip-success" : "chip-outline");
+                setGraphic(box);
                 setText(null);
             }
         });
 
-        answersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+        answersList.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             editingAnswer = newValue;
             fillAnswerForm(newValue);
         });
@@ -157,15 +167,15 @@ public final class BackExamQuestionsController {
         if (questions.isEmpty()) {
             fillQuestionForm(null);
             answers.clear();
-        } else if (questionsTable.getSelectionModel().getSelectedItem() == null) {
-            questionsTable.getSelectionModel().selectFirst();
+        } else if (questionsList.getSelectionModel().getSelectedItem() == null) {
+            questionsList.getSelectionModel().selectFirst();
         }
     }
 
     @FXML
     private void newQuestion(ActionEvent event) {
         editingQuestion = null;
-        questionsTable.getSelectionModel().clearSelection();
+        questionsList.getSelectionModel().clearSelection();
         fillQuestionForm(null);
     }
 
@@ -247,7 +257,7 @@ public final class BackExamQuestionsController {
             return;
         }
         editingAnswer = null;
-        answersTable.getSelectionModel().clearSelection();
+        answersList.getSelectionModel().clearSelection();
         fillAnswerForm(null);
     }
 
@@ -361,18 +371,18 @@ public final class BackExamQuestionsController {
     }
 
     private ExamQuestion currentQuestion() {
-        return questionsTable == null ? editingQuestion : questionsTable.getSelectionModel().getSelectedItem();
+        return questionsList == null ? editingQuestion : questionsList.getSelectionModel().getSelectedItem();
     }
 
     private ExamAnswer currentAnswer() {
-        return answersTable == null ? editingAnswer : answersTable.getSelectionModel().getSelectedItem();
+        return answersList == null ? editingAnswer : answersList.getSelectionModel().getSelectedItem();
     }
 
     private void selectQuestionById(int questionId) {
         for (ExamQuestion question : questions) {
             if (question.getId() == questionId) {
-                questionsTable.getSelectionModel().select(question);
-                questionsTable.scrollTo(question);
+                questionsList.getSelectionModel().select(question);
+                questionsList.scrollTo(question);
                 return;
             }
         }
@@ -381,8 +391,8 @@ public final class BackExamQuestionsController {
     private void selectAnswerById(int answerId) {
         for (ExamAnswer answer : answers) {
             if (answer.getId() == answerId) {
-                answersTable.getSelectionModel().select(answer);
-                answersTable.scrollTo(answer);
+                answersList.getSelectionModel().select(answer);
+                answersList.scrollTo(answer);
                 return;
             }
         }
