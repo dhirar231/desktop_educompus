@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.educompus.service.VideoExplicatifServiceTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.035 s <<< FAILURE! -- in com.educompus.service.VideoExplicatifServiceTest
-com.educompus.service.VideoExplicatifServiceTest -- Time elapsed: 0.035 s <<< ERROR!
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.058 s <<< FAILURE! -- in com.educompus.service.VideoExplicatifServiceTest
+com.educompus.service.VideoExplicatifServiceTest -- Time elapsed: 0.058 s <<< ERROR!
 java.lang.IllegalStateException: Impossible d'ajouter le chapitre: Champ 'niveau' inconnu dans field list
 	at com.educompus.repository.CourseManagementRepository.createChapitre(CourseManagementRepository.java:313)
 	at com.educompus.service.ChapitreService.creer(ChapitreService.java:37)

@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.educompus.service.TDServiceTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.033 s <<< FAILURE! -- in com.educompus.service.TDServiceTest
-com.educompus.service.TDServiceTest -- Time elapsed: 0.033 s <<< ERROR!
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.057 s <<< FAILURE! -- in com.educompus.service.TDServiceTest
+com.educompus.service.TDServiceTest -- Time elapsed: 0.057 s <<< ERROR!
 java.lang.IllegalStateException: Impossible d'ajouter le chapitre: Champ 'niveau' inconnu dans field list
 	at com.educompus.repository.CourseManagementRepository.createChapitre(CourseManagementRepository.java:313)
 	at com.educompus.service.ChapitreService.creer(ChapitreService.java:37)
