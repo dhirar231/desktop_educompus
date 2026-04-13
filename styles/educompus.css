@@ -334,27 +334,23 @@
 
 /* Modern RGB dialogs */
 .rgb-dialog.dialog-pane {
-  -fx-background-color: -edu-card;
+  -fx-background-color: -edu-bg;
   -fx-background-radius: 16px;
   -fx-border-radius: 16px;
   -fx-border-width: 2;
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
 }
 
+.rgb-dialog.dialog-pane > .content {
+  -fx-background-color: -edu-bg;
+  -fx-padding: 14 18 14 18;
+}
+
 .rgb-dialog.dialog-pane > .content.label {
   -fx-text-fill: -edu-text;
 }
 
-.rgb-dialog.dialog-pane .header-panel {
-  -fx-background-color: transparent;
-}
-
-.rgb-dialog.dialog-pane .header-panel .label {
-  -fx-text-fill: -edu-text;
-  -fx-font-weight: 900;
-}
-
-/* Gradient header for modern dialog look */
+/* Gradient header */
 .rgb-dialog.dialog-pane .header-panel {
   -fx-background-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95));
   -fx-padding: 10 14 10 14;
@@ -364,11 +360,17 @@
 .rgb-dialog.dialog-pane .header-panel .label {
   -fx-text-fill: white;
   -fx-font-size: 14px;
+  -fx-font-weight: 900;
 }
 
 /* Make dialog graphic (icon) appear inside the gradient header */
 .rgb-dialog.dialog-pane .graphic {
   -fx-padding: 6 10 6 6;
+}
+
+.rgb-dialog.dialog-pane .button-bar {
+  -fx-background-color: -edu-bg;
+  -fx-padding: 8 14 12 14;
 }
 
 .rgb-dialog.dialog-pane .button {
@@ -645,6 +647,21 @@
   -fx-text-fill: -edu-primary;
 }
 
+.chip-stock-available {
+  -fx-background-color: rgba(12, 188, 135, 0.12);
+  -fx-text-fill: -edu-success;
+}
+
+.chip-stock-low {
+  -fx-background-color: rgba(247, 195, 46, 0.16);
+  -fx-text-fill: #8a6a00;
+}
+
+.chip-stock-rupture {
+  -fx-background-color: rgba(214, 41, 62, 0.12);
+  -fx-text-fill: -edu-danger;
+}
+
 .chip-outline {
   -fx-background-color: transparent;
   -fx-border-color: rgba(128,136,145,0.22);
@@ -711,6 +728,118 @@
   -fx-font-weight: 700;
 }
 
+.exam-stat-card {
+  -fx-min-width: 140px;
+}
+
+.exam-course-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 12px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 12px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.06), 10, 0.10, 0, 2);
+  -fx-cursor: hand;
+}
+
+.exam-course-card:hover {
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.65), rgba(6, 106, 201, 0.65), rgba(106, 17, 203, 0.65));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.14), 24, 0.18, 0, 6);
+}
+
+.exam-course-card.selected {
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
+  -fx-border-width: 2;
+  -fx-background-color: -edu-primary-soft;
+}
+
+.exam-card-title {
+  -fx-font-size: 15px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+  -fx-padding: 8 0 0 6;
+}
+
+.exam-card-minimal {
+  -fx-padding: 12 14 12 14;
+}
+
+/* Teacher Responses page controls styling */
+.responses-controls {
+  -fx-padding: 10 12 10 12;
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 14px;
+  -fx-border-radius: 14px;
+  -fx-border-width: 2;
+  -fx-border-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95));
+  -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.06), 18, 0.12, 0, 6);
+  -fx-spacing: 8px;
+}
+
+.responses-controls .btn-rgb {
+  -fx-background-radius: 12px;
+  -fx-padding: 8 14 8 14;
+}
+
+/* Slightly more compact table header and chip styling for responses */
+.responses-table .table-view {
+  -fx-border-color: -edu-border;
+}
+
+.responses-table .chip {
+  -fx-padding: 4 8 4 8;
+  -fx-font-size: 12px;
+}
+
+/* Filter wrapper for responses page */
+.responses-filter {
+  -fx-padding: 8 10 8 10;
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-width: 2;
+  -fx-border-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95), rgba(106,17,203,0.95));
+  -fx-spacing: 8px;
+}
+
+
+.exam-card-subtitle {
+  -fx-font-size: 13px;
+  -fx-font-weight: 700;
+  -fx-text-fill: -edu-primary;
+}
+
+.exam-card-footer {
+  -fx-alignment: CENTER_LEFT;
+}
+
+.exam-detail-panel {
+  -fx-min-width: 360px;
+}
+
+.exam-placeholder-box {
+  -fx-background-color: -edu-surface;
+  -fx-background-radius: 12px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 12px;
+  -fx-border-width: 1;
+}
+
+.exam-question {
+  -fx-font-size: 15px;
+  -fx-font-weight: 700;
+  -fx-text-fill: -edu-text;
+}
+
+.quiz-answer {
+  -fx-background-color: -edu-bg;
+  -fx-background-radius: 12px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 12px;
+  -fx-border-width: 1;
+  -fx-padding: 12;
+}
+
 .placeholder {
   -fx-background-color: -edu-bg;
 }
@@ -719,6 +848,16 @@
   -fx-font-size: 18px;
   -fx-font-weight: 700;
   -fx-text-fill: -edu-text-muted;
+}
+
+/* Simple snackbar notification */
+.snackbar {
+  -fx-background-color: linear-gradient(to right, rgba(6,106,201,0.95), rgba(106,17,203,0.95));
+  -fx-text-fill: white;
+  -fx-padding: 10 14 10 14;
+  -fx-background-radius: 8px;
+  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.2, 0, 2);
+  -fx-font-weight: 700;
 }
 
 /* Topbar controls */
@@ -1392,6 +1531,7 @@
   -fx-padding: 8 0 8 0;
 }
 
+<<<<<<< HEAD
 /* ── Course Detail Page ── */
 .detail-topbar {
   -fx-background-color: -edu-bg;
@@ -1400,12 +1540,26 @@
 }
 
 .course-hero-card {
+=======
+/* ── Marketplace front : cartes produits ─────────────────────────────── */
+.marketplace-scroll {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+}
+
+.marketplace-scroll .viewport {
+  -fx-background-color: transparent;
+}
+
+.produit-card {
+>>>>>>> origin/gestion_marketplace
   -fx-background-color: -edu-card;
   -fx-background-radius: 16px;
   -fx-border-color: -edu-border;
   -fx-border-radius: 16px;
   -fx-border-width: 1;
   -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
+<<<<<<< HEAD
 }
 
 .course-hero-banner {
@@ -1506,4 +1660,146 @@
 .resource-name {
   -fx-font-weight: 700;
   -fx-text-fill: -edu-text;
+=======
+  -fx-cursor: hand;
+}
+
+.produit-card:hover {
+  -fx-border-color: linear-gradient(to right,
+    rgba(0, 210, 255, 0.65),
+    rgba(6, 106, 201, 0.65),
+    rgba(106, 17, 203, 0.65));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.16), 26, 0.20, 0, 7);
+}
+
+.produit-card-img-wrap {
+  -fx-background-radius: 14px 14px 0 0;
+  -fx-background-color: derive(-edu-surface, -4%);
+}
+
+.produit-card-title {
+  -fx-font-size: 14px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+}
+
+.produit-card-type {
+  -fx-font-size: 11.5px;
+  -fx-text-fill: -edu-text-muted;
+}
+
+.produit-card-prix {
+  -fx-font-size: 15px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-primary;
+}
+
+.produit-card-stock {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-text-muted;
+}
+
+.produit-card-stock-rupture {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-danger;
+  -fx-font-weight: 700;
+}
+
+/* ── Détail produit ──────────────────────────────────────────────────── */
+.detail-topbar {
+  -fx-background-color: -edu-card;
+  -fx-border-color: transparent transparent -edu-border transparent;
+  -fx-border-width: 0 0 1 0;
+}
+
+.detail-img-wrap {
+  -fx-background-color: derive(-edu-surface, -4%);
+  -fx-background-radius: 14px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 14px;
+  -fx-border-width: 1;
+  -fx-alignment: CENTER;
+}
+
+.detail-prix {
+  -fx-font-size: 22px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-primary;
+}
+
+/* ── Étoiles avis ────────────────────────────────────────────────────── */
+.star-label {
+  -fx-font-size: 24px;
+  -fx-text-fill: -edu-text-muted;
+  -fx-cursor: hand;
+}
+
+/* ── Validation formulaire ───────────────────────────────────────────── */
+.field-error {
+  -fx-text-fill: #e74c3c;
+  -fx-font-size: 11px;
+  -fx-font-weight: 600;
+  -fx-padding: 1 0 0 2;
+}
+
+.users-stats-grid {
+  -fx-padding: 0;
+}
+
+.users-stat-card {
+  -fx-min-width: 180px;
+}
+
+.table-cell.role-admin {
+  -fx-text-fill: #7c3aed;
+  -fx-font-weight: 700;
+}
+
+.table-cell.role-teacher {
+  -fx-text-fill: #066ac9;
+  -fx-font-weight: 700;
+}
+
+.table-cell.role-user {
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-weight: 600;
+}
+
+.table-cell.role-mixed {
+  -fx-text-fill: #0f766e;
+  -fx-font-weight: 800;
+}
+
+/* ── Catalogue cours front ── */
+.course-catalog-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 16px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 16px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
+}
+
+.course-catalog-card:hover {
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.65), rgba(6, 106, 201, 0.65), rgba(106, 17, 203, 0.65));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.18), 24, 0.18, 0, 8);
+}
+
+.course-catalog-banner {
+  -fx-background-color: linear-gradient(to bottom right, rgba(6,106,201,0.18), rgba(106,17,203,0.12));
+  -fx-background-radius: 16px 16px 0 0;
+  -fx-border-radius: 16px 16px 0 0;
+  -fx-clip: true;
+}
+
+.course-catalog-title {
+  -fx-font-size: 15px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-text;
+}
+
+.course-catalog-footer {
+  -fx-border-color: -edu-border transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+  -fx-padding: 8 0 0 0;
 }
