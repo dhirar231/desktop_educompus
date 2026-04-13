@@ -645,6 +645,21 @@
   -fx-text-fill: -edu-primary;
 }
 
+.chip-stock-available {
+  -fx-background-color: rgba(12, 188, 135, 0.12);
+  -fx-text-fill: -edu-success;
+}
+
+.chip-stock-low {
+  -fx-background-color: rgba(247, 195, 46, 0.16);
+  -fx-text-fill: #8a6a00;
+}
+
+.chip-stock-rupture {
+  -fx-background-color: rgba(214, 41, 62, 0.12);
+  -fx-text-fill: -edu-danger;
+}
+
 .chip-outline {
   -fx-background-color: transparent;
   -fx-border-color: rgba(128,136,145,0.22);
