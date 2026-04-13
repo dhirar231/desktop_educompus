@@ -45,6 +45,8 @@ public final class BackExamsCatalogueController {
     @FXML
     private javafx.scene.control.MenuButton viewToggle;
     @FXML
+    private javafx.scene.control.MenuItem viewResponsesItem;
+    @FXML
     private javafx.scene.control.TextField searchField;
     @FXML
     private javafx.scene.control.ComboBox<String> sortCombo;
@@ -73,6 +75,13 @@ public final class BackExamsCatalogueController {
         }
         // show cards by default
         showCards();
+        // show responses menu only for teacher or admin
+        try {
+            boolean allowed = com.educompus.app.AppState.isAdmin() || com.educompus.app.AppState.isTeacher();
+            if (viewResponsesItem != null) {
+                viewResponsesItem.setVisible(allowed);
+            }
+        } catch (Exception ignored) {}
     }
 
     @FXML
@@ -252,6 +261,30 @@ public final class BackExamsCatalogueController {
         if (tableControlsBar != null) {
             tableControlsBar.setVisible(false);
             tableControlsBar.setManaged(false);
+        }
+    }
+
+    @FXML
+    private void showResponses() {
+        // double-check permission
+        if (!(com.educompus.app.AppState.isAdmin() || com.educompus.app.AppState.isTeacher())) {
+            info("Accès refusé", "Vous n'êtes pas autorisé à voir les réponses.");
+            return;
+        }
+        try {
+            FXMLLoader loader = Navigator.loader("View/back/TeacherResponses.fxml");
+            Parent view = loader.load();
+            if (contentPane != null) {
+                contentPane.getChildren().setAll(view);
+                if (viewToggle != null) viewToggle.setText("Voir réponses");
+                // hide the shared table controls bar when showing responses to avoid duplicate/buggy buttons
+                if (tableControlsBar != null) {
+                    tableControlsBar.setVisible(false);
+                    tableControlsBar.setManaged(false);
+                }
+            }
+        } catch (Exception e) {
+            error("Erreur affichage reponses", e);
         }
     }
 
