@@ -1,8 +1,8 @@
 com\educompus\repository\AuthUserRepository$NameParts.class
 com\educompus\controller\back\BackUsersController$2.class
 com\educompus\service\AuthUserService$UserStats.class
-com\educompus\controller\back\BackUsersController.class
 com\educompus\controller\back\BackUsersController$1.class
 com\educompus\service\AuthUserService.class
+com\educompus\controller\back\BackUsersController$3.class
 com\educompus\repository\AuthUserRepository.class
 com\educompus\controller\back\BackUserFormController.class
