@@ -1752,3 +1752,88 @@
   -fx-text-fill: #0f766e;
   -fx-font-weight: 800;
 }
+
+/* ── Cartes produit back-office ──────────────────────────────────────── */
+.back-produit-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 16px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 16px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.09), 16, 0.14, 0, 4);
+  -fx-cursor: default;
+}
+
+.back-produit-card:hover {
+  -fx-border-color: linear-gradient(to right,
+    rgba(0, 210, 255, 0.60),
+    rgba(6, 106, 201, 0.60),
+    rgba(106, 17, 203, 0.60));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.15), 22, 0.18, 0, 6);
+}
+
+.back-produit-img {
+  -fx-background-color: derive(-edu-surface, -5%);
+  -fx-background-radius: 14px 14px 0 0;
+  -fx-alignment: CENTER;
+}
+
+/* ── Cartes produit front — design amélioré ─────────────────────────── */
+.produit-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 18px;
+  -fx-border-color: linear-gradient(to right,
+    rgba(0, 210, 255, 0.55),
+    rgba(6, 106, 201, 0.55),
+    rgba(106, 17, 203, 0.55));
+  -fx-border-radius: 18px;
+  -fx-border-width: 1.5;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.09), 18, 0.14, 0, 5);
+  -fx-cursor: hand;
+}
+
+.produit-card:hover {
+  -fx-border-color: linear-gradient(to right,
+    rgba(0, 210, 255, 0.95),
+    rgba(6, 106, 201, 0.95),
+    rgba(106, 17, 203, 0.95));
+  -fx-border-width: 2;
+  -fx-effect: dropshadow(three-pass-box, rgba(6, 106, 201, 0.22), 28, 0.20, 0, 8);
+  -fx-translate-y: -2;
+}
+
+.produit-card-img-wrap {
+  -fx-background-color: linear-gradient(to bottom,
+    derive(-edu-surface, -3%),
+    derive(-edu-surface, -8%));
+  -fx-background-radius: 16px 16px 0 0;
+  -fx-alignment: CENTER;
+}
+
+.produit-card-title {
+  -fx-font-size: 13.5px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+}
+
+.produit-card-type {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-text-muted;
+}
+
+.produit-card-prix {
+  -fx-font-size: 16px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-primary;
+}
+
+.produit-card-stock {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-text-muted;
+}
+
+.produit-card-stock-rupture {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-danger;
+  -fx-font-weight: 700;
+}

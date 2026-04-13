@@ -1,0 +1,8 @@
+com\educompus\repository\CommandeRepository.class
+com\educompus\repository\LigneCommandeRepository.class
+com\educompus\repository\LivraisonRepository.class
+com\educompus\controller\back\BackCommandesController$CommandeCell.class
+com\educompus\controller\back\BackMarketplaceController$ProduitCell.class
+com\educompus\repository\PanierRepository.class
+com\educompus\repository\ProduitRepository.class
+com\educompus\repository\AvisRepository.class

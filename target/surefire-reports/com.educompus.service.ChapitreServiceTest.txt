@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.educompus.service.ChapitreServiceTest
 -------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 5, Skipped: 0, Time elapsed: 0.397 s <<< FAILURE! -- in com.educompus.service.ChapitreServiceTest
-com.educompus.service.ChapitreServiceTest.testAjouterChapitre -- Time elapsed: 0.040 s <<< ERROR!
+Tests run: 5, Failures: 0, Errors: 5, Skipped: 0, Time elapsed: 0.321 s <<< FAILURE! -- in com.educompus.service.ChapitreServiceTest
+com.educompus.service.ChapitreServiceTest.testAjouterChapitre -- Time elapsed: 0.029 s <<< ERROR!
 java.lang.IllegalStateException: Impossible d'ajouter le chapitre: Champ 'niveau' inconnu dans field list
 	at com.educompus.repository.CourseManagementRepository.createChapitre(CourseManagementRepository.java:313)
 	at com.educompus.service.ChapitreService.creer(ChapitreService.java:37)
@@ -33,7 +33,7 @@ Caused by: java.sql.SQLSyntaxErrorException: Champ 'niveau' inconnu dans field l
 	at com.educompus.repository.CourseManagementRepository.createChapitre(CourseManagementRepository.java:306)
 	... 5 more
 
-com.educompus.service.ChapitreServiceTest.testAfficherChapitres -- Time elapsed: 0.014 s <<< ERROR!
+com.educompus.service.ChapitreServiceTest.testAfficherChapitres -- Time elapsed: 0.016 s <<< ERROR!
 java.lang.IllegalStateException: Impossible de charger les chapitres: Champ 'ch.niveau' inconnu dans field list
 	at com.educompus.repository.CourseManagementRepository.listChapitres(CourseManagementRepository.java:89)
 	at com.educompus.service.ChapitreService.listerTous(ChapitreService.java:21)
@@ -61,7 +61,7 @@ Caused by: java.sql.SQLSyntaxErrorException: Champ 'ch.niveau' inconnu dans fiel
 	at com.educompus.repository.CourseManagementRepository.listChapitres(CourseManagementRepository.java:81)
 	... 5 more
 
-com.educompus.service.ChapitreServiceTest.testModifierChapitre -- Time elapsed: 0.013 s <<< ERROR!
+com.educompus.service.ChapitreServiceTest.testModifierChapitre -- Time elapsed: 0.015 s <<< ERROR!
 java.lang.IllegalStateException: Impossible de charger les chapitres: Champ 'ch.niveau' inconnu dans field list
 	at com.educompus.repository.CourseManagementRepository.listChapitres(CourseManagementRepository.java:89)
 	at com.educompus.service.ChapitreService.listerTous(ChapitreService.java:21)
@@ -89,7 +89,7 @@ Caused by: java.sql.SQLSyntaxErrorException: Champ 'ch.niveau' inconnu dans fiel
 	at com.educompus.repository.CourseManagementRepository.listChapitres(CourseManagementRepository.java:81)
 	... 5 more
 
-com.educompus.service.ChapitreServiceTest.testSupprimerChapitre -- Time elapsed: 0.014 s <<< ERROR!
+com.educompus.service.ChapitreServiceTest.testSupprimerChapitre -- Time elapsed: 0.015 s <<< ERROR!
 java.lang.IllegalStateException: Impossible de charger les chapitres: Champ 'ch.niveau' inconnu dans field list
 	at com.educompus.repository.CourseManagementRepository.listChapitres(CourseManagementRepository.java:89)
 	at com.educompus.service.ChapitreService.listerTous(ChapitreService.java:21)
