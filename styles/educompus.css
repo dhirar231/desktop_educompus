@@ -1740,7 +1740,34 @@
   -fx-font-size: 11px;
   -fx-font-weight: 600;
   -fx-padding: 1 0 0 2;
->>>>>>> origin/gestion_marketplace
+}
+
+.users-stats-grid {
+  -fx-padding: 0;
+}
+
+.users-stat-card {
+  -fx-min-width: 180px;
+}
+
+.table-cell.role-admin {
+  -fx-text-fill: #7c3aed;
+  -fx-font-weight: 700;
+}
+
+.table-cell.role-teacher {
+  -fx-text-fill: #066ac9;
+  -fx-font-weight: 700;
+}
+
+.table-cell.role-user {
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-weight: 600;
+}
+
+.table-cell.role-mixed {
+  -fx-text-fill: #0f766e;
+  -fx-font-weight: 800;
 }
 
 /* ── Catalogue cours front ── */
