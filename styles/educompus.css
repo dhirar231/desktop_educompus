@@ -1,5 +1,5 @@
 .root {
-  /* Defaults (so templates work without any Java ThemeManager) */
+  /p* Defaults (so templates work without any Java ThemeManager) */
   -edu-primary: #066ac9;
   -edu-primary-contrast: #ffffff;
   -edu-accent: #1d3b53;
