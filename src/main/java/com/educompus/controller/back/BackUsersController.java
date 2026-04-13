@@ -13,6 +13,15 @@ import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.SVGPath;
+import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -25,9 +34,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-
+import java.io.File;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.Optional;
@@ -81,42 +90,103 @@ public class BackUsersController {
         colEmail.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().email()));
         colRole.setCellValueFactory(c -> new SimpleStringProperty(roleLabel(c.getValue())));
 
+        colDisplayName.setCellFactory(col -> new TableCell<>() {
+            private final ImageView avatarView = new ImageView();
+            private final Label nameLabel = new Label();
+            private final HBox container = new HBox(12, avatarView, nameLabel);
+
+            {
+                container.setAlignment(Pos.CENTER_LEFT);
+                avatarView.setFitWidth(32);
+                avatarView.setFitHeight(32);
+                avatarView.setPreserveRatio(true);
+                Circle clip = new Circle(16, 16, 16);
+                avatarView.setClip(clip);
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getIndex() < 0) {
+                    setGraphic(null);
+                    return;
+                }
+                AuthUser user = getTableView().getItems().get(getIndex());
+                nameLabel.setText(user.displayName());
+                nameLabel.setStyle("-fx-font-weight: 700; -fx-text-fill: -edu-text;");
+
+                String url = user.imageUrl() != null && !user.imageUrl().isBlank() ? user.imageUrl() : null;
+                try {
+                    if (url != null) {
+                        avatarView.setImage(new Image(url, true));
+                    } else {
+                        // Fallback generic user icon or letter
+                        avatarView.setImage(null);
+                    }
+                } catch (Exception e) {
+                    avatarView.setImage(null);
+                }
+                setGraphic(container);
+            }
+        });
+
         colRole.setCellFactory(col -> new TableCell<>() {
+            private final Label chip = new Label();
+
+            {
+                chip.getStyleClass().add("chip");
+                chip.setPadding(new javafx.geometry.Insets(4, 10, 4, 10));
+                setAlignment(Pos.CENTER_LEFT);
+            }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
-                    setText(null);
-                    getStyleClass().removeAll("role-admin", "role-teacher", "role-mixed", "role-user");
+                    setGraphic(null);
                     return;
                 }
-                setText(item);
-                getStyleClass().removeAll("role-admin", "role-teacher", "role-mixed", "role-user");
-                if (getIndex() < 0 || getIndex() >= getTableView().getItems().size()) {
-                    return;
-                }
+                chip.setText(item);
+                chip.getStyleClass().removeAll("chip-success", "chip-warning", "chip-info");
+
                 AuthUser user = getTableView().getItems().get(getIndex());
                 if (user.admin() && user.teacher()) {
-                    getStyleClass().add("role-mixed");
+                    chip.getStyleClass().add("chip-warning");
                 } else if (user.admin()) {
-                    getStyleClass().add("role-admin");
+                    chip.getStyleClass().add("chip-info");
                 } else if (user.teacher()) {
-                    getStyleClass().add("role-teacher");
-                } else {
-                    getStyleClass().add("role-user");
+                    chip.getStyleClass().add("chip-success");
                 }
+                setGraphic(chip);
             }
         });
 
         colActions.setCellFactory(col -> new TableCell<>() {
-            private final Button btnEdit = new Button("Modifier");
-            private final Button btnDelete = new Button("Supprimer");
-            private final HBox box = new HBox(8, btnEdit, btnDelete);
+            private final Button btnEdit = new Button();
+            private final Button btnDelete = new Button();
+            private final HBox box = new HBox(6, btnEdit, btnDelete);
 
             {
-                btnEdit.getStyleClass().add("btn-ghost");
-                btnDelete.getStyleClass().add("btn-ghost");
+                btnEdit.getStyleClass().add("btn-icon");
+                btnDelete.getStyleClass().add("btn-icon");
                 box.setAlignment(Pos.CENTER);
+
+                SVGPath editIcon = new SVGPath();
+                editIcon.setContent(
+                        "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z");
+                editIcon.setScaleX(0.8);
+                editIcon.setScaleY(0.8);
+                editIcon.setFill(Color.web("#066ac9"));
+                btnEdit.setGraphic(editIcon);
+                btnEdit.setTooltip(new Tooltip("Modifier l'utilisateur"));
+
+                SVGPath deleteIcon = new SVGPath();
+                deleteIcon.setContent("M6 19c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z");
+                deleteIcon.setScaleX(0.8);
+                deleteIcon.setScaleY(0.8);
+                deleteIcon.setFill(Color.web("#e11d48"));
+                btnDelete.setGraphic(deleteIcon);
+                btnDelete.setTooltip(new Tooltip("Supprimer l'utilisateur"));
 
                 btnEdit.setOnAction(e -> openEditDialog(getTableView().getItems().get(getIndex())));
                 btnDelete.setOnAction(e -> deleteUser(getTableView().getItems().get(getIndex())));
@@ -129,7 +199,8 @@ public class BackUsersController {
             }
         });
 
-        roleFilter.getItems().setAll("Tous les roles", "Administrateurs", "Enseignants", "Administrateur + Enseignant", "Utilisateurs");
+        roleFilter.getItems().setAll("Tous les roles", "Administrateurs", "Enseignants", "Administrateur + Enseignant",
+                "Utilisateurs");
         roleFilter.getSelectionModel().selectFirst();
 
         sortBy.getItems().setAll(
@@ -138,8 +209,7 @@ public class BackUsersController {
                 "Email (A-Z)",
                 "Role (admin -> user)",
                 "Plus recent (id desc)",
-                "Plus ancien (id asc)"
-        );
+                "Plus ancien (id asc)");
         sortBy.getSelectionModel().select("Plus recent (id desc)");
 
         filtered = new FilteredList<>(data, u -> true);
@@ -147,6 +217,77 @@ public class BackUsersController {
         tableUsers.setItems(sorted);
 
         loadUsers();
+    }
+
+    @FXML
+    private void onImportCSV() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Sélectionner le fichier CSV des utilisateurs");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier CSV", "*.csv"));
+
+        File file = fileChooser.showOpenDialog(tableUsers.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+
+        try {
+            FXMLLoader loader = Navigator.loader("View/back/BackUserImport.fxml");
+            Parent root = loader.load();
+            BackUserImportController controller = loader.getController();
+            controller.loadFile(file);
+            controller.setOnSuccess(this::loadUsers);
+
+            Stage stage = new Stage();
+            stage.setTitle("Aperçu de l'importation");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            Scene scene = new Scene(root);
+            if (tableUsers.getScene() != null) {
+                scene.getStylesheets().addAll(tableUsers.getScene().getStylesheets());
+            }
+            stage.setScene(scene);
+            stage.setMinWidth(920);
+            stage.setMinHeight(600);
+            stage.showAndWait();
+        } catch (Exception e) {
+            showError("Impossible d'ouvrir l'interface d'importation.", e);
+        }
+    }
+
+    @FXML
+    private void onExportCSV() {
+        if (data.isEmpty()) {
+            showSimpleAlert(Alert.AlertType.INFORMATION, "Export", "Aucune donnée à exporter.");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Exporter en CSV");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier CSV", "*.csv"));
+        fileChooser.setInitialFileName("utilisateurs_educampus.csv");
+
+        File file = fileChooser.showSaveDialog(tableUsers.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+
+        try (PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
+            // BOM for Excel UTF-8 support
+            writer.write('\ufeff');
+            writer.println("ID;Nom;Email;password;Rôle;Admin;Enseignant");
+            for (AuthUser u : filtered) {
+                writer.println(String.format("%d;%s;%s;%s;%s;%s",
+                        u.id(),
+                        u.displayName(),
+                        u.email(),
+                        roleLabel(u),
+                        u.admin() ? "Oui" : "Non",
+                        u.teacher() ? "Oui" : "Non"));
+            }
+            showSimpleAlert(Alert.AlertType.INFORMATION, "Succès",
+                    "Données exportées avec succès vers :\n" + file.getAbsolutePath());
+        } catch (Exception e) {
+            showError("Échec de l'exportation.", e);
+        }
     }
 
     @FXML
@@ -227,7 +368,8 @@ public class BackUsersController {
             return;
         }
         if (user.id() == AppState.getUserId()) {
-            showSimpleAlert(Alert.AlertType.WARNING, "Suppression bloquee", "Vous ne pouvez pas supprimer votre propre compte en cours.");
+            showSimpleAlert(Alert.AlertType.WARNING, "Suppression bloquee",
+                    "Vous ne pouvez pas supprimer votre propre compte en cours.");
             return;
         }
 
