@@ -79,7 +79,7 @@
                         <Label text="Edition examen" styleClass="stat-title"/>
                         <TextField fx:id="examTitleField" promptText="Titre de l'examen" styleClass="field"/>
                         <HBox spacing="8">
-                            <TextField fx:id="courseIdField" promptText="Cours ID" styleClass="field"/>
+                            <ComboBox fx:id="courseCombo" promptText="Cours" styleClass="field" prefWidth="260"/>
                             <TextField fx:id="levelField" promptText="Niveau" styleClass="field"/>
                         </HBox>
                         <TextField fx:id="domainField" promptText="Domaine" styleClass="field"/>
