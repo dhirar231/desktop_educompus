@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.educompus.controller.back.BackLoginController"
+            styleClass="app-shell">
+    <center>
+        <HBox spacing="18" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="24" right="24" bottom="24" left="24"/>
+            </padding>
+
+            <VBox styleClass="card" spacing="10" prefWidth="520">
+                <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
+                <Label text="Back Office" styleClass="page-title"/>
+                <Label text="Connexion administrateur (template)." styleClass="page-subtitle"/>
+                <Region prefHeight="6"/>
+                <Label text="Email" styleClass="stat-title"/>
+                <TextField fx:id="email" promptText="admin@educompus.tn" styleClass="field"/>
+                <Label text="Mot de passe" styleClass="stat-title"/>
+                <PasswordField fx:id="password" promptText="••••••••" styleClass="field"/>
+                <HBox spacing="10">
+                    <Button text="Se connecter" onAction="#signIn" styleClass="btn-primary"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="card" spacing="10" prefWidth="520" HBox.hgrow="ALWAYS">
+                <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
+                <Label text="Sécurité &amp; audit" styleClass="page-title"/>
+                <Label text="Espace réservé: rôles, logs, alertes, etc." styleClass="page-subtitle" wrapText="true"/>
+                <Region VBox.vgrow="ALWAYS"/>
+            </VBox>
+        </HBox>
+    </center>
+</BorderPane>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackUsersController"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Gestion des utilisateurs" styleClass="page-title"/>
+        <Label text="Liste complete, roles, statistiques et actions CRUD." styleClass="page-subtitle"/>
+    </VBox>
+
+    <FlowPane hgap="10" vgap="10" prefWrapLength="900" styleClass="users-stats-grid">
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Total utilisateurs" styleClass="stat-title"/>
+            <Label fx:id="statTotal" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Administrateurs" styleClass="stat-title"/>
+            <Label fx:id="statAdmins" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Enseignants" styleClass="stat-title"/>
+            <Label fx:id="statTeachers" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Utilisateurs standard" styleClass="stat-title"/>
+            <Label fx:id="statStandard" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Roles cumules" styleClass="stat-title"/>
+            <Label fx:id="statMixed" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Avec avatar" styleClass="stat-title"/>
+            <Label fx:id="statAvatar" text="0" styleClass="stat-value"/>
+        </VBox>
+    </FlowPane>
+
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="Rechercher (id, nom, email, role...)" styleClass="field" HBox.hgrow="ALWAYS"
+                   onKeyReleased="#onSearch"/>
+        <ComboBox fx:id="roleFilter" promptText="Role" prefWidth="220" styleClass="field" onAction="#onRoleFilter"/>
+        <ComboBox fx:id="sortBy" promptText="Trier" prefWidth="220" styleClass="field" onAction="#onSortChanged"/>
+        <Button text="Reinitialiser" styleClass="btn-ghost" onAction="#onResetFilters"/>
+        <Button text="Ajouter utilisateur" styleClass="btn-primary" onAction="#onAddUser"/>
+    </HBox>
+
+    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
+        <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+        <TableView fx:id="tableUsers" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="colId" text="ID" prefWidth="74"/>
+                <TableColumn fx:id="colDisplayName" text="Nom" prefWidth="210"/>
+                <TableColumn fx:id="colEmail" text="Email" prefWidth="250"/>
+                <TableColumn fx:id="colRole" text="Role" prefWidth="210"/>
+                <TableColumn fx:id="colActions" text="Actions" prefWidth="190" sortable="false"/>
+            </columns>
+            <placeholder>
+                <Label text="Aucun utilisateur trouve." styleClass="page-subtitle"/>
+            </placeholder>
+        </TableView>
+    </VBox>
+
+    <HBox>
+        <Label fx:id="lblResults" text="0 utilisateur(s) affiche(s)" styleClass="page-subtitle"/>
+    </HBox>
+</VBox>
+
