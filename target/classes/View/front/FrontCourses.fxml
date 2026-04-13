@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.front.FrontCoursesController"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Mes cours" styleClass="page-title"/>
+    </VBox>
+
+    <HBox spacing="12">
+        <VBox styleClass="card course-stat-card" spacing="6">
+            <padding><Insets top="14" right="18" bottom="14" left="18"/></padding>
+            <Label text="Cours disponibles" styleClass="stat-title"/>
+            <Label fx:id="totalCoursesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="catalog-scroll">
+        <content>
+            <VBox fx:id="cardsBox" spacing="14" styleClass="project-catalog">
+                <padding>
+                    <Insets top="2" right="2" bottom="2" left="2"/>
+                </padding>
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>
