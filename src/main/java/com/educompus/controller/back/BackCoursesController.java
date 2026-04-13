@@ -667,6 +667,17 @@ public final class BackCoursesController {
         ComboBox<String> domaineCombo = comboStrings(DOMAINES);
         TextField formateurField = field();
         TextField dureeField = field();
+        TextField imageField = field();
+        imageField.setPromptText("Chemin ou URL de l image (optionnel)");
+        Button browseImageBtn = new Button("Parcourir");
+        browseImageBtn.getStyleClass().add("btn-rgb-outline");
+        browseImageBtn.setOnAction(ev -> {
+            File sel = chooseFile("Choisir une image", List.of("png","jpg","jpeg","gif","bmp"), "Images", imageField);
+            if (sel != null) imageField.setText(sel.getAbsolutePath());
+        });
+        HBox imageBox = new HBox(8, imageField, browseImageBtn);
+        imageBox.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(imageField, Priority.ALWAYS);
 
         if (source == null) {
             niveauCombo.setValue(NIVEAUX.get(0));
@@ -680,6 +691,7 @@ public final class BackCoursesController {
             domaineCombo.setValue(safe(source.getDomaine()));
             formateurField.setText(safe(source.getNomFormateur()));
             dureeField.setText(source.getDureeTotaleHeures() <= 0 ? "" : String.valueOf(source.getDureeTotaleHeures()));
+            imageField.setText(safe(source.getImage()).startsWith("auto:") ? "" : safe(source.getImage()));
         }
 
         GridPane grid = formGrid();
@@ -689,14 +701,31 @@ public final class BackCoursesController {
         Label errDomaine = addRow(grid, 3, "Domaine *", domaineCombo);
         Label errFormateur = addRow(grid, 4, "Nom du formateur *", formateurField);
         Label errDuree = addRow(grid, 5, "Duree totale (heures) *", dureeField);
+        Label errImage = addRow(grid, 6, "Image (png/jpg)", imageBox);
+        niveauCombo.valueProperty().addListener((obs, o, n) -> { if (n == null) { niveauCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errNiveau.setText("⚠ Veuillez selectionner un niveau."); } else { niveauCombo.setStyle(""); errNiveau.setText(""); } });
+        domaineCombo.valueProperty().addListener((obs, o, n) -> { if (n == null) { domaineCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errDomaine.setText("⚠ Veuillez selectionner un domaine."); } else { domaineCombo.setStyle(""); errDomaine.setText(""); } });
+        liveValidate(imageField, errImage, () -> { ValidationResult r = new ValidationResult(); String v = imageField.getText().trim(); if (!v.isBlank()) { String vl = v.toLowerCase(); if (!vl.endsWith(".png") && !vl.endsWith(".jpg") && !vl.endsWith(".jpeg")) r.addError("Doit etre .png ou .jpg"); } return r; });
 
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateChapitreTitre(titreField.getText()));
-        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); else if (v.chars().anyMatch(Character::isDigit)) r.addError("La description ne doit pas contenir de chiffres."); return r; });
         liveValidate(formateurField, errFormateur, () -> { ValidationResult r = new ValidationResult(); String v = formateurField.getText().trim(); if (v.isBlank()) r.addError("Le nom du formateur est obligatoire."); else if (v.chars().anyMatch(Character::isDigit)) r.addError("Le nom ne doit pas contenir de chiffres."); return r; });
         liveValidate(dureeField, errDuree, () -> CoursValidationService.validateDureeStr(dureeField.getText()));
 
 
+        // Déclencher validation visuelle au clic OK
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer un cours" : "Modifier un cours", grid);
+        javafx.scene.control.Button okBtnC = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtnC.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            boolean hasErr = false;
+            if (titreField.getText().trim().isBlank()) { FormValidator.markError(titreField, "Obligatoire"); errTitre.setText("⚠ Le titre est obligatoire."); hasErr = true; }
+            if (descriptionArea.getText().trim().isBlank()) { FormValidator.markError(descriptionArea, "Obligatoire"); errDesc.setText("⚠ La description est obligatoire."); hasErr = true; } else if (descriptionArea.getText().trim().length() < 10) { FormValidator.markError(descriptionArea, "Min 10 car."); errDesc.setText("⚠ Minimum 10 caracteres."); hasErr = true; } else if (descriptionArea.getText().trim().chars().anyMatch(Character::isDigit)) { FormValidator.markError(descriptionArea, "Pas de chiffres"); errDesc.setText("⚠ La description ne doit pas contenir de chiffres."); hasErr = true; }
+            if (formateurField.getText().trim().isBlank()) { FormValidator.markError(formateurField, "Obligatoire"); errFormateur.setText("⚠ Le formateur est obligatoire."); hasErr = true; }
+            if (dureeField.getText().trim().isBlank()) { FormValidator.markError(dureeField, "Obligatoire"); errDuree.setText("⚠ La duree est obligatoire."); hasErr = true; }
+            if (niveauCombo.getValue() == null) { niveauCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errNiveau.setText("⚠ Veuillez selectionner un niveau."); hasErr = true; } else { niveauCombo.setStyle(""); errNiveau.setText(""); }
+            if (domaineCombo.getValue() == null) { domaineCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errDomaine.setText("⚠ Veuillez selectionner un domaine."); hasErr = true; } else { domaineCombo.setStyle(""); errDomaine.setText(""); }
+            String imgV = imageField.getText().trim(); if (!imgV.isBlank()) { String ivl = imgV.toLowerCase(); if (!ivl.endsWith(".png") && !ivl.endsWith(".jpg") && !ivl.endsWith(".jpeg")) { FormValidator.markError(imageField, "Doit etre .png ou .jpg"); errImage.setText("⚠ L image doit etre .png ou .jpg"); hasErr = true; } else if (!new java.io.File(imgV).exists()) { FormValidator.markError(imageField, "Fichier introuvable"); errImage.setText("⚠ Fichier introuvable."); hasErr = true; } }
+            if (hasErr) ev.consume();
+        });
         Optional<ButtonType> answer = dialog.showAndWait();
         if (answer.isEmpty() || answer.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) return FormResult.cancelled();
 
@@ -714,7 +743,6 @@ public final class BackCoursesController {
             // Marquer les champs visuellement
             FormValidator.markError(titreField, CoursValidationService.validateChapitreTitre(draft.getTitre()).firstError());
             FormValidator.markError(dureeField, CoursValidationService.validateDureeStr(text(dureeField)).firstError());
-            warnValidation(vr.allErrors());
             return FormResult.cancelled();
         }
 
@@ -727,7 +755,8 @@ public final class BackCoursesController {
         cours.setDomaine(safe(domaineCombo.getValue()));
         cours.setNomFormateur(text(formateurField));
         cours.setDureeTotaleHeures(duree);
-        cours.setImage("auto:" + safe(domaineCombo.getValue()).toLowerCase());
+        String imgVal = text(imageField);
+        cours.setImage(imgVal.isBlank() ? "auto:" + safe(domaineCombo.getValue()).toLowerCase() : imgVal);
         return FormResult.saved(cours);
     }
 
@@ -800,10 +829,20 @@ public final class BackCoursesController {
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateChapitreTitre(titreField.getText()));
         liveValidate(ordreField, errOrdre, () -> CoursValidationService.validateChapitreOrdre(ordreField.getText()));
         liveValidate(fichierField, errFichier, () -> { ValidationResult r = new ValidationResult(); String v = fichierField.getText().trim(); if (v.isBlank()) r.addError("Le fichier PDF est obligatoire."); else if (!v.toLowerCase().endsWith(".pdf")) r.addError("Doit etre un fichier .pdf"); return r; });
-        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); else if (v.chars().anyMatch(Character::isDigit)) r.addError("La description ne doit pas contenir de chiffres."); return r; });
 
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer un chapitre" : "Modifier un chapitre", grid);
+        javafx.scene.control.Button okBtnCh = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtnCh.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            boolean hasErr = false;
+            if (coursCombo.getValue() == null) { FormValidator.markError(coursCombo, "Obligatoire"); errCours.setText("⚠ Cours obligatoire."); hasErr = true; }
+            if (titreField.getText().trim().isBlank()) { FormValidator.markError(titreField, "Obligatoire"); errTitre.setText("⚠ Le titre est obligatoire."); hasErr = true; }
+            if (ordreField.getText().trim().isBlank()) { FormValidator.markError(ordreField, "Obligatoire"); errOrdre.setText("⚠ L ordre est obligatoire."); hasErr = true; }
+            if (fichierField.getText().trim().isBlank()) { FormValidator.markError(fichierField, "Obligatoire"); errFichier.setText("⚠ Le fichier est obligatoire."); hasErr = true; }
+            if (descriptionArea.getText().trim().isBlank()) { FormValidator.markError(descriptionArea, "Obligatoire"); errDesc.setText("⚠ La description est obligatoire."); hasErr = true; } else if (descriptionArea.getText().trim().length() < 10) { FormValidator.markError(descriptionArea, "Min 10 car."); errDesc.setText("⚠ Minimum 10 caracteres."); hasErr = true; } else if (descriptionArea.getText().trim().chars().anyMatch(Character::isDigit)) { FormValidator.markError(descriptionArea, "Pas de chiffres"); errDesc.setText("⚠ La description ne doit pas contenir de chiffres."); hasErr = true; }
+            if (hasErr) ev.consume();
+        });
         Optional<ButtonType> answer = dialog.showAndWait();
         if (answer.isEmpty() || answer.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) return FormResult.cancelled();
 
@@ -817,13 +856,11 @@ public final class BackCoursesController {
         if (!text(fichierField).toLowerCase().endsWith(".pdf")) {
             markInvalid(fichierField, true);
             if (!invalids.contains(fichierField)) invalids.add(fichierField);
-            warnValidation("Le fichier de chapitre doit être un PDF.");
         }
         validateDuration(ordreField, invalids); // ordre entre 1 et 1000
         requireSelection(niveauCombo, invalids);
         requireSelection(domaineCombo, invalids);
         if (!invalids.isEmpty()) {
-            warnValidation("Veuillez corriger les champs rouges.");
             return FormResult.cancelled();
         }
 
@@ -913,10 +950,20 @@ public final class BackCoursesController {
 
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateTdTitre(titreField.getText()));
         liveValidate(fichierField, errFichier, () -> { ValidationResult r = new ValidationResult(); String v = fichierField.getText().trim(); if (v.isBlank()) r.addError("Le fichier PDF est obligatoire."); else if (!v.toLowerCase().endsWith(".pdf")) r.addError("Doit etre un fichier .pdf"); return r; });
-        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); else if (v.chars().anyMatch(Character::isDigit)) r.addError("La description ne doit pas contenir de chiffres."); return r; });
 
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer un TD" : "Modifier un TD", grid);
+        javafx.scene.control.Button okBtnT = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtnT.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            boolean hasErr = false;
+            if (coursCombo.getValue() == null) { FormValidator.markError(coursCombo, "Obligatoire"); errCours.setText("⚠ Cours obligatoire."); hasErr = true; }
+            if (chapitreCombo.getValue() == null) { FormValidator.markError(chapitreCombo, "Obligatoire"); errChapitre.setText("⚠ Chapitre obligatoire."); hasErr = true; }
+            if (titreField.getText().trim().isBlank()) { FormValidator.markError(titreField, "Obligatoire"); errTitre.setText("⚠ Le titre est obligatoire."); hasErr = true; }
+            if (fichierField.getText().trim().isBlank()) { FormValidator.markError(fichierField, "Obligatoire"); errFichier.setText("⚠ Le fichier est obligatoire."); hasErr = true; }
+            if (descriptionArea.getText().trim().isBlank()) { FormValidator.markError(descriptionArea, "Obligatoire"); errDesc.setText("⚠ La description est obligatoire."); hasErr = true; } else if (descriptionArea.getText().trim().length() < 10) { FormValidator.markError(descriptionArea, "Min 10 car."); errDesc.setText("⚠ Minimum 10 caracteres."); hasErr = true; } else if (descriptionArea.getText().trim().chars().anyMatch(Character::isDigit)) { FormValidator.markError(descriptionArea, "Pas de chiffres"); errDesc.setText("⚠ La description ne doit pas contenir de chiffres."); hasErr = true; }
+            if (hasErr) ev.consume();
+        });
         Optional<ButtonType> answer = dialog.showAndWait();
         if (answer.isEmpty() || answer.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) return FormResult.cancelled();
 
@@ -929,12 +976,10 @@ public final class BackCoursesController {
         if (!text(fichierField).toLowerCase().endsWith(".pdf")) {
             markInvalid(fichierField, true);
             if (!invalids.contains(fichierField)) invalids.add(fichierField);
-            warnValidation("Le fichier doit être un PDF.");
         }
         requireSelection(niveauCombo, invalids);
         requireSelection(domaineCombo, invalids);
         if (!invalids.isEmpty()) {
-            warnValidation("Veuillez corriger les champs rouges.");
             return FormResult.cancelled();
         }
 
@@ -1011,10 +1056,20 @@ public final class BackCoursesController {
 
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateVideoTitre(titreField.getText()));
         liveValidate(urlField, errUrl, () -> CoursValidationService.validateVideoUrl(urlField.getText()));
-        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); return r; });
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("La description est obligatoire."); else if (v.length() < 10) r.addError("Minimum 10 caracteres."); else if (v.chars().anyMatch(Character::isDigit)) r.addError("La description ne doit pas contenir de chiffres."); return r; });
 
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Creer une video" : "Modifier une video", grid);
+        javafx.scene.control.Button okBtnV = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtnV.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            boolean hasErr = false;
+            if (coursCombo.getValue() == null) { FormValidator.markError(coursCombo, "Obligatoire"); errCours.setText("⚠ Cours obligatoire."); hasErr = true; }
+            if (chapitreCombo.getValue() == null) { FormValidator.markError(chapitreCombo, "Obligatoire"); errChapitre.setText("⚠ Chapitre obligatoire."); hasErr = true; }
+            if (titreField.getText().trim().isBlank()) { FormValidator.markError(titreField, "Obligatoire"); errTitre.setText("⚠ Le titre est obligatoire."); hasErr = true; }
+            if (urlField.getText().trim().isBlank()) { FormValidator.markError(urlField, "Obligatoire"); errUrl.setText("⚠ L URL est obligatoire."); hasErr = true; }
+            if (descriptionArea.getText().trim().isBlank()) { FormValidator.markError(descriptionArea, "Obligatoire"); errDesc.setText("⚠ La description est obligatoire."); hasErr = true; } else if (descriptionArea.getText().trim().length() < 10) { FormValidator.markError(descriptionArea, "Min 10 car."); errDesc.setText("⚠ Minimum 10 caracteres."); hasErr = true; } else if (descriptionArea.getText().trim().chars().anyMatch(Character::isDigit)) { FormValidator.markError(descriptionArea, "Pas de chiffres"); errDesc.setText("⚠ La description ne doit pas contenir de chiffres."); hasErr = true; }
+            if (hasErr) ev.consume();
+        });
         Optional<ButtonType> answer = dialog.showAndWait();
         if (answer.isEmpty() || answer.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) return FormResult.cancelled();
 
@@ -1028,7 +1083,6 @@ public final class BackCoursesController {
         requireSelection(niveauCombo, invalids);
         requireSelection(domaineCombo, invalids);
         if (!invalids.isEmpty()) {
-            warnValidation("Veuillez corriger les champs rouges. L'URL est obligatoire.");
             return FormResult.cancelled();
         }
 
@@ -1046,14 +1100,17 @@ public final class BackCoursesController {
     private Dialog<ButtonType> buildFormDialog(String title, Node content) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle(title);
-        dialog.setHeaderText(title + "");
+        dialog.setHeaderText(title);
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         dialog.getDialogPane().setPrefWidth(760);
         Dialogs.style(dialog);
+        // Forcer fond blanc sur tout le dialog
+        dialog.getDialogPane().setStyle("-fx-background-color: white; -fx-background-radius: 0;");
+        javafx.scene.layout.Region contentRegion = (javafx.scene.layout.Region) dialog.getDialogPane().lookup(".content");
+        if (contentRegion != null) contentRegion.setStyle("-fx-background-color: white; -fx-padding: 14 18 14 18;");
         return dialog;
     }
-
     private GridPane formGrid() {
         GridPane grid = new GridPane();
         grid.setHgap(14);

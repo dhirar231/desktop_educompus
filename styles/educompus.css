@@ -334,27 +334,23 @@
 
 /* Modern RGB dialogs */
 .rgb-dialog.dialog-pane {
-  -fx-background-color: -edu-card;
+  -fx-background-color: -edu-bg;
   -fx-background-radius: 16px;
   -fx-border-radius: 16px;
   -fx-border-width: 2;
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
 }
 
+.rgb-dialog.dialog-pane > .content {
+  -fx-background-color: -edu-bg;
+  -fx-padding: 14 18 14 18;
+}
+
 .rgb-dialog.dialog-pane > .content.label {
   -fx-text-fill: -edu-text;
 }
 
-.rgb-dialog.dialog-pane .header-panel {
-  -fx-background-color: transparent;
-}
-
-.rgb-dialog.dialog-pane .header-panel .label {
-  -fx-text-fill: -edu-text;
-  -fx-font-weight: 900;
-}
-
-/* Gradient header for modern dialog look */
+/* Gradient header */
 .rgb-dialog.dialog-pane .header-panel {
   -fx-background-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95));
   -fx-padding: 10 14 10 14;
@@ -364,11 +360,17 @@
 .rgb-dialog.dialog-pane .header-panel .label {
   -fx-text-fill: white;
   -fx-font-size: 14px;
+  -fx-font-weight: 900;
 }
 
 /* Make dialog graphic (icon) appear inside the gradient header */
 .rgb-dialog.dialog-pane .graphic {
   -fx-padding: 6 10 6 6;
+}
+
+.rgb-dialog.dialog-pane .button-bar {
+  -fx-background-color: -edu-bg;
+  -fx-padding: 8 14 12 14;
 }
 
 .rgb-dialog.dialog-pane .button {
@@ -1685,4 +1687,38 @@
   -fx-font-weight: 600;
   -fx-padding: 1 0 0 2;
 >>>>>>> origin/gestion_marketplace
+}
+
+/* ── Catalogue cours front ── */
+.course-catalog-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 16px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 16px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
+}
+
+.course-catalog-card:hover {
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.65), rgba(6, 106, 201, 0.65), rgba(106, 17, 203, 0.65));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.18), 24, 0.18, 0, 8);
+}
+
+.course-catalog-banner {
+  -fx-background-color: linear-gradient(to bottom right, rgba(6,106,201,0.18), rgba(106,17,203,0.12));
+  -fx-background-radius: 16px 16px 0 0;
+  -fx-border-radius: 16px 16px 0 0;
+  -fx-clip: true;
+}
+
+.course-catalog-title {
+  -fx-font-size: 15px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-text;
+}
+
+.course-catalog-footer {
+  -fx-border-color: -edu-border transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+  -fx-padding: 8 0 0 0;
 }
