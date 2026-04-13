@@ -469,6 +469,8 @@ public final class CourseManagementRepository {
                         cours_id INT NOT NULL,
                         fichier_c VARCHAR(512),
                         date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        niveau VARCHAR(32),
+                        domaine VARCHAR(64),
                         FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE
                     )
                     """);
@@ -480,6 +482,9 @@ public final class CourseManagementRepository {
                         fichier VARCHAR(512),
                         date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         chapitre_id INT NOT NULL,
+                        cours_id INT,
+                        niveau VARCHAR(32),
+                        domaine VARCHAR(64),
                         FOREIGN KEY (chapitre_id) REFERENCES chapitre(id) ON DELETE CASCADE
                     )
                     """);
@@ -491,6 +496,9 @@ public final class CourseManagementRepository {
                         description TEXT,
                         date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         chapitre_id INT NOT NULL,
+                        cours_id INT,
+                        niveau VARCHAR(32),
+                        domaine VARCHAR(64),
                         FOREIGN KEY (chapitre_id) REFERENCES chapitre(id) ON DELETE CASCADE
                     )
                     """);
@@ -504,6 +512,30 @@ public final class CourseManagementRepository {
             }
             if (!columnExists(conn, "cours", "image")) {
                 executeIgnore(conn, "ALTER TABLE cours ADD COLUMN image VARCHAR(255) NULL");
+            }
+            if (!columnExists(conn, "chapitre", "niveau")) {
+                executeIgnore(conn, "ALTER TABLE chapitre ADD COLUMN niveau VARCHAR(32) NULL");
+            }
+            if (!columnExists(conn, "chapitre", "domaine")) {
+                executeIgnore(conn, "ALTER TABLE chapitre ADD COLUMN domaine VARCHAR(64) NULL");
+            }
+            if (!columnExists(conn, "td", "cours_id")) {
+                executeIgnore(conn, "ALTER TABLE td ADD COLUMN cours_id INT NULL");
+            }
+            if (!columnExists(conn, "td", "niveau")) {
+                executeIgnore(conn, "ALTER TABLE td ADD COLUMN niveau VARCHAR(32) NULL");
+            }
+            if (!columnExists(conn, "td", "domaine")) {
+                executeIgnore(conn, "ALTER TABLE td ADD COLUMN domaine VARCHAR(64) NULL");
+            }
+            if (!columnExists(conn, "video_explicative", "cours_id")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN cours_id INT NULL");
+            }
+            if (!columnExists(conn, "video_explicative", "niveau")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN niveau VARCHAR(32) NULL");
+            }
+            if (!columnExists(conn, "video_explicative", "domaine")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN domaine VARCHAR(64) NULL");
             }
         } catch (Exception ignored) {
             // Keep app usable even if schema migration cannot be performed.

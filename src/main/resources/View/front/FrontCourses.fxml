@@ -3,6 +3,8 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -15,25 +17,27 @@
     </padding>
 
     <VBox spacing="4">
-        <Label text="Mes cours" styleClass="page-title"/>
+        <Label text="Catalogue des cours" styleClass="page-title"/>
+        <Label text="Explorez et accédez à vos cours" styleClass="page-subtitle"/>
     </VBox>
 
-    <HBox spacing="12">
+    <HBox spacing="12" alignment="CENTER_LEFT">
         <VBox styleClass="card course-stat-card" spacing="6">
             <padding><Insets top="14" right="18" bottom="14" left="18"/></padding>
             <Label text="Cours disponibles" styleClass="stat-title"/>
             <Label fx:id="totalCoursesLabel" text="0" styleClass="stat-value"/>
         </VBox>
         <Region HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="searchField" promptText="🔍  Rechercher un cours..." styleClass="field" prefWidth="260"/>
     </HBox>
 
     <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="catalog-scroll">
         <content>
-            <VBox fx:id="cardsBox" spacing="14" styleClass="project-catalog">
+            <FlowPane fx:id="cardsFlow" hgap="18" vgap="18" styleClass="project-catalog">
                 <padding>
-                    <Insets top="2" right="2" bottom="2" left="2"/>
+                    <Insets top="4" right="4" bottom="4" left="4"/>
                 </padding>
-            </VBox>
+            </FlowPane>
         </content>
     </ScrollPane>
 </VBox>
