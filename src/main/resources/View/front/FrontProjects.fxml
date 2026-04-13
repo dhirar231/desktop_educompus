@@ -6,8 +6,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.FlowPane?>
@@ -141,17 +140,7 @@
 
             <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                <TableView fx:id="submissionsTable" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="colSubId" text="ID" prefWidth="0" minWidth="0" maxWidth="0" visible="false"/>
-                        <TableColumn fx:id="colSubProject" text="Projet" prefWidth="320"/>
-                        <TableColumn fx:id="colSubSubmittedAt" text="Soumis le" prefWidth="200"/>
-                        <TableColumn fx:id="colSubResponse" text="Reponse" prefWidth="280"/>
-                        <TableColumn fx:id="colSubFile" text="Fichier" prefWidth="120"/>
-                        <TableColumn fx:id="colSubZip" text="Zip" prefWidth="120"/>
-                        <TableColumn fx:id="colSubActions" text="Action" prefWidth="140"/>
-                    </columns>
-                </TableView>
+                <ListView fx:id="submissionsList" VBox.vgrow="ALWAYS"/>
                 <Label fx:id="selectedSubmissionLabel" text="Sélectionnez une soumission" styleClass="page-subtitle" wrapText="true"/>
             </VBox>
         </VBox>
