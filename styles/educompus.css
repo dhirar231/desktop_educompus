@@ -647,6 +647,21 @@
   -fx-text-fill: -edu-primary;
 }
 
+.chip-stock-available {
+  -fx-background-color: rgba(12, 188, 135, 0.12);
+  -fx-text-fill: -edu-success;
+}
+
+.chip-stock-low {
+  -fx-background-color: rgba(247, 195, 46, 0.16);
+  -fx-text-fill: #8a6a00;
+}
+
+.chip-stock-rupture {
+  -fx-background-color: rgba(214, 41, 62, 0.12);
+  -fx-text-fill: -edu-danger;
+}
+
 .chip-outline {
   -fx-background-color: transparent;
   -fx-border-color: rgba(128,136,145,0.22);
@@ -748,6 +763,45 @@
 .exam-card-minimal {
   -fx-padding: 12 14 12 14;
 }
+
+/* Teacher Responses page controls styling */
+.responses-controls {
+  -fx-padding: 10 12 10 12;
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 14px;
+  -fx-border-radius: 14px;
+  -fx-border-width: 2;
+  -fx-border-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95));
+  -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.06), 18, 0.12, 0, 6);
+  -fx-spacing: 8px;
+}
+
+.responses-controls .btn-rgb {
+  -fx-background-radius: 12px;
+  -fx-padding: 8 14 8 14;
+}
+
+/* Slightly more compact table header and chip styling for responses */
+.responses-table .table-view {
+  -fx-border-color: -edu-border;
+}
+
+.responses-table .chip {
+  -fx-padding: 4 8 4 8;
+  -fx-font-size: 12px;
+}
+
+/* Filter wrapper for responses page */
+.responses-filter {
+  -fx-padding: 8 10 8 10;
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-width: 2;
+  -fx-border-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95), rgba(106,17,203,0.95));
+  -fx-spacing: 8px;
+}
+
 
 .exam-card-subtitle {
   -fx-font-size: 13px;

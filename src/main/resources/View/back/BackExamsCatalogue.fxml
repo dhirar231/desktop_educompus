@@ -34,6 +34,7 @@
         <MenuButton fx:id="viewToggle" text="Affichage" styleClass="btn-rgb-outline">
             <items>
                 <MenuItem text="Vue Cartes" onAction="#showCards" />
+                <MenuItem fx:id="viewResponsesItem" text="Voir réponses" onAction="#showResponses" />
                 <MenuItem text="Vue Table" onAction="#showTable" />
             </items>
         </MenuButton>

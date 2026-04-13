@@ -1,7 +1,9 @@
 package com.educompus.controller.back;
 
 import com.educompus.model.ExamCatalogueItem;
+import com.educompus.model.Cours;
 import com.educompus.repository.ExamRepository;
+import com.educompus.repository.CourseManagementRepository;
 import com.educompus.util.Theme;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -60,7 +62,7 @@ public final class BackExamsController {
     @FXML
     private TextField examTitleField;
     @FXML
-    private TextField courseIdField;
+    private javafx.scene.control.ComboBox<Cours> courseCombo;
     @FXML
     private TextField levelField;
     @FXML
@@ -73,11 +75,14 @@ public final class BackExamsController {
     private final ExamRepository repository = new ExamRepository();
     private final ObservableList<ExamCatalogueItem> exams = FXCollections.observableArrayList();
     private ExamCatalogueItem editingExam;
+    private final CourseManagementRepository courseRepo = new CourseManagementRepository();
+    private final javafx.collections.ObservableList<Cours> courses = FXCollections.observableArrayList();
 
     @FXML
     private void initialize() {
         setupTable();
         setupSort();
+        loadCourses();
         reload();
     }
 
@@ -118,6 +123,18 @@ public final class BackExamsController {
         });
     }
 
+    private void loadCourses() {
+        try {
+            java.util.List<Cours> list = courseRepo.listCours("");
+            courses.setAll(list);
+            if (courseCombo != null) {
+                courseCombo.getItems().setAll(courses);
+            }
+        } catch (Exception e) {
+            error("Cours", e instanceof Exception ? (Exception) e : null);
+        }
+    }
+
     private void setupSort() {
         if (searchField != null) {
             searchField.textProperty().addListener((obs, oldValue, newValue) -> reload());
@@ -135,6 +152,8 @@ public final class BackExamsController {
         exams.setAll(items);
         applySort();
         updateStats(items);
+        // refresh course list for combobox
+        loadCourses();
 
         int selectedId = editingExam == null ? 0 : editingExam.getExamId();
         if (selectedId > 0) {
@@ -227,17 +246,11 @@ public final class BackExamsController {
             return;
         }
 
-        try {
-            int cid = Integer.parseInt(text(courseIdField));
-            if (cid <= 0) {
-                info("Examen", "Le champ Cours ID doit etre un entier positif.");
-                return;
-            }
-            item.setCourseId(cid);
-        } catch (Exception e) {
-            info("Examen", "Le champ Cours ID doit etre un entier valide.");
+        if (courseCombo == null || courseCombo.getValue() == null) {
+            info("Examen", "Veuillez selectionner un cours valide.");
             return;
         }
+        item.setCourseId(courseCombo.getValue().getId());
 
         try {
             if (item.getExamId() <= 0) {
@@ -356,7 +369,20 @@ public final class BackExamsController {
     private void fillExamForm(ExamCatalogueItem item) {
         examTitleField.setText(item == null ? "" : safe(item.getExamTitle()));
         examDescriptionArea.setText(item == null ? "" : safe(item.getExamDescription()));
-        courseIdField.setText(item == null ? "" : String.valueOf(item.getCourseId()));
+        if (courseCombo != null) {
+            if (item == null) {
+                courseCombo.setValue(null);
+            } else {
+                Cours found = null;
+                for (Cours c : courses) {
+                    if (c.getId() == item.getCourseId()) {
+                        found = c;
+                        break;
+                    }
+                }
+                courseCombo.setValue(found);
+            }
+        }
         levelField.setText(item == null ? "" : safe(item.getLevelLabel()));
         domainField.setText(item == null ? "" : safe(item.getDomainLabel()));
         selectedExamLabel.setText(item == null

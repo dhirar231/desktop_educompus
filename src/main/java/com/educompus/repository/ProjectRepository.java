@@ -140,6 +140,20 @@ public final class ProjectRepository {
         }
     }
 
+    public Project getById(int id) {
+        String sql = "SELECT id, title, description, deadline, deliverables, created_by_id, is_published, created_at FROM project WHERE id = ?";
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return map(rs);
+            }
+            return null;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to get project: " + safeMsg(e), e);
+        }
+    }
+
     private static Project map(ResultSet rs) throws Exception {
         Project p = new Project();
         p.setId(rs.getInt("id"));
