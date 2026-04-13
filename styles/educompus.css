@@ -334,27 +334,23 @@
 
 /* Modern RGB dialogs */
 .rgb-dialog.dialog-pane {
-  -fx-background-color: -edu-card;
+  -fx-background-color: -edu-bg;
   -fx-background-radius: 16px;
   -fx-border-radius: 16px;
   -fx-border-width: 2;
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
 }
 
+.rgb-dialog.dialog-pane > .content {
+  -fx-background-color: -edu-bg;
+  -fx-padding: 14 18 14 18;
+}
+
 .rgb-dialog.dialog-pane > .content.label {
   -fx-text-fill: -edu-text;
 }
 
-.rgb-dialog.dialog-pane .header-panel {
-  -fx-background-color: transparent;
-}
-
-.rgb-dialog.dialog-pane .header-panel .label {
-  -fx-text-fill: -edu-text;
-  -fx-font-weight: 900;
-}
-
-/* Gradient header for modern dialog look */
+/* Gradient header */
 .rgb-dialog.dialog-pane .header-panel {
   -fx-background-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95));
   -fx-padding: 10 14 10 14;
@@ -364,11 +360,17 @@
 .rgb-dialog.dialog-pane .header-panel .label {
   -fx-text-fill: white;
   -fx-font-size: 14px;
+  -fx-font-weight: 900;
 }
 
 /* Make dialog graphic (icon) appear inside the gradient header */
 .rgb-dialog.dialog-pane .graphic {
   -fx-padding: 6 10 6 6;
+}
+
+.rgb-dialog.dialog-pane .button-bar {
+  -fx-background-color: -edu-bg;
+  -fx-padding: 8 14 12 14;
 }
 
 .rgb-dialog.dialog-pane .button {
@@ -513,6 +515,19 @@
 .field-invalid .content,
 .text-area.field-invalid .content {
   -fx-background-color: rgba(214, 41, 62, 0.03);
+}
+
+/* Simple inline error styles used by form validation */
+.field-error {
+  -fx-border-color: #d6293e;
+  -fx-border-width: 2;
+  -fx-effect: dropshadow(three-pass-box, rgba(214, 41, 62, 0.18), 12, 0.12, 0, 2);
+}
+
+.field-error-text {
+  -fx-text-fill: #d6293e;
+  -fx-font-size: 11px;
+  -fx-padding: 6 0 0 4;
 }
 
 .course-stat-card {
@@ -1766,4 +1781,162 @@
 .table-cell.role-mixed {
   -fx-text-fill: #0f766e;
   -fx-font-weight: 800;
+}
+
+/* ── Catalogue cours front ── */
+.course-catalog-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 16px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 16px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
+}
+
+.course-catalog-card:hover {
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.65), rgba(6, 106, 201, 0.65), rgba(106, 17, 203, 0.65));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.18), 24, 0.18, 0, 8);
+}
+
+.course-catalog-banner {
+  -fx-background-color: linear-gradient(to bottom right, rgba(6,106,201,0.18), rgba(106,17,203,0.12));
+  -fx-background-radius: 16px 16px 0 0;
+  -fx-border-radius: 16px 16px 0 0;
+  -fx-clip: true;
+}
+
+.course-catalog-title {
+  -fx-font-size: 15px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-text;
+}
+
+.course-catalog-footer {
+  -fx-border-color: -edu-border transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+  -fx-padding: 8 0 0 0;
+}
+
+/* ── Course Detail Page ── */
+.course-detail-hero {
+  -fx-background-color: linear-gradient(to bottom right, rgba(6,106,201,0.92), rgba(106,17,203,0.85));
+  -fx-background-radius: 16px;
+  -fx-border-radius: 16px;
+}
+
+.course-detail-title {
+  -fx-font-size: 26px;
+  -fx-font-weight: 900;
+  -fx-text-fill: white;
+}
+
+.course-detail-section-title {
+  -fx-font-size: 14px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+}
+
+.course-detail-desc {
+  -fx-font-size: 13px;
+  -fx-text-fill: -edu-text;
+  -fx-line-spacing: 4px;
+}
+
+.course-detail-info-card {
+  -fx-min-width: 220px;
+}
+
+.course-info-icon {
+  -fx-min-width: 32px;
+  -fx-min-height: 32px;
+  -fx-max-width: 32px;
+  -fx-max-height: 32px;
+  -fx-background-color: -edu-primary-soft;
+  -fx-background-radius: 999px;
+}
+
+.course-info-label {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-weight: 600;
+}
+
+.course-info-value {
+  -fx-font-size: 13px;
+  -fx-font-weight: 700;
+  -fx-text-fill: -edu-text;
+}
+
+/* ── Back office stat cards ── */
+.back-stat-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 14px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 14px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.07), 14, 0.12, 0, 3);
+}
+
+.back-stat-card:hover {
+  -fx-border-color: derive(-edu-primary, 72%);
+  -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.12), 18, 0.15, 0, 5);
+}
+
+.back-stat-icon {
+  -fx-min-width: 40px;
+  -fx-min-height: 40px;
+  -fx-max-width: 40px;
+  -fx-max-height: 40px;
+  -fx-background-radius: 12px;
+  -fx-alignment: CENTER;
+}
+
+.back-stat-icon-blue  { -fx-background-color: rgba(6,106,201,0.12); }
+.back-stat-icon-purple{ -fx-background-color: rgba(106,17,203,0.12); }
+.back-stat-icon-green { -fx-background-color: rgba(12,188,135,0.12); }
+.back-stat-icon-orange{ -fx-background-color: rgba(247,195,46,0.18); }
+
+.back-stat-svg {
+  -fx-fill: -edu-primary;
+  -fx-scale-x: 0.82;
+  -fx-scale-y: 0.82;
+}
+
+.back-stat-icon-purple .back-stat-svg { -fx-fill: #6a11cb; }
+.back-stat-icon-green  .back-stat-svg { -fx-fill: #0cbc87; }
+.back-stat-icon-orange .back-stat-svg { -fx-fill: #c8960a; }
+
+/* ── Back table améliorée ── */
+.back-table {
+  -fx-background-color: transparent;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+}
+
+.back-table .column-header-background {
+  -fx-background-color: linear-gradient(to right, rgba(6,106,201,0.06), rgba(106,17,203,0.04));
+  -fx-background-radius: 12px 12px 0 0;
+  -fx-border-color: -edu-border;
+  -fx-border-width: 0 0 1 0;
+}
+
+.back-table .column-header .label {
+  -fx-text-fill: -edu-primary;
+  -fx-font-weight: 800;
+  -fx-font-size: 12px;
+}
+
+.back-table .table-row-cell {
+  -fx-background-color: -edu-card;
+  -fx-border-color: transparent transparent -edu-border transparent;
+  -fx-border-width: 0 0 1 0;
+}
+
+.back-table .table-row-cell:filled:hover {
+  -fx-background-color: -edu-primary-soft;
+}
+
+.back-table .table-row-cell:filled:selected {
+  -fx-background-color: -edu-primary-soft-2;
 }
