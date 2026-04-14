@@ -5,6 +5,8 @@ import com.educompus.model.ExamCatalogueItem;
 import com.educompus.model.ExamQuestion;
 
 import java.sql.Connection;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,6 +21,8 @@ import java.util.Set;
 public final class ExamRepository {
     private boolean fallbackUsed;
     private String sourceLabel = "";
+    // Incremented whenever exams are added/updated/deleted/published so UI controllers can refresh.
+    public static final LongProperty CHANGE_COUNTER = new SimpleLongProperty(0);
 
     public boolean isFallbackUsed() {
         return fallbackUsed;
@@ -546,6 +550,8 @@ public final class ExamRepository {
                     if (rs.next()) item.setExamId(rs.getInt(1));
                 }
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
@@ -584,6 +590,8 @@ public final class ExamRepository {
                 ps.setInt(idx, item.getExamId());
                 ps.executeUpdate();
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
@@ -604,6 +612,8 @@ public final class ExamRepository {
                 ps.setInt(2, examId);
                 ps.executeUpdate();
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
@@ -617,6 +627,8 @@ public final class ExamRepository {
                 ps.setInt(1, id);
                 ps.executeUpdate();
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
