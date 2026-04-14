@@ -1927,3 +1927,31 @@
 .back-table .table-row-cell:filled:selected {
   -fx-background-color: -edu-primary-soft-2;
 }
+
+/* ── Back ListView ── */
+.back-list {
+  -fx-background-color: transparent;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+  -fx-padding: 4;
+}
+
+.back-list .list-cell {
+  -fx-background-color: -edu-card;
+  -fx-border-color: transparent transparent -edu-border transparent;
+  -fx-border-width: 0 0 1 0;
+  -fx-padding: 0;
+}
+
+.back-list .list-cell:filled:hover {
+  -fx-background-color: -edu-primary-soft;
+}
+
+.back-list .list-cell:filled:selected {
+  -fx-background-color: -edu-primary-soft-2;
+}
+
+.back-list .list-cell:last-child {
+  -fx-border-color: transparent;
+}

@@ -74,83 +74,21 @@ public final class BackCoursesController {
 
     @FXML private TextField coursSearchField;
     @FXML private ComboBox<String> coursSortCombo;
-    @FXML private TableView<Cours> coursTable;
-    @FXML private TableColumn<Cours, Number> colCoursId;
-    @FXML private TableColumn<Cours, String> colCoursTitre;
-    @FXML private TableColumn<Cours, String> colCoursNiveau;
-    @FXML private TableColumn<Cours, String> colCoursDomaine;
-    @FXML private TableColumn<Cours, String> colCoursFormateur;
-    @FXML private TableColumn<Cours, Number> colCoursDuree;
-    @FXML private TableColumn<Cours, String> colCoursDate;
-    @FXML private TableColumn<Cours, Number> colCoursChapitres;
-    @FXML private TableColumn<Cours, Void> colCoursActions;
-
+    @FXML private javafx.scene.control.ListView<Cours> coursListView;
+    @FXML private javafx.scene.control.ListView<Chapitre> chapitreListView;
+    @FXML private javafx.scene.control.ListView<Td> tdListView;
+    @FXML private javafx.scene.control.ListView<VideoExplicative> videoListView;
     @FXML private TextField chapitreSearchField;
     @FXML private ComboBox<String> chapitreSortCombo;
-    @FXML private TableView<Chapitre> chapitreTable;
-    @FXML private TableColumn<Chapitre, Number> colChapitreId;
-    @FXML private TableColumn<Chapitre, String> colChapitreTitre;
-    @FXML private TableColumn<Chapitre, String> colChapitreCours;
-    @FXML private TableColumn<Chapitre, String> colChapitreNiveau;
-    @FXML private TableColumn<Chapitre, String> colChapitreDomaine;
-    @FXML private TableColumn<Chapitre, String> colChapitreFichier;
-    @FXML private TableColumn<Chapitre, Number> colChapitreOrdre;
-    @FXML private TableColumn<Chapitre, Number> colChapitreTd;
-    @FXML private TableColumn<Chapitre, Number> colChapitreVideos;
-    @FXML private TableColumn<Chapitre, String> colChapitreDate;
-    @FXML private TableColumn<Chapitre, Void> colChapitreActions;
-
     @FXML private TextField tdSearchField;
     @FXML private ComboBox<String> tdSortCombo;
-    @FXML private TableView<Td> tdTable;
-    @FXML private TableColumn<Td, Number> colTdId;
-    @FXML private TableColumn<Td, String> colTdTitre;
-    @FXML private TableColumn<Td, String> colTdCours;
-    @FXML private TableColumn<Td, String> colTdChapitre;
-    @FXML private TableColumn<Td, String> colTdFichier;
-    @FXML private TableColumn<Td, String> colTdNiveau;
-    @FXML private TableColumn<Td, String> colTdDomaine;
-    @FXML private TableColumn<Td, String> colTdDate;
-    @FXML private TableColumn<Td, Void> colTdActions;
-
     @FXML private TextField videoSearchField;
     @FXML private ComboBox<String> videoSortCombo;
-    @FXML private TableView<VideoExplicative> videoTable;
-    @FXML private TableColumn<VideoExplicative, Number> colVideoId;
-    @FXML private TableColumn<VideoExplicative, String> colVideoTitre;
-    @FXML private TableColumn<VideoExplicative, String> colVideoCours;
-    @FXML private TableColumn<VideoExplicative, String> colVideoChapitre;
-    @FXML private TableColumn<VideoExplicative, String> colVideoNiveau;
-    @FXML private TableColumn<VideoExplicative, String> colVideoDomaine;
-    @FXML private TableColumn<VideoExplicative, Void> colVideoAccess;
-    @FXML private TableColumn<VideoExplicative, String> colVideoDate;
-    @FXML private TableColumn<VideoExplicative, Void> colVideoActions;
 
     @FXML
     private void initialize() {
-        setupCoursTable();
-        setupChapitreTable();
-        setupTdTable();
-        setupVideoTable();
+        setupListViews();
         setupSorts();
-        coursTable.setRowFactory(table -> {
-            TableRow<Cours> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && !row.isEmpty()) {
-                    createChapitreForCourse(row.getItem());
-                }
-            });
-            return row;
-        });
-        chapitreTable.setRowFactory(table -> {
-            TableRow<Chapitre> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2 && !row.isEmpty()) {
-                    openTdVideoChoice(row.getItem());
-                }
-            });
-            return row;
-        });
         refreshAll();
     }
 
@@ -307,233 +245,162 @@ public final class BackCoursesController {
     private void reloadCours() {
         coursItems.setAll(repository.listCours(text(coursSearchField)));
         applyCoursSort();
-        coursTable.setItems(coursItems);
-        coursTable.refresh();
+        if (coursListView != null) { coursListView.setItems(coursItems); coursListView.refresh(); }
         statsCoursLabel.setText(String.valueOf(coursItems.size()));
     }
 
     private void reloadChapitres() {
         chapitreItems.setAll(repository.listChapitres(text(chapitreSearchField)));
         applyChapitreSort();
-        chapitreTable.setItems(chapitreItems);
-        chapitreTable.refresh();
+        if (chapitreListView != null) { chapitreListView.setItems(chapitreItems); chapitreListView.refresh(); }
         statsChapitreLabel.setText(String.valueOf(chapitreItems.size()));
     }
 
     private void reloadTds() {
         tdItems.setAll(repository.listTds(text(tdSearchField)));
         applyTdSort();
-        tdTable.setItems(tdItems);
-        tdTable.refresh();
+        if (tdListView != null) { tdListView.setItems(tdItems); tdListView.refresh(); }
         statsTdLabel.setText(String.valueOf(tdItems.size()));
     }
 
     private void reloadVideos() {
         videoItems.setAll(repository.listVideos(text(videoSearchField)));
         applyVideoSort();
-        videoTable.setItems(videoItems);
-        videoTable.refresh();
+        if (videoListView != null) { videoListView.setItems(videoItems); videoListView.refresh(); }
         statsVideoLabel.setText(String.valueOf(videoItems.size()));
     }
 
-    private void setupCoursTable() {
-        colCoursId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colCoursTitre.setCellValueFactory(new PropertyValueFactory<>("titre"));
-        colCoursNiveau.setCellValueFactory(new PropertyValueFactory<>("niveau"));
-        colCoursDomaine.setCellValueFactory(new PropertyValueFactory<>("domaine"));
-        colCoursFormateur.setCellValueFactory(new PropertyValueFactory<>("nomFormateur"));
-        colCoursDuree.setCellValueFactory(new PropertyValueFactory<>("dureeTotaleHeures"));
-        colCoursChapitres.setCellValueFactory(new PropertyValueFactory<>("chapitreCount"));
-        colCoursActions.setCellFactory(courseActionCellFactory());
-    }
-
-    private void setupChapitreTable() {
-        colChapitreId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colChapitreTitre.setCellValueFactory(new PropertyValueFactory<>("titre"));
-        colChapitreCours.setCellValueFactory(new PropertyValueFactory<>("coursTitre"));
-        colChapitreNiveau.setCellValueFactory(new PropertyValueFactory<>("niveau"));
-        colChapitreDomaine.setCellValueFactory(new PropertyValueFactory<>("domaine"));
-        colChapitreFichier.setCellFactory(col -> new TableCell<>() {
-            private final Button openBtn = new Button("Ouvrir");
-            {
-                openBtn.getStyleClass().add("btn-rgb-compact");
-            }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                    setText(null);
-                    return;
+    private void setupListViews() {
+        // Cours ListView
+        if (coursListView != null) {
+            coursListView.setCellFactory(lv -> new javafx.scene.control.ListCell<Cours>() {
+                @Override protected void updateItem(Cours c, boolean empty) {
+                    super.updateItem(c, empty);
+                    if (empty || c == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(c.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(c.getDomaine()) + "  •  " + safe(c.getNiveau()) + "  •  " + safe(c.getNomFormateur()) + "  •  " + c.getDureeTotaleHeures() + "h  •  " + c.getChapitreCount() + " chap.");
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editCours(c));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteCours(c));
+                    row.getChildren().addAll(info, editBtn, delBtn);
+                    setGraphic(row);
                 }
-                Chapitre chapitre = getTableView().getItems().get(getIndex());
-                String path = chapitre == null ? null : chapitre.getFichierC();
-                if (path == null || path.isBlank()) {
-                    openBtn.setDisable(true);
-                } else {
-                    openBtn.setDisable(false);
-                    openBtn.setOnAction(e -> {
-                        try {
-                            File file = new File(path);
-                            if (file.exists()) {
-                                Desktop.getDesktop().open(file);
-                            } else {
-                                info("Fichier introuvable", "Le fichier n'existe pas: " + path);
-                            }
-                        } catch (Exception ex) {
-                            error("Erreur ouverture fichier", ex);
-                        }
-                    });
+            });
+            coursListView.setOnMouseClicked(e -> {
+                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                    Cours sel = coursListView.getSelectionModel().getSelectedItem();
+                    if (sel != null) createChapitreForCourse(sel);
                 }
-                setGraphic(openBtn);
-                setText(null);
-            }
-        });
-        colChapitreOrdre.setCellValueFactory(new PropertyValueFactory<>("ordre"));
-        colChapitreTd.setCellValueFactory(new PropertyValueFactory<>("tdCount"));
-        colChapitreVideos.setCellValueFactory(new PropertyValueFactory<>("videoCount"));
-        colChapitreActions.setCellFactory(actionCellFactory(this::editChapitre, this::deleteChapitre));
-    }
-
-    private void setupTdTable() {
-        colTdId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colTdTitre.setCellValueFactory(new PropertyValueFactory<>("titre"));
-        colTdCours.setCellValueFactory(new PropertyValueFactory<>("coursTitre"));
-        colTdChapitre.setCellValueFactory(new PropertyValueFactory<>("chapitreTitre"));
-        colTdFichier.setCellFactory(col -> new TableCell<>() {
-            private final Button openBtn = new Button("Ouvrir");
-            {
-                openBtn.getStyleClass().add("btn-rgb-compact");
-            }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                    setText(null);
-                    return;
+            });
+        }
+        // Chapitre ListView
+        if (chapitreListView != null) {
+            chapitreListView.setCellFactory(lv -> new javafx.scene.control.ListCell<Chapitre>() {
+                @Override protected void updateItem(Chapitre ch, boolean empty) {
+                    super.updateItem(ch, empty);
+                    if (empty || ch == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    Label num = new Label(String.valueOf(ch.getOrdre()));
+                    num.getStyleClass().add("chapitre-num");
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(ch.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(ch.getCoursTitre()) + "  •  " + safe(ch.getDomaine()) + "  •  " + ch.getTdCount() + " TD  •  " + ch.getVideoCount() + " vidéos");
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editChapitre(ch));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteChapitre(ch));
+                    row.getChildren().addAll(num, info, editBtn, delBtn);
+                    setGraphic(row);
                 }
-                Td td = getTableView().getItems().get(getIndex());
-                String path = td == null ? null : td.getFichier();
-                if (path == null || path.isBlank()) {
-                    openBtn.setDisable(true);
-                } else {
-                    openBtn.setDisable(false);
-                    openBtn.setOnAction(e -> {
-                        try {
-                            File file = new File(path);
-                            if (file.exists()) {
-                                Desktop.getDesktop().open(file);
-                            } else {
-                                info("Fichier introuvable", "Le fichier n'existe pas: " + path);
-                            }
-                        } catch (Exception ex) {
-                            error("Erreur ouverture fichier", ex);
-                        }
-                    });
+            });
+            chapitreListView.setOnMouseClicked(e -> {
+                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                    Chapitre sel = chapitreListView.getSelectionModel().getSelectedItem();
+                    if (sel != null) openTdVideoChoice(sel);
                 }
-                setGraphic(openBtn);
-                setText(null);
-            }
-        });
-        colTdNiveau.setCellValueFactory(new PropertyValueFactory<>("niveau"));
-        colTdDomaine.setCellValueFactory(new PropertyValueFactory<>("domaine"));
-        colTdActions.setCellFactory(actionCellFactory(this::editTd, this::deleteTd));
-    }
-
-    private void setupVideoTable() {
-        colVideoId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colVideoTitre.setCellValueFactory(new PropertyValueFactory<>("titre"));
-        colVideoCours.setCellValueFactory(new PropertyValueFactory<>("coursTitre"));
-        colVideoChapitre.setCellValueFactory(new PropertyValueFactory<>("chapitreTitre"));
-        colVideoNiveau.setCellValueFactory(new PropertyValueFactory<>("niveau"));
-        colVideoDomaine.setCellValueFactory(new PropertyValueFactory<>("domaine"));
-        colVideoAccess.setCellFactory(col -> new TableCell<VideoExplicative, Void>() {
-            private final javafx.scene.control.Button openBtn = new javafx.scene.control.Button("▶ Ouvrir");
-            {
-                openBtn.getStyleClass().add("btn-rgb-compact");
-                openBtn.setOnAction(e -> {
-                    VideoExplicative v = getTableRow() == null ? null : getTableRow().getItem();
-                    if (v == null) return;
-                    String url = safe(v.getUrlVideo());
-                    if (url == null || url.isBlank()) { info("URL manquante", "Aucune URL definie."); return; }
-                    try { com.educompus.util.UrlOpener.open(url); } catch (Exception ex) { error("Erreur URL", ex); }
-                });
-            }
-            @Override protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) { setGraphic(null); setText(null); return; }
-                VideoExplicative v = getTableRow() == null ? null : getTableRow().getItem();
-                String url = v == null ? "" : safe(v.getUrlVideo());
-                openBtn.setDisable(url == null || url.isBlank());
-                setGraphic(openBtn); setText(null);
-            }
-        });
-        colVideoActions.setCellFactory(actionCellFactory(this::editVideo, this::deleteVideo));
-    }
-
-    private <T> Callback<TableColumn<T, Void>, TableCell<T, Void>> actionCellFactory(RowAction<T> editAction, RowAction<T> deleteAction) {
-        return col -> new TableCell<>() {
-            private final Button editBtn = new Button("✏️ Modifier");
-            private final Button deleteBtn = new Button("🗑️ Supprimer");
-            private final HBox box = new HBox(8, editBtn, deleteBtn);
-            {
-                editBtn.getStyleClass().add("btn-rgb-outline");
-                deleteBtn.getStyleClass().add("btn-danger");
-                box.getStyleClass().add("table-actions");
-                editBtn.setOnAction(event -> {
-                    T item = currentItem();
-                    if (item != null) editAction.run(item);
-                });
-                deleteBtn.setOnAction(event -> {
-                    T item = currentItem();
-                    if (item != null) deleteAction.run(item);
-                });
-            }
-            
-            private T currentItem() {
-                return getTableRow() == null ? null : getTableRow().getItem();
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : box);
-            }
-        };
-    }
-
-    private Callback<TableColumn<Cours, Void>, TableCell<Cours, Void>> courseActionCellFactory() {
-        return col -> new TableCell<>() {
-            private final Button editBtn = new Button("✏️ Modifier");
-            private final Button deleteBtn = new Button("🗑️ Supprimer");
-            private final HBox box = new HBox(8, editBtn, deleteBtn);
-            {
-                editBtn.getStyleClass().add("btn-rgb-outline");
-                deleteBtn.getStyleClass().add("btn-danger");
-                box.getStyleClass().add("table-actions");
-                editBtn.setOnAction(event -> {
-                    Cours cours = currentItem();
-                    if (cours != null) editCours(cours);
-                });
-                deleteBtn.setOnAction(event -> {
-                    Cours cours = currentItem();
-                    if (cours != null) deleteCours(cours);
-                });
-            }
-            
-            private Cours currentItem() {
-                return getTableRow() == null ? null : getTableRow().getItem();
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : box);
-            }
-        };
+            });
+        }
+        // TD ListView
+        if (tdListView != null) {
+            tdListView.setCellFactory(lv -> new javafx.scene.control.ListCell<Td>() {
+                @Override protected void updateItem(Td td, boolean empty) {
+                    super.updateItem(td, empty);
+                    if (empty || td == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(td.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(td.getCoursTitre()) + "  •  " + safe(td.getChapitreTitre()) + "  •  " + safe(td.getDomaine()));
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button openBtn = new Button("📄");
+                    openBtn.getStyleClass().add("btn-rgb-compact");
+                    openBtn.setDisable(td.getFichier() == null || td.getFichier().isBlank());
+                    openBtn.setOnAction(e -> { try { Desktop.getDesktop().open(new File(td.getFichier())); } catch (Exception ex) { error("Erreur", ex); } });
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editTd(td));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteTd(td));
+                    row.getChildren().addAll(info, openBtn, editBtn, delBtn);
+                    setGraphic(row);
+                }
+            });
+        }
+        // Video ListView
+        if (videoListView != null) {
+            videoListView.setCellFactory(lv -> new javafx.scene.control.ListCell<VideoExplicative>() {
+                @Override protected void updateItem(VideoExplicative v, boolean empty) {
+                    super.updateItem(v, empty);
+                    if (empty || v == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(v.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(v.getCoursTitre()) + "  •  " + safe(v.getChapitreTitre()) + "  •  " + safe(v.getDomaine()));
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button playBtn = new Button("▶");
+                    playBtn.getStyleClass().add("btn-rgb-compact");
+                    playBtn.setDisable(v.getUrlVideo() == null || v.getUrlVideo().isBlank());
+                    playBtn.setOnAction(e -> { try { com.educompus.util.UrlOpener.open(v.getUrlVideo()); } catch (Exception ex) { error("Erreur URL", ex); } });
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editVideo(v));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteVideo(v));
+                    row.getChildren().addAll(info, playBtn, editBtn, delBtn);
+                    setGraphic(row);
+                }
+            });
+        }
     }
 
     private void editCours(Cours cours) {

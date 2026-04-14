@@ -1,4 +1,4 @@
-Dpackage com.educompus.service;
+package com.educompus.service;
 
 import com.educompus.model.Chapitre;
 import com.educompus.model.Cours;
