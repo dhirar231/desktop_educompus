@@ -148,10 +148,27 @@ public final class FrontCourseDetailController {
         header.getChildren().addAll(num, titre, badges, chevron);
 
         // ── Body ──
-        VBox body = new VBox(10);
-        body.setPadding(new Insets(0, 18, 14, 18));
+        VBox body = new VBox(12);
+        body.setPadding(new Insets(0, 18, 16, 18));
         body.setVisible(false);
         body.setManaged(false);
+
+        // Description du chapitre
+        String descText = safe(ch.getDescription());
+        if (!descText.isBlank()) {
+            VBox descBox = new VBox(6);
+            descBox.setStyle("-fx-background-color: rgba(6,106,201,0.05); -fx-background-radius: 10px; -fx-border-color: rgba(6,106,201,0.15); -fx-border-radius: 10px; -fx-border-width: 1; -fx-padding: 12 14 12 14;");
+            Label descTitle = new Label("📋  Description");
+            descTitle.setStyle("-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: -edu-primary; -fx-padding: 0 0 2 0;");
+            Label descLabel = new Label(descText);
+            descLabel.setStyle("-fx-text-fill: -edu-text; -fx-font-size: 13px; -fx-line-spacing: 3px;");
+            descLabel.setWrapText(true);
+            descBox.getChildren().addAll(descTitle, descLabel);
+            body.getChildren().add(descBox);
+            javafx.scene.control.Separator sep = new javafx.scene.control.Separator();
+            sep.setStyle("-fx-opacity: 0.3; -fx-padding: 4 0 4 0;");
+            body.getChildren().add(sep);
+        }
 
         if (!tds.isEmpty()) {
             Label tdSection = new Label("Travaux Dirigés");
@@ -173,12 +190,23 @@ public final class FrontCourseDetailController {
 
         // ── Bouton Terminé ──
         HBox footer = new HBox();
-        footer.setPadding(new Insets(0, 18, 14, 18));
+        footer.setPadding(new Insets(8, 18, 14, 18));
         footer.setAlignment(Pos.CENTER_RIGHT);
 
-        Button doneBtn = new Button(isCompleted ? "✓ Lu" : "Marquer comme lu");
-        doneBtn.getStyleClass().add(isCompleted ? "btn-ghost" : "btn-primary");
-        if (isCompleted) doneBtn.setStyle("-fx-text-fill: #0cbc87; -fx-font-weight: 700;");
+        // Icône SVG check
+        javafx.scene.shape.SVGPath checkIcon = new javafx.scene.shape.SVGPath();
+        checkIcon.setContent("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z");
+        checkIcon.setScaleX(0.7); checkIcon.setScaleY(0.7);
+
+        Button doneBtn = new Button(isCompleted ? "  Lu" : "  Marquer comme lu");
+        doneBtn.setGraphic(checkIcon);
+        if (isCompleted) {
+            checkIcon.setStyle("-fx-fill: #0cbc87;");
+            doneBtn.setStyle("-fx-background-color: rgba(12,188,135,0.12); -fx-text-fill: #0cbc87; -fx-font-weight: 800; -fx-border-color: #0cbc87; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
+        } else {
+            checkIcon.setStyle("-fx-fill: -edu-primary;");
+            doneBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -edu-primary; -fx-font-weight: 700; -fx-border-color: -edu-primary; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
+        }
 
         doneBtn.setOnAction(e -> {
             boolean nowCompleted = !completedIds.contains(ch.getId());
@@ -193,18 +221,16 @@ public final class FrontCourseDetailController {
                 card.setStyle("-fx-border-color: #0cbc87; -fx-border-width: 2;");
                 num.setText("✓");
                 num.setStyle("-fx-background-color: #0cbc87; -fx-text-fill: white;");
-                doneBtn.setText("✓ Lu");
-                doneBtn.getStyleClass().remove("btn-primary");
-                if (!doneBtn.getStyleClass().contains("btn-ghost")) doneBtn.getStyleClass().add("btn-ghost");
-                doneBtn.setStyle("-fx-text-fill: #0cbc87; -fx-font-weight: 700;");
+                doneBtn.setText("  Lu");
+                checkIcon.setStyle("-fx-fill: #0cbc87;");
+                doneBtn.setStyle("-fx-background-color: rgba(12,188,135,0.12); -fx-text-fill: #0cbc87; -fx-font-weight: 800; -fx-border-color: #0cbc87; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
             } else {
                 card.setStyle("");
                 num.setText(String.valueOf(ch.getOrdre()));
                 num.setStyle("");
-                doneBtn.setText("Marquer comme lu");
-                doneBtn.getStyleClass().remove("btn-ghost");
-                if (!doneBtn.getStyleClass().contains("btn-primary")) doneBtn.getStyleClass().add("btn-primary");
-                doneBtn.setStyle("");
+                doneBtn.setText("  Marquer comme lu");
+                checkIcon.setStyle("-fx-fill: -edu-primary;");
+                doneBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -edu-primary; -fx-font-weight: 700; -fx-border-color: -edu-primary; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
             }
         });
 
@@ -279,6 +305,19 @@ public final class FrontCourseDetailController {
 
     @FXML
     private void onBack() {
+        // Naviguer dans le contentWrap du shell sans remplacer tout le shell
+        try {
+            javafx.scene.Node current = chapitresBox;
+            while (current != null) {
+                if (current instanceof javafx.scene.layout.StackPane sp && "contentWrap".equals(sp.getId())) {
+                    javafx.scene.Parent coursesRoot = Navigator.load("View/front/FrontCourses.fxml");
+                    sp.getChildren().setAll(coursesRoot);
+                    return;
+                }
+                current = current.getParent();
+            }
+        } catch (Exception ignored) {}
+        // fallback
         Navigator.goRoot("View/front/FrontCourses.fxml");
     }
 
