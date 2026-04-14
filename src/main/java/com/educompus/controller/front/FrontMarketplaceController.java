@@ -22,18 +22,24 @@ import java.util.stream.Collectors;
 
 public class FrontMarketplaceController {
 
-    @FXML private TextField  searchField;
-    @FXML private FlowPane   cardsPane;
-    @FXML private ScrollPane scrollPane;
-    @FXML private VBox       emptyState;
-    @FXML private Label      lblCount;
-    @FXML private Button     btnPanier;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private FlowPane cardsPane;
+    @FXML
+    private ScrollPane scrollPane;
+    @FXML
+    private VBox emptyState;
+    @FXML
+    private Label lblCount;
+    @FXML
+    private Button btnPanier;
 
     // Conteneur parent pour la navigation interne (liste ↔ détail)
     private StackPane parentContainer;
 
-    private final ServiceProduit service       = new ServiceProduit();
-    private final ServicePanier  servicePanier = new ServicePanier();
+    private final ServiceProduit service = new ServiceProduit();
+    private final ServicePanier servicePanier = new ServicePanier();
     private List<Produit> allProduits;
     private List<Produit> produitsFiltres;
 
@@ -95,7 +101,8 @@ public class FrontMarketplaceController {
             FrontMesCommandesController ctrl = loader.getController();
 
             StackPane container = getParentStackPane();
-            if (container == null) return;
+            if (container == null)
+                return;
 
             Node listeView = container.getChildren().get(0);
             ctrl.setOnRetour(() -> container.getChildren().setAll(listeView));
@@ -106,13 +113,15 @@ public class FrontMarketplaceController {
     }
 
     @FXML
-    private void onOuvrirPanier(ActionEvent event) {        try {
+    private void onOuvrirPanier(ActionEvent event) {
+        try {
             FXMLLoader loader = Navigator.loader("View/front/FrontPanier.fxml");
             Node panierView = loader.load();
             FrontPanierController ctrl = loader.getController();
 
             StackPane container = getParentStackPane();
-            if (container == null) return;
+            if (container == null)
+                return;
 
             Node listeView = container.getChildren().get(0);
 
@@ -132,7 +141,8 @@ public class FrontMarketplaceController {
         try {
             int nb = servicePanier.afficherByUser(AppState.getUserId()).size();
             btnPanier.setText("🛒  Mon panier" + (nb > 0 ? "  (" + nb + ")" : ""));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     // ── Affichage cartes ─────────────────────────────────────────────────────
@@ -151,9 +161,9 @@ public class FrontMarketplaceController {
             return;
         }
 
-        int total   = produits.size();
-        int debut   = pageCourante * PAGE_SIZE;
-        int fin     = Math.min(debut + PAGE_SIZE, total);
+        int total = produits.size();
+        int debut = pageCourante * PAGE_SIZE;
+        int fin = Math.min(debut + PAGE_SIZE, total);
         int nbPages = (int) Math.ceil((double) total / PAGE_SIZE);
 
         lblCount.setText(total + " produit" + (total > 1 ? "s" : "")
@@ -259,6 +269,30 @@ public class FrontMarketplaceController {
         StackPane.setMargin(badgeStock, new Insets(9, 9, 0, 0));
 
         imgWrap.getChildren().addAll(badgeCat, badgeStock);
+        Label badge = new Label(p.getCategorie());
+        badge.getStyleClass().addAll("chip", "chip-info");
+        badge.setStyle("-fx-font-size: 11px; -fx-font-weight: 700;");
+        StackPane.setAlignment(badge, Pos.TOP_LEFT);
+        StackPane.setMargin(badge, new Insets(8, 0, 0, 8));
+        imgWrap.getChildren().add(badge);
+
+        // Stock status badge (top-right)
+        Label stockStatus = new Label();
+        stockStatus.getStyleClass().add("chip");
+        stockStatus.setStyle("-fx-font-size: 11px; -fx-font-weight: 700;");
+        if (p.getStock() <= 0) {
+            stockStatus.setText("Rupture");
+            stockStatus.getStyleClass().add("chip-stock-rupture");
+        } else if (p.getStock() <= 5) {
+            stockStatus.setText("Stock faible");
+            stockStatus.getStyleClass().add("chip-stock-low");
+        } else {
+            stockStatus.setText("Disponible");
+            stockStatus.getStyleClass().add("chip-stock-available");
+        }
+        StackPane.setAlignment(stockStatus, Pos.TOP_RIGHT);
+        StackPane.setMargin(stockStatus, new Insets(8, 8, 0, 0));
+        imgWrap.getChildren().add(stockStatus);
 
         // ── Corps ──────────────────────────────────────────────────────────
         VBox body = new VBox(0);
@@ -281,7 +315,8 @@ public class FrontMarketplaceController {
 
         // Description tronquée
         String desc = p.getDescription() != null ? p.getDescription() : "";
-        if (desc.length() > 72) desc = desc.substring(0, 72) + "…";
+        if (desc.length() > 72)
+            desc = desc.substring(0, 72) + "…";
         Label description = new Label(desc);
         description.getStyleClass().add("produit-card-type");
         description.setWrapText(true);
@@ -329,10 +364,11 @@ public class FrontMarketplaceController {
 
     private Label buildImagePlaceholder(Produit p) {
         String initiale = p.getNom() != null && !p.getNom().isBlank()
-                ? String.valueOf(p.getNom().charAt(0)).toUpperCase() : "?";
+                ? String.valueOf(p.getNom().charAt(0)).toUpperCase()
+                : "?";
         Label lbl = new Label(initiale);
         lbl.setStyle("-fx-font-size: 52px; -fx-font-weight: 900;" +
-                     "-fx-text-fill: -edu-primary; -fx-opacity: 0.22;");
+                "-fx-text-fill: -edu-primary; -fx-opacity: 0.22;");
         return lbl;
     }
 
@@ -383,7 +419,8 @@ public class FrontMarketplaceController {
     }
 
     private StackPane getParentStackPane() {
-        if (parentContainer != null) return parentContainer;
+        if (parentContainer != null)
+            return parentContainer;
         // Remonter dans le scène graph pour trouver le contentWrap du shell
         try {
             Node node = searchField;
@@ -394,7 +431,8 @@ public class FrontMarketplaceController {
                     return sp;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return null;
     }
 
