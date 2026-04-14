@@ -37,6 +37,7 @@ public final class FrontCourseDetailController {
     @FXML private Label chapitresTotal;
     @FXML private Label dateLabel;
     @FXML private Label breadcrumb;
+    @FXML private Label niveauInfoLabel;
     @FXML private VBox chapitresBox;
 
     private final CourseManagementRepository repo = new CourseManagementRepository();
@@ -62,6 +63,7 @@ public final class FrontCourseDetailController {
         formateurLabel.setText(safe(cours.getNomFormateur()).isBlank() ? "Non renseigné" : safe(cours.getNomFormateur()));
         dureeLabel.setText(cours.getDureeTotaleHeures() + "h de contenu");
         breadcrumb.setText(safe(cours.getTitre()));
+        if (niveauInfoLabel != null) niveauInfoLabel.setText(safe(cours.getNiveau()).isBlank() ? "Tous niveaux" : safe(cours.getNiveau()));
 
         if (cours.getDateCreation() != null) {
             dateLabel.setText("Créé le " + cours.getDateCreation().toString().substring(0, 10));
@@ -136,9 +138,9 @@ public final class FrontCourseDetailController {
             badges.getChildren().add(vidBadge);
         }
         if (ch.getFichierC() != null && !ch.getFichierC().isBlank()) {
-            Button pdfBtn = new Button("PDF");
+            Button pdfBtn = new Button("⬇ Chapitre");
             pdfBtn.getStyleClass().add("btn-rgb-compact");
-            pdfBtn.setOnAction(e -> openFile(ch.getFichierC()));
+            pdfBtn.setOnAction(e -> downloadFile(ch.getFichierC(), "chapitre_" + ch.getOrdre() + ".pdf"));
             badges.getChildren().add(pdfBtn);
         }
 
@@ -266,11 +268,11 @@ public final class FrontCourseDetailController {
         desc.setWrapText(true);
         if (!desc.getText().isBlank()) info.getChildren().add(desc);
         info.getChildren().add(0, name);
-        Button openBtn = new Button("Ouvrir");
+        Button openBtn = new Button("⬇ Télécharger");
         openBtn.getStyleClass().add("btn-rgb-compact");
         boolean hasFile = td.getFichier() != null && !td.getFichier().isBlank();
         openBtn.setDisable(!hasFile);
-        if (hasFile) openBtn.setOnAction(e -> openFile(td.getFichier()));
+        if (hasFile) openBtn.setOnAction(e -> downloadFile(td.getFichier(), "td_" + safe(td.getTitre()).replaceAll("[^a-zA-Z0-9]", "_") + ".pdf"));
         row.getChildren().addAll(icon, info, openBtn);
         return row;
     }
@@ -327,6 +329,40 @@ public final class FrontCourseDetailController {
             File file = new File(path);
             if (file.exists()) Desktop.getDesktop().open(file);
         } catch (Exception ignored) {}
+    }
+
+    /** Ouvre le fichier avec l'application par défaut (lecture/téléchargement). */
+    private void downloadFile(String path, String suggestedName) {
+        if (path == null || path.isBlank()) return;
+        File file = new File(path);
+        if (!file.exists()) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Fichier introuvable");
+            alert.setHeaderText(null);
+            alert.setContentText("Le fichier est introuvable :\n" + path);
+            alert.showAndWait();
+            return;
+        }
+        try {
+            // Ouvrir avec l'application par défaut (PDF viewer, etc.)
+            Desktop.getDesktop().open(file);
+        } catch (Exception e) {
+            // Fallback : copier dans le dossier Téléchargements
+            try {
+                File dest = new File(System.getProperty("user.home") + "/Downloads/" + suggestedName);
+                java.nio.file.Files.copy(file.toPath(), dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("Téléchargement");
+                alert.setHeaderText(null);
+                alert.setContentText("Fichier copié dans :\n" + dest.getAbsolutePath());
+                alert.showAndWait();
+            } catch (Exception ex) {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Erreur");
+                alert.setContentText("Impossible d'ouvrir le fichier : " + ex.getMessage());
+                alert.showAndWait();
+            }
+        }
     }
 
     private void openUrl(String url) {

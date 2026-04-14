@@ -22,18 +22,24 @@ import java.util.stream.Collectors;
 
 public class FrontMarketplaceController {
 
-    @FXML private TextField  searchField;
-    @FXML private FlowPane   cardsPane;
-    @FXML private ScrollPane scrollPane;
-    @FXML private VBox       emptyState;
-    @FXML private Label      lblCount;
-    @FXML private Button     btnPanier;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private FlowPane cardsPane;
+    @FXML
+    private ScrollPane scrollPane;
+    @FXML
+    private VBox emptyState;
+    @FXML
+    private Label lblCount;
+    @FXML
+    private Button btnPanier;
 
     // Conteneur parent pour la navigation interne (liste ↔ détail)
     private StackPane parentContainer;
 
-    private final ServiceProduit service       = new ServiceProduit();
-    private final ServicePanier  servicePanier = new ServicePanier();
+    private final ServiceProduit service = new ServiceProduit();
+    private final ServicePanier servicePanier = new ServicePanier();
     private List<Produit> allProduits;
     private List<Produit> produitsFiltres;
 
@@ -95,7 +101,8 @@ public class FrontMarketplaceController {
             FrontMesCommandesController ctrl = loader.getController();
 
             StackPane container = getParentStackPane();
-            if (container == null) return;
+            if (container == null)
+                return;
 
             Node listeView = container.getChildren().get(0);
             ctrl.setOnRetour(() -> container.getChildren().setAll(listeView));
@@ -106,13 +113,15 @@ public class FrontMarketplaceController {
     }
 
     @FXML
-    private void onOuvrirPanier(ActionEvent event) {        try {
+    private void onOuvrirPanier(ActionEvent event) {
+        try {
             FXMLLoader loader = Navigator.loader("View/front/FrontPanier.fxml");
             Node panierView = loader.load();
             FrontPanierController ctrl = loader.getController();
 
             StackPane container = getParentStackPane();
-            if (container == null) return;
+            if (container == null)
+                return;
 
             Node listeView = container.getChildren().get(0);
 
@@ -132,7 +141,8 @@ public class FrontMarketplaceController {
         try {
             int nb = servicePanier.afficherByUser(AppState.getUserId()).size();
             btnPanier.setText("🛒  Mon panier" + (nb > 0 ? "  (" + nb + ")" : ""));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     // ── Affichage cartes ─────────────────────────────────────────────────────
@@ -151,9 +161,9 @@ public class FrontMarketplaceController {
             return;
         }
 
-        int total   = produits.size();
-        int debut   = pageCourante * PAGE_SIZE;
-        int fin     = Math.min(debut + PAGE_SIZE, total);
+        int total = produits.size();
+        int debut = pageCourante * PAGE_SIZE;
+        int fin = Math.min(debut + PAGE_SIZE, total);
         int nbPages = (int) Math.ceil((double) total / PAGE_SIZE);
 
         lblCount.setText(total + " produit" + (total > 1 ? "s" : "")
@@ -218,24 +228,25 @@ public class FrontMarketplaceController {
     private VBox buildCard(Produit p) {
         VBox card = new VBox(0);
         card.getStyleClass().add("produit-card");
-        card.setPrefWidth(230);
-        card.setMaxWidth(230);
+        card.setPrefWidth(260);
+        card.setMaxWidth(260);
+        card.setMinWidth(260);
 
-        // Clic sur la carte → page détail
+        // Clic sur la carte → page détail (pas sur le bouton)
         card.setOnMouseClicked(e -> ouvrirDetail(p));
 
-        // --- Image ---
+        // ── Image ──────────────────────────────────────────────────────────
         StackPane imgWrap = new StackPane();
-        imgWrap.setPrefHeight(140);
-        imgWrap.setMinHeight(140);
-        imgWrap.setMaxHeight(140);
+        imgWrap.setPrefHeight(160);
+        imgWrap.setMinHeight(160);
+        imgWrap.setMaxHeight(160);
         imgWrap.getStyleClass().add("produit-card-img-wrap");
 
         if (p.getImage() != null && !p.getImage().isBlank()) {
             try {
-                ImageView iv = new ImageView(new Image(p.getImage(), 230, 140, true, true, true));
-                iv.setFitWidth(230);
-                iv.setFitHeight(140);
+                ImageView iv = new ImageView(new Image(p.getImage(), 260, 160, true, true, true));
+                iv.setFitWidth(260);
+                iv.setFitHeight(160);
                 iv.setPreserveRatio(false);
                 imgWrap.getChildren().add(iv);
             } catch (Exception ignored) {
@@ -245,6 +256,19 @@ public class FrontMarketplaceController {
             imgWrap.getChildren().add(buildImagePlaceholder(p));
         }
 
+        // Badge catégorie — haut gauche
+        Label badgeCat = new Label(p.getCategorie());
+        badgeCat.getStyleClass().addAll("chip", "chip-info");
+        badgeCat.setStyle("-fx-font-size: 10.5px; -fx-font-weight: 700;");
+        StackPane.setAlignment(badgeCat, Pos.TOP_LEFT);
+        StackPane.setMargin(badgeCat, new Insets(9, 0, 0, 9));
+
+        // Badge stock — haut droite
+        Label badgeStock = buildBadgeStock(p);
+        StackPane.setAlignment(badgeStock, Pos.TOP_RIGHT);
+        StackPane.setMargin(badgeStock, new Insets(9, 9, 0, 0));
+
+        imgWrap.getChildren().addAll(badgeCat, badgeStock);
         Label badge = new Label(p.getCategorie());
         badge.getStyleClass().addAll("chip", "chip-info");
         badge.setStyle("-fx-font-size: 11px; -fx-font-weight: 700;");
@@ -270,59 +294,103 @@ public class FrontMarketplaceController {
         StackPane.setMargin(stockStatus, new Insets(8, 8, 0, 0));
         imgWrap.getChildren().add(stockStatus);
 
-        // --- Corps ---
-        VBox body = new VBox(8);
-        body.setPadding(new Insets(12, 14, 14, 14));
+        // ── Corps ──────────────────────────────────────────────────────────
+        VBox body = new VBox(0);
+        body.setPadding(new Insets(14, 16, 16, 16));
+        body.setSpacing(0);
 
+        // Nom
         Label nom = new Label(p.getNom());
         nom.getStyleClass().add("produit-card-title");
         nom.setWrapText(true);
-        nom.setMaxWidth(202);
+        nom.setMaxWidth(228);
+        nom.setStyle("-fx-font-size: 13.5px; -fx-font-weight: 800;");
+        VBox.setMargin(nom, new Insets(0, 0, 4, 0));
 
+        // Type chip
         Label type = new Label(p.getType());
-        type.getStyleClass().add("produit-card-type");
+        type.getStyleClass().addAll("chip", "chip-outline");
+        type.setStyle("-fx-font-size: 10px;");
+        VBox.setMargin(type, new Insets(0, 0, 10, 0));
 
+        // Description tronquée
+        String desc = p.getDescription() != null ? p.getDescription() : "";
+        if (desc.length() > 72)
+            desc = desc.substring(0, 72) + "…";
+        Label description = new Label(desc);
+        description.getStyleClass().add("produit-card-type");
+        description.setWrapText(true);
+        description.setMaxWidth(228);
+        description.setStyle("-fx-font-size: 11px; -fx-text-fill: -edu-text-muted;");
+        VBox.setMargin(description, new Insets(0, 0, 12, 0));
+
+        // Séparateur
         Region sep = new Region();
         sep.setPrefHeight(1);
         sep.setStyle("-fx-background-color: -edu-border;");
+        VBox.setMargin(sep, new Insets(0, 0, 12, 0));
 
-        HBox footer = new HBox();
-        footer.setAlignment(Pos.CENTER_LEFT);
+        // Prix + stock
+        HBox prixRow = new HBox();
+        prixRow.setAlignment(Pos.CENTER_LEFT);
+        VBox.setMargin(prixRow, new Insets(0, 0, 12, 0));
 
         Label prix = new Label(String.format("%.2f TND", p.getPrix()));
         prix.getStyleClass().add("produit-card-prix");
+        prix.setStyle("-fx-font-size: 16px; -fx-font-weight: 900;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label stock = new Label("Stock : " + p.getStock());
-        stock.getStyleClass().add("produit-card-stock");
-        if (p.getStock() == 0) {
-            stock.getStyleClass().setAll("produit-card-stock-rupture");
-            stock.setText("Rupture");
-        }
-        footer.getChildren().addAll(prix, spacer, stock);
+        Label stockLbl = new Label(p.getStock() == 0 ? "Rupture" : p.getStock() + " en stock");
+        stockLbl.setStyle(p.getStock() == 0
+                ? "-fx-font-size: 11px; -fx-text-fill: #e74c3c; -fx-font-weight: 700;"
+                : "-fx-font-size: 11px; -fx-text-fill: -edu-text-muted;");
 
-        // Bouton panier — stoppe la propagation du clic vers la carte
-        Button btnAdd = new Button("🛒  Ajouter");
-        btnAdd.getStyleClass().add("btn-primary");
+        prixRow.getChildren().addAll(prix, spacer, stockLbl);
+
+        // Bouton panier pleine largeur
+        Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "🛒  Ajouter au panier");
+        btnAdd.getStyleClass().add(p.getStock() == 0 ? "btn-ghost" : "btn-primary");
         btnAdd.setMaxWidth(Double.MAX_VALUE);
         btnAdd.setDisable(p.getStock() == 0);
-        btnAdd.setOnMouseClicked(e -> e.consume()); // ne pas ouvrir le détail
+        btnAdd.setOnMouseClicked(e -> e.consume());
         btnAdd.setOnAction(e -> onAjouterPanier(p));
 
-        body.getChildren().addAll(nom, type, sep, footer, btnAdd);
+        body.getChildren().addAll(nom, type, description, sep, prixRow, btnAdd);
         card.getChildren().addAll(imgWrap, body);
         return card;
     }
 
     private Label buildImagePlaceholder(Produit p) {
         String initiale = p.getNom() != null && !p.getNom().isBlank()
-                ? String.valueOf(p.getNom().charAt(0)).toUpperCase() : "?";
+                ? String.valueOf(p.getNom().charAt(0)).toUpperCase()
+                : "?";
         Label lbl = new Label(initiale);
-        lbl.getStyleClass().add("produit-card-title");
-        lbl.setStyle("-fx-font-size: 42px; -fx-font-weight: 900; -fx-opacity: 0.35;");
+        lbl.setStyle("-fx-font-size: 52px; -fx-font-weight: 900;" +
+                "-fx-text-fill: -edu-primary; -fx-opacity: 0.22;");
         return lbl;
+    }
+
+    private Label buildBadgeStock(Produit p) {
+        Label badge;
+        if (p.getStock() == 0) {
+            badge = new Label("Rupture");
+            badge.setStyle("-fx-background-color: rgba(214,41,62,0.82); -fx-text-fill: white;" +
+                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8;" +
+                    "-fx-font-size: 10px; -fx-font-weight: 700;");
+        } else if (p.getStock() <= 5) {
+            badge = new Label("Stock faible");
+            badge.setStyle("-fx-background-color: rgba(247,195,46,0.88); -fx-text-fill: #5a4000;" +
+                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8;" +
+                    "-fx-font-size: 10px; -fx-font-weight: 700;");
+        } else {
+            badge = new Label("✓ Disponible");
+            badge.setStyle("-fx-background-color: rgba(12,188,135,0.82); -fx-text-fill: white;" +
+                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8;" +
+                    "-fx-font-size: 10px; -fx-font-weight: 700;");
+        }
+        return badge;
     }
 
     // ── Navigation vers le détail ─────────────────────────────────────────────
@@ -351,7 +419,8 @@ public class FrontMarketplaceController {
     }
 
     private StackPane getParentStackPane() {
-        if (parentContainer != null) return parentContainer;
+        if (parentContainer != null)
+            return parentContainer;
         // Remonter dans le scène graph pour trouver le contentWrap du shell
         try {
             Node node = searchField;
@@ -362,7 +431,8 @@ public class FrontMarketplaceController {
                     return sp;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return null;
     }
 
