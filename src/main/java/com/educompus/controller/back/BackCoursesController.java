@@ -1,4 +1,4 @@
-﻿package com.educompus.controller.back;
+package com.educompus.controller.back;
 
 import com.educompus.model.Chapitre;
 import com.educompus.model.Cours;

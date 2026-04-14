@@ -7,7 +7,6 @@ import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -22,7 +21,6 @@ import javafx.scene.layout.VBox;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class FrontCoursesController {
     private final CourseManagementRepository repository = new CourseManagementRepository();
@@ -42,11 +40,6 @@ public final class FrontCoursesController {
         if (searchField != null) {
             searchField.textProperty().addListener((obs, o, n) -> applyFilter(n));
         }
-
-        if (searchField != null) {
-            searchField.textProperty().addListener((obs, o, n) -> applyFilter());
-        }
-
         renderCards(allCourses);
     }
 
@@ -63,17 +56,10 @@ public final class FrontCoursesController {
         }
         String q = query.trim().toLowerCase();
         List<Cours> filtered = allCourses.stream()
-            .filter(c -> {
-                boolean matchQ = q.isBlank()
-                    || safe(c.getTitre()).toLowerCase().contains(q)
-                    || safe(c.getDomaine()).toLowerCase().contains(q)
-                    || safe(c.getNomFormateur()).toLowerCase().contains(q);
-                boolean matchD = domaine.isBlank() || domaine.equals("Tous les domaines")
-                    || safe(c.getDomaine()).equalsIgnoreCase(domaine);
-                return matchQ && matchD;
-            })
-            .collect(Collectors.toList());
-
+            .filter(c -> safe(c.getTitre()).toLowerCase().contains(q)
+                      || safe(c.getDomaine()).toLowerCase().contains(q)
+                      || safe(c.getNomFormateur()).toLowerCase().contains(q))
+            .toList();
         renderCards(filtered);
     }
 
@@ -94,7 +80,6 @@ public final class FrontCoursesController {
         card.setStyle("-fx-cursor: hand;");
         card.setOnMouseClicked(e -> openDetail(cours));
 
-        // Banner image
         StackPane banner = new StackPane();
         banner.setMinHeight(150);
         banner.setPrefHeight(150);
@@ -121,7 +106,6 @@ public final class FrontCoursesController {
         if (!domainChip.getText().isBlank()) banner.getChildren().add(domainChip);
         if (!niveauChip.getText().isBlank()) banner.getChildren().add(niveauChip);
 
-        // Body
         VBox body = new VBox(8);
         body.setPadding(new Insets(14, 16, 14, 16));
 
@@ -134,7 +118,6 @@ public final class FrontCoursesController {
         desc.getStyleClass().add("project-card-subtitle");
         desc.setWrapText(true);
 
-        // Footer
         HBox footer = new HBox(8);
         footer.setAlignment(Pos.CENTER_LEFT);
         footer.setStyle("-fx-border-color: -edu-border transparent transparent transparent; -fx-border-width: 1 0 0 0; -fx-padding: 8 0 0 0;");
