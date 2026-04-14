@@ -269,30 +269,7 @@ public class FrontMarketplaceController {
         StackPane.setMargin(badgeStock, new Insets(9, 9, 0, 0));
 
         imgWrap.getChildren().addAll(badgeCat, badgeStock);
-        Label badge = new Label(p.getCategorie());
-        badge.getStyleClass().addAll("chip", "chip-info");
-        badge.setStyle("-fx-font-size: 11px; -fx-font-weight: 700;");
-        StackPane.setAlignment(badge, Pos.TOP_LEFT);
-        StackPane.setMargin(badge, new Insets(8, 0, 0, 8));
-        imgWrap.getChildren().add(badge);
-
-        // Stock status badge (top-right)
-        Label stockStatus = new Label();
-        stockStatus.getStyleClass().add("chip");
-        stockStatus.setStyle("-fx-font-size: 11px; -fx-font-weight: 700;");
-        if (p.getStock() <= 0) {
-            stockStatus.setText("Rupture");
-            stockStatus.getStyleClass().add("chip-stock-rupture");
-        } else if (p.getStock() <= 5) {
-            stockStatus.setText("Stock faible");
-            stockStatus.getStyleClass().add("chip-stock-low");
-        } else {
-            stockStatus.setText("Disponible");
-            stockStatus.getStyleClass().add("chip-stock-available");
-        }
-        StackPane.setAlignment(stockStatus, Pos.TOP_RIGHT);
-        StackPane.setMargin(stockStatus, new Insets(8, 8, 0, 0));
-        imgWrap.getChildren().add(stockStatus);
+      
 
         // ── Corps ──────────────────────────────────────────────────────────
         VBox body = new VBox(0);
