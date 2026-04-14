@@ -150,7 +150,8 @@
 }
 
 /* Sidebar buttons (same style as .user-menu-signout) */
-.nav-btn, .side-menu-btn {
+.nav-btn,
+.side-menu-btn {
   -fx-background-color: transparent, transparent, transparent;
   -fx-background-insets: 0, 0, 0;
   -fx-background-radius: 999px, 999px, 999px;
@@ -169,42 +170,51 @@
   -fx-cursor: hand;
 }
 
-.nav-btn:hover, .side-menu-btn:hover {
+.nav-btn:hover,
+.side-menu-btn:hover {
   -fx-background-color: -edu-primary-soft-2;
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
 }
 
-.nav-btn:pressed, .side-menu-btn:pressed {
+.nav-btn:pressed,
+.side-menu-btn:pressed {
   -fx-background-color: derive(-edu-primary-soft-2, -2%);
 }
 
-.nav-btn.active, .side-menu-btn.active {
+.nav-btn.active,
+.side-menu-btn.active {
   -fx-background-color: -edu-primary-soft;
   -fx-text-fill: -edu-primary;
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
 }
 
-.nav-btn.active:hover, .side-menu-btn.active:hover {
+.nav-btn.active:hover,
+.side-menu-btn.active:hover {
   -fx-background-color: derive(-edu-primary, 89%);
 }
 
-.nav-btn:focused, .side-menu-btn:focused {
+.nav-btn:focused,
+.side-menu-btn:focused {
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
 }
 
-.nav-btn:hover .side-icon, .side-menu-btn:hover .side-icon {
+.nav-btn:hover .side-icon,
+.side-menu-btn:hover .side-icon {
   -fx-background-color: rgba(6, 106, 201, 0.16);
 }
 
-.nav-btn.active .side-icon, .side-menu-btn.active .side-icon {
+.nav-btn.active .side-icon,
+.side-menu-btn.active .side-icon {
   -fx-background-color: rgba(6, 106, 201, 0.18);
 }
 
-.nav-btn:hover .side-svg, .side-menu-btn:hover .side-svg {
+.nav-btn:hover .side-svg,
+.side-menu-btn:hover .side-svg {
   -fx-fill: -edu-primary;
 }
 
-.nav-btn.active .side-svg, .side-menu-btn.active .side-svg {
+.nav-btn.active .side-svg,
+.side-menu-btn.active .side-svg {
   -fx-fill: -edu-primary;
 }
 
@@ -341,18 +351,18 @@
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
 }
 
-.rgb-dialog.dialog-pane > .content {
+.rgb-dialog.dialog-pane>.content {
   -fx-background-color: -edu-bg;
   -fx-padding: 14 18 14 18;
 }
 
-.rgb-dialog.dialog-pane > .content.label {
+.rgb-dialog.dialog-pane>.content.label {
   -fx-text-fill: -edu-text;
 }
 
 /* Gradient header */
 .rgb-dialog.dialog-pane .header-panel {
-  -fx-background-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95));
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95));
   -fx-padding: 10 14 10 14;
   -fx-background-radius: 12px 12px 0 0;
 }
@@ -626,7 +636,8 @@
   -fx-alignment: CENTER_LEFT;
 }
 
-.combo-box.field, .date-picker.field {
+.combo-box.field,
+.date-picker.field {
   -fx-background-color: -edu-bg;
   -fx-border-color: -edu-border;
   -fx-border-radius: 10px;
@@ -634,7 +645,8 @@
   -fx-padding: 2 6 2 6;
 }
 
-.combo-box.field:focused, .date-picker.field:focused {
+.combo-box.field:focused,
+.date-picker.field:focused {
   -fx-border-color: -edu-primary;
   -fx-effect: dropshadow(three-pass-box, derive(-edu-primary, 70%), 12, 0.12, 0, 2);
 }
@@ -677,7 +689,7 @@
 
 .chip-outline {
   -fx-background-color: transparent;
-  -fx-border-color: rgba(128,136,145,0.22);
+  -fx-border-color: rgba(128, 136, 145, 0.22);
   -fx-border-width: 1;
   -fx-border-radius: 10px;
   -fx-text-fill: -edu-text;
@@ -784,8 +796,8 @@
   -fx-background-radius: 14px;
   -fx-border-radius: 14px;
   -fx-border-width: 2;
-  -fx-border-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95));
-  -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.06), 18, 0.12, 0, 6);
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.06), 18, 0.12, 0, 6);
   -fx-spacing: 8px;
 }
 
@@ -811,7 +823,7 @@
   -fx-background-radius: 12px;
   -fx-border-radius: 12px;
   -fx-border-width: 2;
-  -fx-border-color: linear-gradient(to right, rgba(0,210,255,0.95), rgba(6,106,201,0.95), rgba(106,17,203,0.95));
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
   -fx-spacing: 8px;
 }
 
@@ -865,11 +877,11 @@
 
 /* Simple snackbar notification */
 .snackbar {
-  -fx-background-color: linear-gradient(to right, rgba(6,106,201,0.95), rgba(106,17,203,0.95));
+  -fx-background-color: linear-gradient(to right, rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
   -fx-text-fill: white;
   -fx-padding: 10 14 10 14;
   -fx-background-radius: 8px;
-  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.2, 0, 2);
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 8, 0.2, 0, 2);
   -fx-font-weight: 700;
 }
 
@@ -916,16 +928,16 @@
   -fx-border-color: derive(-edu-primary, 65%);
 }
 
-.topbar .user-menu > .arrow-button {
+.topbar .user-menu>.arrow-button {
   -fx-background-color: transparent;
   -fx-padding: 0 8 0 4;
 }
 
-.topbar .user-menu > .arrow-button > .arrow {
+.topbar .user-menu>.arrow-button>.arrow {
   -fx-background-color: -edu-text-muted;
 }
 
-.topbar .user-menu > .label {
+.topbar .user-menu>.label {
   -fx-padding: 0 6 0 8;
 }
 
@@ -1188,7 +1200,8 @@
   -fx-border-width: 0 0 1 0;
 }
 
-.table-view .column-header, .table-view .filler {
+.table-view .column-header,
+.table-view .filler {
   -fx-background-color: transparent;
   -fx-size: 36px;
 }
@@ -1296,7 +1309,8 @@
   -fx-background-color: transparent;
 }
 
-.chart-vertical-grid-lines, .chart-horizontal-grid-lines {
+.chart-vertical-grid-lines,
+.chart-horizontal-grid-lines {
   -fx-stroke: derive(-edu-border, -8%);
 }
 
@@ -1544,16 +1558,6 @@
   -fx-padding: 8 0 8 0;
 }
 
-<<<<<<< HEAD
-/* ── Course Detail Page ── */
-.detail-topbar {
-  -fx-background-color: -edu-bg;
-  -fx-border-color: transparent transparent -edu-border transparent;
-  -fx-border-width: 0 0 1 0;
-}
-
-.course-hero-card {
-=======
 /* ── Marketplace front : cartes produits ─────────────────────────────── */
 .marketplace-scroll {
   -fx-background-color: transparent;
@@ -1565,14 +1569,13 @@
 }
 
 .produit-card {
->>>>>>> origin/gestion_marketplace
   -fx-background-color: -edu-card;
   -fx-background-radius: 16px;
   -fx-border-color: -edu-border;
   -fx-border-radius: 16px;
   -fx-border-width: 1;
   -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
-<<<<<<< HEAD
+
 }
 
 .course-hero-banner {
@@ -1673,15 +1676,15 @@
 .resource-name {
   -fx-font-weight: 700;
   -fx-text-fill: -edu-text;
-=======
+
   -fx-cursor: hand;
 }
 
 .produit-card:hover {
   -fx-border-color: linear-gradient(to right,
-    rgba(0, 210, 255, 0.65),
-    rgba(6, 106, 201, 0.65),
-    rgba(106, 17, 203, 0.65));
+      rgba(0, 210, 255, 0.65),
+      rgba(6, 106, 201, 0.65),
+      rgba(106, 17, 203, 0.65));
   -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.16), 26, 0.20, 0, 7);
 }
 
@@ -1799,7 +1802,7 @@
 }
 
 .course-catalog-banner {
-  -fx-background-color: linear-gradient(to bottom right, rgba(6,106,201,0.18), rgba(106,17,203,0.12));
+  -fx-background-color: linear-gradient(to bottom right, rgba(6, 106, 201, 0.18), rgba(106, 17, 203, 0.12));
   -fx-background-radius: 16px 16px 0 0;
   -fx-border-radius: 16px 16px 0 0;
   -fx-clip: true;
@@ -1819,7 +1822,7 @@
 
 /* ── Course Detail Page ── */
 .course-detail-hero {
-  -fx-background-color: linear-gradient(to bottom right, rgba(6,106,201,0.92), rgba(106,17,203,0.85));
+  -fx-background-color: linear-gradient(to bottom right, rgba(6, 106, 201, 0.92), rgba(106, 17, 203, 0.85));
   -fx-background-radius: 16px;
   -fx-border-radius: 16px;
 }
@@ -1874,12 +1877,12 @@
   -fx-border-color: -edu-border;
   -fx-border-radius: 14px;
   -fx-border-width: 1;
-  -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.07), 14, 0.12, 0, 3);
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.07), 14, 0.12, 0, 3);
 }
 
 .back-stat-card:hover {
   -fx-border-color: derive(-edu-primary, 72%);
-  -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.12), 18, 0.15, 0, 5);
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.12), 18, 0.15, 0, 5);
 }
 
 .back-stat-icon {
@@ -1891,10 +1894,21 @@
   -fx-alignment: CENTER;
 }
 
-.back-stat-icon-blue  { -fx-background-color: rgba(6,106,201,0.12); }
-.back-stat-icon-purple{ -fx-background-color: rgba(106,17,203,0.12); }
-.back-stat-icon-green { -fx-background-color: rgba(12,188,135,0.12); }
-.back-stat-icon-orange{ -fx-background-color: rgba(247,195,46,0.18); }
+.back-stat-icon-blue {
+  -fx-background-color: rgba(6, 106, 201, 0.12);
+}
+
+.back-stat-icon-purple {
+  -fx-background-color: rgba(106, 17, 203, 0.12);
+}
+
+.back-stat-icon-green {
+  -fx-background-color: rgba(12, 188, 135, 0.12);
+}
+
+.back-stat-icon-orange {
+  -fx-background-color: rgba(247, 195, 46, 0.18);
+}
 
 .back-stat-svg {
   -fx-fill: -edu-primary;
@@ -1902,9 +1916,17 @@
   -fx-scale-y: 0.82;
 }
 
-.back-stat-icon-purple .back-stat-svg { -fx-fill: #6a11cb; }
-.back-stat-icon-green  .back-stat-svg { -fx-fill: #0cbc87; }
-.back-stat-icon-orange .back-stat-svg { -fx-fill: #c8960a; }
+.back-stat-icon-purple .back-stat-svg {
+  -fx-fill: #6a11cb;
+}
+
+.back-stat-icon-green .back-stat-svg {
+  -fx-fill: #0cbc87;
+}
+
+.back-stat-icon-orange .back-stat-svg {
+  -fx-fill: #c8960a;
+}
 
 /* ── Back table améliorée ── */
 .back-table {
@@ -1915,7 +1937,7 @@
 }
 
 .back-table .column-header-background {
-  -fx-background-color: linear-gradient(to right, rgba(6,106,201,0.06), rgba(106,17,203,0.04));
+  -fx-background-color: linear-gradient(to right, rgba(6, 106, 201, 0.06), rgba(106, 17, 203, 0.04));
   -fx-background-radius: 12px 12px 0 0;
   -fx-border-color: -edu-border;
   -fx-border-width: 0 0 1 0;

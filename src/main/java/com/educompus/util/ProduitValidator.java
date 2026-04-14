@@ -219,15 +219,17 @@ public final class ProduitValidator {
         err.setText(msg);
         err.setVisible(true);
         err.setManaged(true);
-        field.setStyle(field.getStyle() == null ? "" : field.getStyle());
+        // S'assurer que la classe CSS rouge est bien présente
+        if (!err.getStyleClass().contains("field-error"))
+            err.getStyleClass().add("field-error");
         // Bordure rouge sur le champ
-        String base = "-fx-border-color: #e74c3c; -fx-border-width: 1.5; -fx-border-radius: 10px;";
-        field.setStyle(base);
+        field.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 1.5; -fx-border-radius: 10px;");
     }
 
     private static void cacher(Label err, Region field) {
         err.setVisible(false);
         err.setManaged(false);
-        field.setStyle(""); // remet le style CSS de la classe .field
+        err.getStyleClass().remove("field-error");
+        field.setStyle("");
     }
 }
