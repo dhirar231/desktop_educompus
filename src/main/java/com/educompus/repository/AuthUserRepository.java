@@ -116,6 +116,25 @@ public class AuthUserRepository {
         return null;
     }
 
+    public AuthUser findById(int id) throws SQLException {
+        String sql = """
+                SELECT id, email, name, last_name, image_url, roles
+                FROM `user`
+                WHERE id = ?
+                LIMIT 1
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        }
+        return null;
+    }
+
     public boolean emailExists(String email, Integer excludeUserId) throws SQLException {
         String sql = "SELECT 1 FROM `user` WHERE email = ? AND (? IS NULL OR id <> ?) LIMIT 1";
         try (Connection conn = EducompusDB.getConnection();
