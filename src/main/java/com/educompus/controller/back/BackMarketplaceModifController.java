@@ -85,7 +85,6 @@ public class BackMarketplaceModifController {
 
     @FXML
     private void onValider(ActionEvent event) {
-        // Validation complète avant confirmation
         boolean ok = ProduitValidator.validerTout(
                 fieldNom,         errNom,
                 fieldDescription, errDescription,
@@ -96,6 +95,17 @@ public class BackMarketplaceModifController {
                 fieldImage,       errImage
         );
         if (!ok) return;
+
+        // Vérifier qu'au moins un champ a été modifié
+        if (!aEteModifie()) {
+            Alert info = new Alert(Alert.AlertType.INFORMATION);
+            info.setTitle("Aucune modification");
+            info.setHeaderText(null);
+            info.setContentText("Aucune modification détectée. Veuillez modifier au moins un champ avant de valider.");
+            styleAlert(info);
+            info.showAndWait();
+            return;
+        }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Confirmer les modifications");
@@ -121,6 +131,26 @@ public class BackMarketplaceModifController {
             fermer();
         } catch (Exception e) {
             showAlert("Erreur lors de la modification : " + e.getMessage());
+        }
+    }
+
+    /** Retourne true si au moins un champ diffère de la valeur originale du produit. */
+    private boolean aEteModifie() {
+        String imageOrigine = produit.getImage() == null ? "" : produit.getImage();
+        try {
+            double prixSaisi  = Double.parseDouble(fieldPrix.getText().trim().replace(",", "."));
+            int    stockSaisi = Integer.parseInt(fieldStock.getText().trim());
+
+            return !fieldNom.getText().trim().equals(produit.getNom())
+                || !fieldDescription.getText().trim().equals(produit.getDescription())
+                || prixSaisi  != produit.getPrix()
+                || stockSaisi != produit.getStock()
+                || !fieldType.getValue().equals(produit.getType())
+                || !fieldCategorie.getValue().equals(produit.getCategorie())
+                || !fieldImage.getText().trim().equals(imageOrigine);
+        } catch (NumberFormatException e) {
+            // Si le format est invalide, la validation aura déjà bloqué — on laisse passer
+            return true;
         }
     }
 
