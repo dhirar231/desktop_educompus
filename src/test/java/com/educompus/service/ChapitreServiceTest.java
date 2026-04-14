@@ -9,9 +9,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests unitaires pour ChapitreService.
- * Nécessite une connexion MySQL active (base educompus) et au moins un cours
- * existant.
+ * Tests unitaires pour ChapitreService test.
+ * Nécessite une connexion MySQL active (base educompus) et au moins un cours existant.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ChapitreServiceTest {

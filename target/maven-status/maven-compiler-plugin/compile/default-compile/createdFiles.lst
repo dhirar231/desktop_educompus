@@ -1,19 +1,16 @@
-<<<<<<< HEAD
 com\educompus\repository\CommandeRepository.class
+com\educompus\repository\AuthUserRepository$NameParts.class
+com\educompus\controller\back\BackUsersController$2.class
 com\educompus\repository\LigneCommandeRepository.class
+com\educompus\service\AuthUserService$UserStats.class
 com\educompus\repository\LivraisonRepository.class
 com\educompus\controller\back\BackCommandesController$CommandeCell.class
 com\educompus\controller\back\BackMarketplaceController$ProduitCell.class
+com\educompus\controller\back\BackUsersController$1.class
 com\educompus\repository\PanierRepository.class
+com\educompus\service\AuthUserService.class
 com\educompus\repository\ProduitRepository.class
 com\educompus\repository\AvisRepository.class
-=======
-com\educompus\repository\AuthUserRepository$NameParts.class
-com\educompus\controller\back\BackUsersController$2.class
-com\educompus\service\AuthUserService$UserStats.class
-com\educompus\controller\back\BackUsersController$1.class
-com\educompus\service\AuthUserService.class
 com\educompus\controller\back\BackUsersController$3.class
 com\educompus\repository\AuthUserRepository.class
 com\educompus\controller\back\BackUserFormController.class
->>>>>>> main

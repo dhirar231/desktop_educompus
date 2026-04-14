@@ -4,10 +4,9 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -101,18 +100,7 @@
                             <ComboBox fx:id="coursSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un cours" onAction="#createCours" styleClass="btn-rgb"/>
                         </HBox>
-                        <TableView fx:id="coursTable" VBox.vgrow="ALWAYS" styleClass="back-table">
-                            <columns>
-                                <TableColumn fx:id="colCoursId" text="ID" prefWidth="60" visible="false"/>
-                                <TableColumn fx:id="colCoursTitre" text="Titre" prefWidth="200"/>
-                                <TableColumn fx:id="colCoursNiveau" text="Niveau" prefWidth="90"/>
-                                <TableColumn fx:id="colCoursDomaine" text="Domaine" prefWidth="160"/>
-                                <TableColumn fx:id="colCoursFormateur" text="Formateur" prefWidth="160"/>
-                                <TableColumn fx:id="colCoursDuree" text="Heures" prefWidth="80"/>
-                                <TableColumn fx:id="colCoursChapitres" text="Chapitres" prefWidth="90"/>
-                                <TableColumn fx:id="colCoursActions" text="Actions" prefWidth="260"/>
-                            </columns>
-                        </TableView>
+                        <ListView fx:id="coursListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>
@@ -127,20 +115,7 @@
                             <ComboBox fx:id="chapitreSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un chapitre" onAction="#createChapitre" styleClass="btn-rgb"/>
                         </HBox>
-                        <TableView fx:id="chapitreTable" VBox.vgrow="ALWAYS" styleClass="back-table">
-                            <columns>
-                                <TableColumn fx:id="colChapitreId" text="ID" prefWidth="70" visible="false"/>
-                                <TableColumn fx:id="colChapitreTitre" text="Titre" prefWidth="200"/>
-                                <TableColumn fx:id="colChapitreCours" text="Cours" prefWidth="180"/>
-                                <TableColumn fx:id="colChapitreNiveau" text="Niveau" prefWidth="90"/>
-                                <TableColumn fx:id="colChapitreDomaine" text="Domaine" prefWidth="130"/>
-                                <TableColumn fx:id="colChapitreFichier" text="Fichier" prefWidth="110"/>
-                                <TableColumn fx:id="colChapitreOrdre" text="Ordre" prefWidth="70"/>
-                                <TableColumn fx:id="colChapitreTd" text="TD" prefWidth="60"/>
-                                <TableColumn fx:id="colChapitreVideos" text="Vidéos" prefWidth="70"/>
-                                <TableColumn fx:id="colChapitreActions" text="Actions" prefWidth="220"/>
-                            </columns>
-                        </TableView>
+                        <ListView fx:id="chapitreListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>
@@ -155,18 +130,7 @@
                             <ComboBox fx:id="tdSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un TD" onAction="#createTd" styleClass="btn-rgb"/>
                         </HBox>
-                        <TableView fx:id="tdTable" VBox.vgrow="ALWAYS" styleClass="back-table">
-                            <columns>
-                                <TableColumn fx:id="colTdId" text="ID" prefWidth="70" visible="false"/>
-                                <TableColumn fx:id="colTdTitre" text="Titre" prefWidth="220"/>
-                                <TableColumn fx:id="colTdCours" text="Cours" prefWidth="170"/>
-                                <TableColumn fx:id="colTdChapitre" text="Chapitre" prefWidth="170"/>
-                                <TableColumn fx:id="colTdFichier" text="Fichier" prefWidth="110"/>
-                                <TableColumn fx:id="colTdNiveau" text="Niveau" prefWidth="100"/>
-                                <TableColumn fx:id="colTdDomaine" text="Domaine" prefWidth="130"/>
-                                <TableColumn fx:id="colTdActions" text="Actions" prefWidth="220"/>
-                            </columns>
-                        </TableView>
+                        <ListView fx:id="tdListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>
@@ -181,18 +145,7 @@
                             <ComboBox fx:id="videoSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer une vidéo" onAction="#createVideo" styleClass="btn-rgb"/>
                         </HBox>
-                        <TableView fx:id="videoTable" VBox.vgrow="ALWAYS" styleClass="back-table">
-                            <columns>
-                                <TableColumn fx:id="colVideoId" text="ID" prefWidth="70" visible="false"/>
-                                <TableColumn fx:id="colVideoTitre" text="Titre" prefWidth="200"/>
-                                <TableColumn fx:id="colVideoCours" text="Cours" prefWidth="160"/>
-                                <TableColumn fx:id="colVideoChapitre" text="Chapitre" prefWidth="160"/>
-                                <TableColumn fx:id="colVideoNiveau" text="Niveau" prefWidth="100"/>
-                                <TableColumn fx:id="colVideoDomaine" text="Domaine" prefWidth="130"/>
-                                <TableColumn fx:id="colVideoAccess" text="Lien" prefWidth="100"/>
-                                <TableColumn fx:id="colVideoActions" text="Actions" prefWidth="220"/>
-                            </columns>
-                        </TableView>
+                        <ListView fx:id="videoListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>

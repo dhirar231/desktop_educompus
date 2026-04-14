@@ -25,17 +25,17 @@
             <Label text="Explorez et accédez à vos cours disponibles." styleClass="page-subtitle"/>
         </VBox>
         <Label fx:id="totalCoursesLabel" text="0" styleClass="stat-value"/>
-        <Label text="cours" styleClass="page-subtitle"/>
+        <Label text=" cours" styleClass="page-subtitle"/>
     </HBox>
 
-    <!-- Barre de recherche + filtre -->
+    <!-- Barre de recherche -->
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"
                    promptText="🔍  Rechercher un cours par titre, domaine, formateur…"
                    styleClass="field"
                    HBox.hgrow="ALWAYS"/>
-        <ComboBox fx:id="filterCombo" prefWidth="180" styleClass="combo-rgb"/>
         <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
+        <Label fx:id="lblCount" text="" styleClass="page-subtitle"/>
     </HBox>
 
     <!-- Grille de cartes -->
