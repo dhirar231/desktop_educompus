@@ -10,7 +10,8 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.DatePicker?>
@@ -62,13 +63,16 @@
                             <VBox styleClass="card" spacing="10">
                                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                                 <Label text="Liste des projets" styleClass="stat-title"/>
-                                        <ListView fx:id="projectsList" VBox.vgrow="ALWAYS"/>
-                                        <HBox spacing="8" alignment="CENTER" styleClass="pagination" prefHeight="36">
-                                            <padding><Insets top="8" bottom="0" left="0" right="0"/></padding>
-                                            <Button fx:id="projectsPrevBtn" text="⬅️ Prev" onAction="#onProjectsPrev" styleClass="btn-rgb-outline"/>
-                                            <Label fx:id="projectsPageLabel" text="Page 1 / 1"/>
-                                            <Button fx:id="projectsNextBtn" text="Next ➡️" onAction="#onProjectsNext" styleClass="btn-rgb-outline"/>
-                                        </HBox>
+                                        <TableView fx:id="projectsTable" VBox.vgrow="ALWAYS">
+                                            <columns>
+                                                <TableColumn fx:id="colProjectId" text="ID" prefWidth="64"/>
+                                                <TableColumn fx:id="colProjectTitle" text="Titre" prefWidth="240"/>
+                                                <TableColumn fx:id="colProjectSubmissions" text="Soumissions" prefWidth="120"/>
+                                                <TableColumn fx:id="colProjectDeadline" text="Deadline" prefWidth="140"/>
+                                                <TableColumn fx:id="colProjectPublished" text="Publié" prefWidth="90"/>
+                                                <TableColumn fx:id="colProjectCreatedAt" text="Créé le" prefWidth="160"/>
+                                            </columns>
+                                        </TableView>
                             </VBox>
                             <VBox styleClass="card" spacing="10">
                                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
@@ -78,10 +82,8 @@
                                             <DatePicker fx:id="deadlineDatePicker" promptText="Date" styleClass="field"/>
                                             <TextField fx:id="deadlineTimeField" promptText="HH:mm:ss" prefWidth="120" styleClass="field"/>
                                         </HBox>
-                                <Label fx:id="deadlineError" text="" styleClass="field-error-text" visible="false" managed="false"/>
-                                <TextArea fx:id="deliverablesArea" promptText="Livrables (ex: PDF, ZIP...)" styleClass="field area" prefRowCount="3" wrapText="true" visible="false" managed="false"/>
+                                <TextArea fx:id="deliverablesArea" promptText="Livrables (ex: PDF, ZIP...)" styleClass="field area" prefRowCount="3" wrapText="true"/>
                                 <TextArea fx:id="descriptionArea" promptText="Description" styleClass="field area" prefRowCount="5" wrapText="true" VBox.vgrow="ALWAYS"/>
-                                <Label fx:id="descriptionError" text="" styleClass="field-error-text" visible="false" managed="false"/>
                                 <CheckBox fx:id="publishedCheck" text="Publié"/>
                                 <HBox spacing="10">
                                     <Region HBox.hgrow="ALWAYS"/>
@@ -108,7 +110,18 @@
                 <center>
                     <VBox styleClass="card" spacing="10">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <ListView fx:id="submissionsList" VBox.vgrow="ALWAYS"/>
+                        <TableView fx:id="submissionsTable" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colSubId" text="ID" prefWidth="64"/>
+                                <TableColumn fx:id="colSubProject" text="Projet" prefWidth="220"/>
+                                <TableColumn fx:id="colSubStudent" text="Étudiant" prefWidth="180"/>
+                                <TableColumn fx:id="colSubSubmittedAt" text="Soumis le" prefWidth="160"/>
+                                <TableColumn fx:id="colSubResponse" text="Réponse" prefWidth="260"/>
+                                <TableColumn fx:id="colSubFile" text="Cahier" prefWidth="120"/>
+                                <TableColumn fx:id="colSubZip" text="Dossier" prefWidth="120"/>
+                                <TableColumn fx:id="colSubActions" text="Action" prefWidth="140"/>
+                            </columns>
+                        </TableView>
                     </VBox>
                 </center>
             </BorderPane>

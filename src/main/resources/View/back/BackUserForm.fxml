@@ -40,11 +40,8 @@
         </VBox>
 
         <VBox spacing="3">
-            <Label text="Image de profil" styleClass="stat-title"/>
-            <HBox spacing="8" alignment="CENTER_LEFT">
-                <TextField fx:id="imageField" styleClass="field" promptText="URL ou chemin local..." HBox.hgrow="ALWAYS"/>
-                <Button text="Parcourir" onAction="#onBrowseImage" styleClass="btn-rgb-compact"/>
-            </HBox>
+            <Label text="Image (URL)" styleClass="stat-title"/>
+            <TextField fx:id="imageField" styleClass="field" promptText="https://..."/>
         </VBox>
 
         <VBox spacing="3">

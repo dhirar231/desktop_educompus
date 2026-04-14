@@ -23,24 +23,33 @@
 
     <!-- Filtres -->
     <HBox spacing="10">
-        <TextField fx:id="searchField" promptText="🔍  Rechercher par ville, adresse, téléphone…"
+        <TextField fx:id="searchField" promptText="Rechercher par ville,Téléphone…"
                    styleClass="field" HBox.hgrow="ALWAYS" onKeyReleased="#onSearch"/>
         <ComboBox fx:id="filterStatut" promptText="Statut livraison" prefWidth="180"
                   styleClass="field" onAction="#onSearch"/>
-        <ComboBox fx:id="sortCombo" promptText="Trier par…" prefWidth="170"
-                  styleClass="field" onAction="#onSort"/>
         <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
     </HBox>
 
-    <!-- ListView commandes -->
+    <!-- Tableau -->
     <VBox styleClass="card" spacing="0" VBox.vgrow="ALWAYS">
         <padding><Insets top="0" right="0" bottom="0" left="0"/></padding>
-        <ListView fx:id="listeCommandes" VBox.vgrow="ALWAYS"
-                  style="-fx-background-color: transparent; -fx-border-color: transparent;">
+
+        <TableView fx:id="tableCommandes" VBox.vgrow="ALWAYS"
+                   style="-fx-background-color: transparent; -fx-border-color: transparent;">
+            <columns>
+                <TableColumn fx:id="colDate"         text="Date"        prefWidth="140"/>
+                <TableColumn fx:id="colTotal"        text="Total (TND)" prefWidth="110" style="-fx-alignment: CENTER_RIGHT;"/>
+                <TableColumn fx:id="colAdresse"      text="Adresse"     prefWidth="200"/>
+                <TableColumn fx:id="colVille"        text="Ville"       prefWidth="120"/>
+                <TableColumn fx:id="colPhone"        text="Téléphone"   prefWidth="130"/>
+                <TableColumn fx:id="colStatut"       text="Statut de livraison"      prefWidth="140"/>
+                <TableColumn fx:id="colActions"      text="Actions"     prefWidth="110"
+                             style="-fx-alignment: CENTER;" sortable="false"/>
+            </columns>
             <placeholder>
                 <Label text="Aucune commande enregistrée." styleClass="page-subtitle"/>
             </placeholder>
-        </ListView>
+        </TableView>
     </VBox>
 
     <!-- Compteur -->

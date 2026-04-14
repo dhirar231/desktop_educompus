@@ -153,9 +153,6 @@ public final class CoursValidationService {
         if (d.length() > DESC_MAX) {
             r.addError("La description ne doit pas dépasser " + DESC_MAX + " caractères.");
         }
-        if (d.chars().anyMatch(Character::isDigit)) {
-            r.addError("La description ne doit pas contenir de chiffres.");
-        }
     }
 
     private static void validateNiveau(String niveau, ValidationResult r) {

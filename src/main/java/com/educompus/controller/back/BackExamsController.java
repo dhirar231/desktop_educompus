@@ -16,15 +16,12 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Modality;
@@ -49,13 +46,19 @@ public final class BackExamsController {
     @FXML
     private Label readyQuizzesLabel;
     @FXML
-    private ListView<ExamCatalogueItem> examsList;
+    private TableView<ExamCatalogueItem> examsTable;
     @FXML
-    private Button examsPrevBtn;
+    private TableColumn<ExamCatalogueItem, Number> colExamId;
     @FXML
-    private Button examsNextBtn;
+    private TableColumn<ExamCatalogueItem, String> colExamTitle;
     @FXML
-    private Label examsPageLabel;
+    private TableColumn<ExamCatalogueItem, String> colCourse;
+    @FXML
+    private TableColumn<ExamCatalogueItem, String> colLevel;
+    @FXML
+    private TableColumn<ExamCatalogueItem, Number> colQuestions;
+    @FXML
+    private TableColumn<ExamCatalogueItem, String> colStatus;
     @FXML
     private TextField examTitleField;
     @FXML
@@ -66,196 +69,55 @@ public final class BackExamsController {
     private TextField domainField;
     @FXML
     private TextArea examDescriptionArea;
-    
-    @FXML
-    private Label examTitleError;
-    @FXML
-    private Label courseError;
-    @FXML
-    private Label levelError;
-    @FXML
-    private Label domainError;
-    @FXML
-    private Label examDescriptionError;
     @FXML
     private Label selectedExamLabel;
-    @FXML
-    private javafx.scene.control.Button saveExamBtn;
 
     private final ExamRepository repository = new ExamRepository();
     private final ObservableList<ExamCatalogueItem> exams = FXCollections.observableArrayList();
-    private final List<ExamCatalogueItem> allExams = new java.util.ArrayList<>();
-    private int examsPageSize = 10;
-    private int examsCurrentPage = 1;
     private ExamCatalogueItem editingExam;
     private final CourseManagementRepository courseRepo = new CourseManagementRepository();
     private final javafx.collections.ObservableList<Cours> courses = FXCollections.observableArrayList();
 
-
     @FXML
     private void initialize() {
-        setupList();
+        setupTable();
         setupSort();
         loadCourses();
-        setupValidation();
         reload();
     }
 
-    private void setupValidation() {
-        // respond to field changes to enable/disable save button
-        Runnable updater = this::updateSaveButtonState;
-        if (examTitleField != null) examTitleField.textProperty().addListener((obs, o, n) -> updater.run());
-        if (examDescriptionArea != null) examDescriptionArea.textProperty().addListener((obs, o, n) -> updater.run());
-        if (levelField != null) levelField.textProperty().addListener((obs, o, n) -> updater.run());
-        if (domainField != null) domainField.textProperty().addListener((obs, o, n) -> updater.run());
-        if (courseCombo != null) courseCombo.valueProperty().addListener((obs, o, n) -> updater.run());
-        // initial state
-        updateSaveButtonState();
-    }
-
-    private void updateSaveButtonState() {
-        boolean titleError = examTitleField == null || safe(examTitleField.getText()).isBlank() || safe(examTitleField.getText()).length() > 200;
-        boolean descError = examDescriptionArea == null || safe(examDescriptionArea.getText()).isBlank() || safe(examDescriptionArea.getText()).length() > 2000;
-        boolean lvlError = levelField == null || safe(levelField.getText()).isBlank() || safe(levelField.getText()).length() > 100;
-        boolean domError = domainField == null || safe(domainField.getText()).isBlank() || safe(domainField.getText()).length() > 100;
-        boolean courseSelError = courseCombo != null && courseCombo.getValue() == null;
-
-        boolean valid = !titleError && !descError && !lvlError && !domError && !courseSelError;
-        if (saveExamBtn != null) saveExamBtn.setDisable(!valid);
-
-        setFieldError(examTitleField, titleError);
-        setFieldError(examDescriptionArea, descError);
-        setFieldError(levelField, lvlError);
-        setFieldError(domainField, domError);
-        setFieldError(courseCombo, courseSelError);
-
-        if (examTitleError != null) {
-            examTitleError.setVisible(titleError);
-            examTitleError.setManaged(titleError);
-            examTitleError.setText(titleError ? (safe(examTitleField.getText()).isBlank() ? "Le titre est obligatoire." : "Max 200 caracteres.") : "");
-        }
-        if (examDescriptionError != null) {
-            examDescriptionError.setVisible(descError);
-            examDescriptionError.setManaged(descError);
-            if (safe(examDescriptionArea.getText()).isBlank()) {
-                examDescriptionError.setText("La description est obligatoire.");
-            } else if (safe(examDescriptionArea.getText()).length() > 2000) {
-                examDescriptionError.setText("Description trop longue (max 2000).");
-            } else {
-                examDescriptionError.setText("");
-            }
-        }
-        if (levelError != null) {
-            levelError.setVisible(lvlError);
-            levelError.setManaged(lvlError);
-            if (safe(levelField.getText()).isBlank()) {
-                levelError.setText("Le niveau est obligatoire.");
-            } else if (safe(levelField.getText()).length() > 100) {
-                levelError.setText("Niveau trop long (max 100).");
-            } else {
-                levelError.setText("");
-            }
-        }
-        if (domainError != null) {
-            domainError.setVisible(domError);
-            domainError.setManaged(domError);
-            if (safe(domainField.getText()).isBlank()) {
-                domainError.setText("Le domaine est obligatoire.");
-            } else if (safe(domainField.getText()).length() > 100) {
-                domainError.setText("Domaine trop long (max 100)." );
-            } else {
-                domainError.setText("");
-            }
-        }
-        if (courseError != null) {
-            courseError.setVisible(courseSelError);
-            courseError.setManaged(courseSelError);
-            courseError.setText(courseSelError ? "Selectionnez un cours." : "");
-        }
-    }
-
-    private boolean isExamFormValid(boolean showAlerts) {
-        String title = text(examTitleField);
-        if (title.isBlank()) {
-            if (showAlerts) info("Examen", "Le titre de l'examen est obligatoire.");
-            return false;
-        }
-        if (title.length() > 200) {
-            if (showAlerts) info("Examen", "Le titre ne doit pas depasser 200 caracteres.");
-            return false;
-        }
-        String desc = text(examDescriptionArea);
-        if (desc.isBlank()) {
-            if (showAlerts) info("Examen", "La description est obligatoire.");
-            return false;
-        }
-        if (desc.length() > 2000) {
-            if (showAlerts) info("Examen", "La description est trop longue (max 2000 caracteres).");
-            return false;
-        }
-        String lvl = text(levelField);
-        if (lvl.isBlank()) {
-            if (showAlerts) info("Examen", "Le niveau est obligatoire.");
-            return false;
-        }
-        if (lvl.length() > 100) {
-            if (showAlerts) info("Examen", "Niveau trop long (max 100 caracteres).");
-            return false;
-        }
-        String dom = text(domainField);
-        if (dom.isBlank()) {
-            if (showAlerts) info("Examen", "Le domaine est obligatoire.");
-            return false;
-        }
-        if (dom.length() > 100) {
-            if (showAlerts) info("Examen", "Domaine trop long (max 100 caracteres).");
-            return false;
-        }
-        if (courseCombo == null || courseCombo.getValue() == null) {
-            if (showAlerts) info("Examen", "Veuillez selectionner un cours valide.");
-            return false;
-        }
-        return true;
-    }
-
-    private void setFieldError(javafx.scene.Node node, boolean error) {
-        if (node == null) return;
-        var cls = node.getStyleClass();
-        if (error) {
-            if (!cls.contains("field-error")) cls.add("field-error");
-        } else {
-            cls.removeAll("field-error");
-        }
-    }
-    private void setupList() {
-        examsList.setItems(exams);
-        examsList.setCellFactory(lv -> new ListCell<>() {
-            private final Label title = new Label();
-            private final Label course = new Label();
-            private final HBox box = new HBox(8);
+    private void setupTable() {
+        examsTable.setItems(exams);
+        colExamId.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getExamId()));
+        colExamTitle.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getExamTitle()));
+        colCourse.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCourseTitle()));
+        colLevel.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getLevelLabel()));
+        colQuestions.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getQuestionCount()));
+        colStatus.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getStatusLabel()));
+        colExamId.setVisible(false);
+        colStatus.setCellFactory(col -> new TableCell<>() {
+            private final Label badge = new Label();
             {
-                VBox v = new VBox(4, title, course);
-                Region spacer = new Region();
-                HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-                box.getChildren().addAll(v, spacer);
+                badge.getStyleClass().add("chip");
             }
 
             @Override
-            protected void updateItem(ExamCatalogueItem item, boolean empty) {
+            protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
+                if (empty || item == null || item.isBlank()) {
                     setGraphic(null);
+                    setText(null);
                     return;
                 }
-                title.setText(safe(item.getExamTitle()));
-                course.setText(safe(item.getCourseTitle()));
-                setGraphic(box);
+                badge.setText(item);
+                badge.getStyleClass().removeAll("chip-success", "chip-warning");
+                badge.getStyleClass().add("Pret".equalsIgnoreCase(item) ? "chip-success" : "chip-warning");
+                setGraphic(badge);
                 setText(null);
             }
         });
 
-        examsList.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+        examsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             editingExam = newValue;
             fillExamForm(newValue);
         });
@@ -287,8 +149,7 @@ public final class BackExamsController {
     @FXML
     private void reload() {
         List<ExamCatalogueItem> items = repository.listAdminRows(text(searchField));
-        allExams.clear();
-        allExams.addAll(items);
+        exams.setAll(items);
         applySort();
         updateStats(items);
         // refresh course list for combobox
@@ -298,9 +159,9 @@ public final class BackExamsController {
         if (selectedId > 0) {
             selectExamById(selectedId);
         }
-        // show first page
-        examsCurrentPage = 1;
-        showExamsPage(examsCurrentPage);
+        if (!exams.isEmpty() && examsTable.getSelectionModel().getSelectedItem() == null) {
+            examsTable.getSelectionModel().selectFirst();
+        }
         if (exams.isEmpty()) {
             fillExamForm(null);
         }
@@ -323,50 +184,23 @@ public final class BackExamsController {
     private void applySort() {
         String sort = examSortCombo == null ? "Titre A-Z" : String.valueOf(examSortCombo.getValue());
         if ("Titre Z-A".equalsIgnoreCase(sort)) {
-            allExams.sort(Comparator.comparing((ExamCatalogueItem item) -> safe(item.getExamTitle()), String.CASE_INSENSITIVE_ORDER).reversed());
+            exams.sort(Comparator.comparing((ExamCatalogueItem item) -> safe(item.getExamTitle()), String.CASE_INSENSITIVE_ORDER).reversed());
         } else if ("Cours A-Z".equalsIgnoreCase(sort)) {
-            allExams.sort(Comparator.comparing((ExamCatalogueItem item) -> safe(item.getCourseTitle()), String.CASE_INSENSITIVE_ORDER)
+            exams.sort(Comparator.comparing((ExamCatalogueItem item) -> safe(item.getCourseTitle()), String.CASE_INSENSITIVE_ORDER)
                     .thenComparing(item -> safe(item.getExamTitle()), String.CASE_INSENSITIVE_ORDER));
         } else if ("Questions desc".equalsIgnoreCase(sort)) {
-            allExams.sort(Comparator.comparingInt(ExamCatalogueItem::getQuestionCount).reversed()
+            exams.sort(Comparator.comparingInt(ExamCatalogueItem::getQuestionCount).reversed()
                     .thenComparing(item -> safe(item.getExamTitle()), String.CASE_INSENSITIVE_ORDER));
         } else {
-            allExams.sort(Comparator.comparing((ExamCatalogueItem item) -> safe(item.getExamTitle()), String.CASE_INSENSITIVE_ORDER));
+            exams.sort(Comparator.comparing((ExamCatalogueItem item) -> safe(item.getExamTitle()), String.CASE_INSENSITIVE_ORDER));
         }
-        // refresh page after sorting
-        showExamsPage(examsCurrentPage <= 0 ? 1 : examsCurrentPage);
-    }
-
-    @FXML
-    private void onExamsPrev(ActionEvent ev) {
-        if (examsCurrentPage > 1) showExamsPage(examsCurrentPage - 1);
-    }
-
-    @FXML
-    private void onExamsNext(ActionEvent ev) {
-        int total = (int) Math.max(1, Math.ceil((double) allExams.size() / examsPageSize));
-        if (examsCurrentPage < total) showExamsPage(examsCurrentPage + 1);
-    }
-
-    private void showExamsPage(int page) {
-        examsCurrentPage = Math.max(1, page);
-        int total = (int) Math.max(1, Math.ceil((double) allExams.size() / examsPageSize));
-        int from = (examsCurrentPage - 1) * examsPageSize;
-        int to = Math.min(allExams.size(), from + examsPageSize);
-        List<ExamCatalogueItem> sub = new java.util.ArrayList<>();
-        if (from < to) sub.addAll(allExams.subList(from, to));
-        exams.setAll(sub);
-        if (examsList != null && !exams.isEmpty() && examsList.getSelectionModel().getSelectedItem() == null) examsList.getSelectionModel().selectFirst();
-        if (examsPageLabel != null) examsPageLabel.setText("Page " + examsCurrentPage + " / " + total);
-        if (examsPrevBtn != null) examsPrevBtn.setDisable(examsCurrentPage <= 1);
-        if (examsNextBtn != null) examsNextBtn.setDisable(examsCurrentPage >= total);
     }
 
     @FXML
     private void newExam(ActionEvent event) {
         editingExam = null;
-        if (examsList != null) {
-            examsList.getSelectionModel().clearSelection();
+        if (examsTable != null) {
+            examsTable.getSelectionModel().clearSelection();
         }
         fillExamForm(null);
     }
@@ -390,7 +224,6 @@ public final class BackExamsController {
         item.setExamDescription(text(examDescriptionArea));
         item.setLevelLabel(text(levelField));
         item.setDomainLabel(text(domainField));
-        // New exams are created as draft (Brouillon) by default — admin will publish when ready
         if (editingExam == null) {
             item.setPublished(false);
         }
@@ -460,8 +293,8 @@ public final class BackExamsController {
             repository.setPublished(selected.getExamId(), !selected.isPublished());
             selected.setPublished(!selected.isPublished());
             info("Publication", selected.isPublished() ? "Examen publie." : "Examen depublie.");
-            if (examsList != null) {
-                examsList.refresh();
+            if (examsTable != null) {
+                examsTable.refresh();
             }
             reload();
         } catch (Exception e) {
@@ -508,7 +341,7 @@ public final class BackExamsController {
                 controller.setExam(selected);
             }
 
-            Window owner = examsList == null || examsList.getScene() == null ? null : examsList.getScene().getWindow();
+            Window owner = examsTable == null || examsTable.getScene() == null ? null : examsTable.getScene().getWindow();
             Stage stage = new Stage();
             stage.setTitle("Questions & reponses - " + selected.getExamTitle());
             stage.initModality(Modality.WINDOW_MODAL);
@@ -517,8 +350,8 @@ public final class BackExamsController {
             }
 
             Scene scene = new Scene(root, 1180, 760);
-            if (examsList != null && examsList.getScene() != null) {
-                scene.getStylesheets().setAll(examsList.getScene().getStylesheets());
+            if (examsTable != null && examsTable.getScene() != null) {
+                scene.getStylesheets().setAll(examsTable.getScene().getStylesheets());
             }
             Theme.apply(root);
             stage.setScene(scene);
@@ -530,7 +363,7 @@ public final class BackExamsController {
     }
 
     private ExamCatalogueItem currentExam() {
-        return examsList == null ? editingExam : examsList.getSelectionModel().getSelectedItem();
+        return examsTable == null ? editingExam : examsTable.getSelectionModel().getSelectedItem();
     }
 
     private void fillExamForm(ExamCatalogueItem item) {
@@ -556,14 +389,13 @@ public final class BackExamsController {
                 ? "Nouvel examen"
                 : "Examen #" + item.getExamId() + " - " + summarize(item.getExamTitle(), 38)
                 + (item.isPublished() ? " [Publie]" : " [Brouillon]"));
-        // publishedToggle removed: published state shown via selectedExamLabel
     }
 
     private void selectExamById(int examId) {
         for (ExamCatalogueItem item : exams) {
             if (item.getExamId() == examId) {
-                examsList.getSelectionModel().select(item);
-                examsList.scrollTo(item);
+                examsTable.getSelectionModel().select(item);
+                examsTable.scrollTo(item);
                 return;
             }
         }

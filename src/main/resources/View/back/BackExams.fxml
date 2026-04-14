@@ -2,11 +2,10 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
@@ -64,36 +63,31 @@
                     <VBox styleClass="card" spacing="10">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                         <Label text="Liste des examens" styleClass="stat-title"/>
-                        <ListView fx:id="examsList" VBox.vgrow="ALWAYS" />
-                        <HBox spacing="8" alignment="CENTER" styleClass="pagination" prefHeight="36">
-                            <padding><Insets top="8" bottom="0" left="0" right="0"/></padding>
-                            <Button fx:id="examsPrevBtn" text="⬅️ Prev" onAction="#onExamsPrev" styleClass="btn-rgb-outline"/>
-                            <Label fx:id="examsPageLabel" text="Page 1 / 1"/>
-                            <Button fx:id="examsNextBtn" text="Next ➡️" onAction="#onExamsNext" styleClass="btn-rgb-outline"/>
-                        </HBox>
+                        <TableView fx:id="examsTable" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colExamId" text="ID" prefWidth="64"/>
+                                <TableColumn fx:id="colExamTitle" text="Examen" prefWidth="220"/>
+                                <TableColumn fx:id="colCourse" text="Cours" prefWidth="180"/>
+                                <TableColumn fx:id="colLevel" text="Niveau" prefWidth="110"/>
+                                <TableColumn fx:id="colQuestions" text="Questions" prefWidth="110"/>
+                                <TableColumn fx:id="colStatus" text="Statut" prefWidth="120"/>
+                            </columns>
+                        </TableView>
                     </VBox>
                     <VBox styleClass="card" spacing="10">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                         <Label text="Edition examen" styleClass="stat-title"/>
                         <TextField fx:id="examTitleField" promptText="Titre de l'examen" styleClass="field"/>
-                        <Label fx:id="examTitleError" text="" styleClass="field-error-text" visible="false" managed="false"/>
                         <HBox spacing="8">
                             <ComboBox fx:id="courseCombo" promptText="Cours" styleClass="field" prefWidth="260"/>
                             <TextField fx:id="levelField" promptText="Niveau" styleClass="field"/>
                         </HBox>
-                        <HBox spacing="8">
-                            <Label fx:id="courseError" text="" styleClass="field-error-text" visible="false" managed="false"/>
-                            <Region HBox.hgrow="ALWAYS" />
-                            <Label fx:id="levelError" text="" styleClass="field-error-text" visible="false" managed="false"/>
-                        </HBox>
                         <TextField fx:id="domainField" promptText="Domaine" styleClass="field"/>
-                        <Label fx:id="domainError" text="" styleClass="field-error-text" visible="false" managed="false"/>
                         <TextArea fx:id="examDescriptionArea" promptText="Description de l'examen" styleClass="field area" prefRowCount="6" wrapText="true" VBox.vgrow="ALWAYS"/>
-                        <Label fx:id="examDescriptionError" text="" styleClass="field-error-text" visible="false" managed="false"/>
                         <HBox spacing="8">
                             <Label fx:id="selectedExamLabel" text="Aucun examen selectionne" styleClass="chip chip-outline"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Button fx:id="saveExamBtn" text="Enregistrer" onAction="#saveExam" styleClass="btn-rgb"/>
+                            <Button text="Enregistrer" onAction="#saveExam" styleClass="btn-rgb"/>
                         </HBox>
                     </VBox>
                 </items>

@@ -18,74 +18,76 @@
         <Insets top="22" right="22" bottom="22" left="22"/>
     </padding>
 
-    <VBox spacing="6">
-        <HBox alignment="CENTER_LEFT" spacing="12">
-            <VBox spacing="4" HBox.hgrow="ALWAYS">
-                <Label text="Gestion des utilisateurs" styleClass="page-title"/>
-                <Label text="Liste complète, rôles, statistiques et actions d'administration." styleClass="page-subtitle"/>
-            </VBox>
-            <Button text="Importer CSV" onAction="#onImportCSV" styleClass="btn-rgb-outline"/>
-            <Button text="Exporter CSV" onAction="#onExportCSV" styleClass="btn-rgb-outline"/>
-            <Button text="➕ Ajouter utilisateur" onAction="#onAddUser" styleClass="btn-rgb"/>
-        </HBox>
+    <VBox spacing="4">
+        <Label text="Gestion des utilisateurs" styleClass="page-title"/>
+        <Label text="Liste complete, roles, statistiques et actions CRUD." styleClass="page-subtitle"/>
     </VBox>
 
-    <VBox styleClass="card">
-        <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
-        <FlowPane hgap="24" vgap="18" prefWrapLength="900">
-            <VBox spacing="6" minWidth="120">
-                <Label text="Total utilisateurs" styleClass="stat-title"/>
-                <Label fx:id="statTotal" text="0" styleClass="stat-value"/>
-            </VBox>
-            <VBox spacing="6" minWidth="120">
-                <Label text="Administrateurs" styleClass="stat-title"/>
-                <Label fx:id="statAdmins" text="0" styleClass="stat-value"/>
-            </VBox>
-            <VBox spacing="6" minWidth="120">
-                <Label text="Enseignants" styleClass="stat-title"/>
-                <Label fx:id="statTeachers" text="0" styleClass="stat-value"/>
-            </VBox>
-            <VBox spacing="6" minWidth="120">
-                <Label text="Standard" styleClass="stat-title"/>
-                <Label fx:id="statStandard" text="0" styleClass="stat-value"/>
-            </VBox>
-            <VBox spacing="6" minWidth="120">
-                <Label text="Mixtes" styleClass="stat-title"/>
-                <Label fx:id="statMixed" text="0" styleClass="stat-value"/>
-            </VBox>
-            <VBox spacing="6" minWidth="120">
-                <Label text="Avec avatar" styleClass="stat-title"/>
-                <Label fx:id="statAvatar" text="0" styleClass="stat-value"/>
-            </VBox>
-        </FlowPane>
-    </VBox>
+    <FlowPane hgap="10" vgap="10" prefWrapLength="900" styleClass="users-stats-grid">
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Total utilisateurs" styleClass="stat-title"/>
+            <Label fx:id="statTotal" text="0" styleClass="stat-value"/>
+        </VBox>
 
-    <HBox spacing="12" alignment="CENTER_LEFT">
-        <TextField fx:id="searchField" promptText="Rechercher par nom, email, rôle..." styleClass="field" HBox.hgrow="ALWAYS"
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Administrateurs" styleClass="stat-title"/>
+            <Label fx:id="statAdmins" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Enseignants" styleClass="stat-title"/>
+            <Label fx:id="statTeachers" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Utilisateurs standard" styleClass="stat-title"/>
+            <Label fx:id="statStandard" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Roles cumules" styleClass="stat-title"/>
+            <Label fx:id="statMixed" text="0" styleClass="stat-value"/>
+        </VBox>
+
+        <VBox styleClass="card users-stat-card" spacing="4">
+            <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+            <Label text="Avec avatar" styleClass="stat-title"/>
+            <Label fx:id="statAvatar" text="0" styleClass="stat-value"/>
+        </VBox>
+    </FlowPane>
+
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="Rechercher (id, nom, email, role...)" styleClass="field" HBox.hgrow="ALWAYS"
                    onKeyReleased="#onSearch"/>
-        <ComboBox fx:id="roleFilter" promptText="Tous les rôles" prefWidth="200" styleClass="field" onAction="#onRoleFilter"/>
-        <ComboBox fx:id="sortBy" promptText="Trier par" prefWidth="180" styleClass="field" onAction="#onSortChanged"/>
-        <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onResetFilters"/>
+        <ComboBox fx:id="roleFilter" promptText="Role" prefWidth="220" styleClass="field" onAction="#onRoleFilter"/>
+        <ComboBox fx:id="sortBy" promptText="Trier" prefWidth="220" styleClass="field" onAction="#onSortChanged"/>
+        <Button text="Reinitialiser" styleClass="btn-ghost" onAction="#onResetFilters"/>
+        <Button text="Ajouter utilisateur" styleClass="btn-primary" onAction="#onAddUser"/>
     </HBox>
 
     <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
-        <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+        <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
         <TableView fx:id="tableUsers" VBox.vgrow="ALWAYS">
             <columns>
-                <TableColumn fx:id="colId" text="ID" prefWidth="60"/>
-                <TableColumn fx:id="colDisplayName" text="Utilisateur" prefWidth="240"/>
-                <TableColumn fx:id="colEmail" text="Email" prefWidth="280"/>
-                <TableColumn fx:id="colRole" text="Rôle" prefWidth="220"/>
-                <TableColumn fx:id="colActions" text="Actions" prefWidth="160" sortable="false"/>
+                <TableColumn fx:id="colId" text="ID" prefWidth="74"/>
+                <TableColumn fx:id="colDisplayName" text="Nom" prefWidth="210"/>
+                <TableColumn fx:id="colEmail" text="Email" prefWidth="250"/>
+                <TableColumn fx:id="colRole" text="Role" prefWidth="210"/>
+                <TableColumn fx:id="colActions" text="Actions" prefWidth="190" sortable="false"/>
             </columns>
             <placeholder>
-                <Label text="Aucun utilisateur trouvé." styleClass="page-subtitle"/>
+                <Label text="Aucun utilisateur trouve." styleClass="page-subtitle"/>
             </placeholder>
         </TableView>
     </VBox>
 
-    <HBox alignment="CENTER_RIGHT">
-        <Label fx:id="lblResults" text="0 utilisateur(s) affiché(s)" styleClass="page-subtitle"/>
+    <HBox>
+        <Label fx:id="lblResults" text="0 utilisateur(s) affiche(s)" styleClass="page-subtitle"/>
     </HBox>
 </VBox>
 

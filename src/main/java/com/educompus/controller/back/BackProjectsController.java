@@ -82,13 +82,25 @@ public final class BackProjectsController {
     private ComboBox<String> projectsSortCombo;
 
     @FXML
-    private javafx.scene.control.ListView<Project> projectsList;
+    private TableView<Project> projectsTable;
+
     @FXML
-    private Button projectsPrevBtn;
+    private TableColumn<Project, Integer> colProjectId;
+
     @FXML
-    private Button projectsNextBtn;
+    private TableColumn<Project, String> colProjectTitle;
+
     @FXML
-    private Label projectsPageLabel;
+    private TableColumn<Project, String> colProjectDeadline;
+
+    @FXML
+    private TableColumn<Project, Boolean> colProjectPublished;
+
+    @FXML
+    private TableColumn<Project, String> colProjectCreatedAt;
+
+    @FXML
+    private TableColumn<Project, Integer> colProjectSubmissions;
 
     @FXML
     private TextField titleField;
@@ -104,16 +116,36 @@ public final class BackProjectsController {
 
     @FXML
     private TextArea descriptionArea;
-    @FXML
-    private Label descriptionError;
-    @FXML
-    private Label deadlineError;
 
     @FXML
     private CheckBox publishedCheck;
 
     @FXML
-    private javafx.scene.control.ListView<ProjectSubmissionView> submissionsList;
+    private TableView<ProjectSubmissionView> submissionsTable;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, Integer> colSubId;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubProject;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubStudent;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubSubmittedAt;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, Void> colSubActions;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubResponse;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubFile;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubZip;
 
     @FXML
     private TextField submissionsSearchField;
@@ -125,9 +157,6 @@ public final class BackProjectsController {
     private FlowPane adminCardsFlow;
 
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
-    private final List<Project> allProjects = new ArrayList<>();
-    private int projectsPageSize = 10;
-    private int projectsCurrentPage = 1;
     private final ObservableList<ProjectSubmissionView> submissions = FXCollections.observableArrayList();
     private final ObservableList<ProjectSubmissionView> allSubmissions = FXCollections.observableArrayList();
     private final Map<Integer, Integer> submissionsCountByProject = new HashMap<>();
@@ -164,7 +193,7 @@ public final class BackProjectsController {
             projectSearchField.textProperty().addListener((obs, o, n) -> reloadProjects(null));
         }
         if (projectsSortCombo != null) {
-            projectsSortCombo.getItems().setAll("Date desc", "Date asc", "Projet A-Z", "Projet Z-A", "Deadline");
+            projectsSortCombo.getItems().setAll("Date desc", "Date asc", "Titre A-Z", "Deadline");
             if (projectsSortCombo.getValue() == null || String.valueOf(projectsSortCombo.getValue()).isBlank()) {
                 projectsSortCombo.setValue("Date desc");
             }
@@ -252,7 +281,7 @@ public final class BackProjectsController {
         // clamp card width to reasonable range for 2-column layout
         cardW = Math.max(320, Math.min(520, cardW));
 
-        for (Project p : allProjects) {
+        for (Project p : projects) {
             if (p == null) continue;
             VBox card = buildAdminProjectCard(p);
             card.setPrefWidth(cardW);
@@ -332,7 +361,7 @@ public final class BackProjectsController {
                 projectRepo.update(project);
                 info("Publication", project.isPublished() ? "Projet publié." : "Projet dépublié.");
                 // refresh UI
-                if (projectsList != null) projectsList.refresh();
+                if (projectsTable != null) projectsTable.refresh();
                 renderAdminCards();
             } catch (Exception ex) {
                 error("Erreur", ex);
@@ -347,92 +376,197 @@ public final class BackProjectsController {
     }
 
     private void setupProjectsTable() {
-        if (projectsList == null) return;
-        projectsList.setItems(projects);
-        projectsList.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
-            @Override
-            protected void updateItem(Project p, boolean empty) {
-                super.updateItem(p, empty);
-                if (empty || p == null) {
-                    setGraphic(null);
-                    setText(null);
-                    return;
+        if (projectsTable == null) {
+            return;
+        }
+        projectsTable.setItems(projects);
+
+        if (colProjectId != null) {
+            colProjectId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("id"));
+            colProjectId.setVisible(false); // hide ID column in admin list as requested
+        }
+        if (colProjectTitle != null) {
+            colProjectTitle.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("title"));
+        }
+        if (colProjectDeadline != null) {
+            colProjectDeadline.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("deadline"));
+        }
+        if (colProjectPublished != null) {
+            colProjectPublished.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("published"));
+            colProjectPublished.setCellFactory(col -> new TableCell<>() {
+                @Override
+                protected void updateItem(Boolean item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty ? null : (Boolean.TRUE.equals(item) ? "Oui" : "Non"));
                 }
-                Label title = new Label(safe(p.getTitle()));
-                title.getStyleClass().add("stat-value");
-                Label meta = new Label("Soumissions: " + submissionsCountByProject.getOrDefault(p.getId(), 0) + "  •  " + deadlineChipText(p.getDeadline()) + "  •  " + (p.isPublished() ? "Publié" : "Non"));
-                meta.getStyleClass().add("page-subtitle");
-                VBox v = new VBox(4, title, meta);
-                setGraphic(v);
-            }
-        });
-        projectsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            });
+        }
+        if (colProjectCreatedAt != null) {
+            colProjectCreatedAt.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("createdAt"));
+        }
+        if (colProjectSubmissions != null) {
+            colProjectSubmissions.setCellValueFactory(c -> {
+                Project p = c == null ? null : c.getValue();
+                int id = p == null ? 0 : p.getId();
+                int count = id <= 0 ? 0 : submissionsCountByProject.getOrDefault(id, 0);
+                return new javafx.beans.property.SimpleObjectProperty<>(count);
+            });
+        }
+
+        projectsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
             editingProject = newV;
             fillProjectForm(newV);
         });
-        if (projectSearchField != null) projectSearchField.setOnAction(e -> reloadProjects(null));
-    }
 
-    @FXML
-    private void onProjectsPrev(ActionEvent ev) {
-        if (projectsCurrentPage > 1) {
-            showProjectsPage(projectsCurrentPage - 1);
+        if (projectSearchField != null) {
+            projectSearchField.setOnAction(e -> reloadProjects(null));
         }
-    }
-
-    @FXML
-    private void onProjectsNext(ActionEvent ev) {
-        int total = (int) Math.max(1, Math.ceil((double) allProjects.size() / projectsPageSize));
-        if (projectsCurrentPage < total) {
-            showProjectsPage(projectsCurrentPage + 1);
-        }
-    }
-
-    private void showProjectsPage(int page) {
-        projectsCurrentPage = Math.max(1, page);
-        int total = (int) Math.max(1, Math.ceil((double) allProjects.size() / projectsPageSize));
-        int from = (projectsCurrentPage - 1) * projectsPageSize;
-        int to = Math.min(allProjects.size(), from + projectsPageSize);
-        List<Project> sub = new ArrayList<>();
-        if (from < to) sub.addAll(allProjects.subList(from, to));
-        projects.setAll(sub);
-        if (projectsList != null && !projects.isEmpty() && projectsList.getSelectionModel().getSelectedItem() == null) {
-            projectsList.getSelectionModel().selectFirst();
-        }
-        if (projectsPageLabel != null) projectsPageLabel.setText("Page " + projectsCurrentPage + " / " + total);
-        if (projectsPrevBtn != null) projectsPrevBtn.setDisable(projectsCurrentPage <= 1);
-        if (projectsNextBtn != null) projectsNextBtn.setDisable(projectsCurrentPage >= total);
     }
 
     private void setupSubmissionsTable() {
-        if (submissionsList == null) return;
-        submissionsList.setItems(submissions);
-        submissionsList.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
-            @Override
-            protected void updateItem(ProjectSubmissionView s, boolean empty) {
-                super.updateItem(s, empty);
-                if (empty || s == null) { setGraphic(null); setText(null); return; }
-                Label title = new Label(safe(s.getProjectTitle()));
-                title.getStyleClass().add("stat-value");
-                Label meta = new Label(safe(s.getSubmittedAt()) + "  •  " + safe(s.getStudentEmail()));
-                meta.getStyleClass().add("page-subtitle");
-                Label resp = new Label(summarize(safe(s.getTextResponse()), 120));
-                resp.setWrapText(true);
-                Button dlC = new Button("Télécharger"); dlC.getStyleClass().add("btn-rgb-compact"); dlC.setDisable(safe(s.getCahierPath()).isBlank()); dlC.setOnAction(e -> { try { File f = new File(s.getCahierPath()); if (f.exists()) Desktop.getDesktop().open(f); else info("Fichier introuvable","Le fichier n'existe pas: " + s.getCahierPath()); } catch (Exception ex){ error("Erreur ouverture fichier", ex); } });
-                Button dlZ = new Button("Télécharger"); dlZ.getStyleClass().add("btn-rgb-compact"); dlZ.setDisable(safe(s.getDossierPath()).isBlank()); dlZ.setOnAction(e -> { try { File f = new File(s.getDossierPath()); if (f.exists()) Desktop.getDesktop().open(f); else info("Fichier introuvable","Le fichier n'existe pas: " + s.getDossierPath()); } catch (Exception ex){ error("Erreur ouverture fichier", ex); } });
-                Button kan = new Button("Voir Kanban"); kan.getStyleClass().add("btn-rgb-outline"); kan.setOnAction(e -> { selectedSubmission = s; openKanbanWindow(s); });
-                HBox right = new HBox(8, dlC, dlZ, kan);
-                VBox left = new VBox(4, title, meta, resp);
-                Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
-                HBox row = new HBox(12, left, spacer, right); row.getStyleClass().add("submission-row");
-                setGraphic(row); setText(null);
-            }
+        if (submissionsTable == null) {
+            return;
+        }
+        submissionsTable.setItems(submissions);
+
+        if (colSubId != null) {
+            colSubId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("id"));
+            colSubId.setVisible(false); // hide id column
+        }
+        if (colSubProject != null) {
+            colSubProject.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue() == null ? null : c.getValue().getProjectTitle())));
+        }
+        if (colSubStudent != null) {
+            colSubStudent.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue() == null ? null : c.getValue().getStudentEmail())));
+        }
+        if (colSubSubmittedAt != null) {
+            colSubSubmittedAt.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("submittedAt"));
+        }
+
+        if (colSubResponse != null) {
+            colSubResponse.setCellValueFactory(c -> new SimpleStringProperty(summarize(safe(c.getValue() == null ? null : c.getValue().getTextResponse()), 120)));
+        }
+
+        if (colSubFile != null) {
+            colSubFile.setCellFactory(col -> new TableCell<>() {
+                private final Button btn = new Button("Télécharger");
+                {
+                    btn.getStyleClass().add("btn-rgb-compact");
+                }
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
+                    ProjectSubmissionView s = getTableView().getItems().get(getIndex());
+                    String path = s == null ? null : s.getCahierPath();
+                    if (path == null || path.isBlank()) {
+                        btn.setDisable(true);
+                    } else {
+                        btn.setDisable(false);
+                        btn.setOnAction(e -> {
+                            try {
+                                File f = new File(path);
+                                if (f.exists()) {
+                                    Desktop.getDesktop().open(f);
+                                } else {
+                                    info("Fichier introuvable", "Le fichier n'existe pas: " + path);
+                                }
+                            } catch (Exception ex) {
+                                error("Erreur ouverture fichier", ex);
+                            }
+                        });
+                    }
+                    setGraphic(btn);
+                    setText(null);
+                }
+            });
+        }
+
+        if (colSubZip != null) {
+            colSubZip.setCellFactory(col -> new TableCell<>() {
+                private final Button btn = new Button("Télécharger");
+                {
+                    btn.getStyleClass().add("btn-rgb-compact");
+                }
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
+                    ProjectSubmissionView s = getTableView().getItems().get(getIndex());
+                    String path = s == null ? null : s.getDossierPath();
+                    if (path == null || path.isBlank()) {
+                        btn.setDisable(true);
+                    } else {
+                        btn.setDisable(false);
+                        btn.setOnAction(e -> {
+                            try {
+                                File f = new File(path);
+                                if (f.exists()) {
+                                    Desktop.getDesktop().open(f);
+                                } else {
+                                    info("Fichier introuvable", "Le fichier n'existe pas: " + path);
+                                }
+                            } catch (Exception ex) {
+                                error("Erreur ouverture fichier", ex);
+                            }
+                        });
+                    }
+                    setGraphic(btn);
+                    setText(null);
+                }
+            });
+        }
+
+        if (colSubActions != null) {
+            colSubActions.setCellFactory(col -> new TableCell<>() {
+                private final Button btn = new Button("Voir Kanban");
+                {
+                    btn.getStyleClass().add("btn-rgb-outline");
+                    btn.setOnAction(e -> {
+                        int idx = getIndex();
+                        if (idx < 0 || idx >= submissionsTable.getItems().size()) return;
+                        ProjectSubmissionView s = submissionsTable.getItems().get(idx);
+                        if (s == null) return;
+                        submissionsTable.getSelectionModel().select(s);
+                        selectedSubmission = s;
+                        openKanbanWindow(s);
+                    });
+                }
+
+                @Override
+                protected void updateItem(Void item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
+                    setGraphic(btn);
+                    setText(null);
+                }
+            });
+        }
+
+        submissionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            selectedSubmission = newV;
         });
-        submissionsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> selectedSubmission = newV);
-        if (submissionsSearchField != null) submissionsSearchField.textProperty().addListener((obs, oldV, newV) -> applySubmissionsFilterAndSort());
+
+        if (submissionsSearchField != null) {
+            submissionsSearchField.textProperty().addListener((obs, oldV, newV) -> applySubmissionsFilterAndSort());
+        }
         if (submissionsSortCombo != null) {
             submissionsSortCombo.getItems().setAll("Date desc", "Date asc", "Projet A-Z", "Projet Z-A");
-            if (submissionsSortCombo.getValue() == null || String.valueOf(submissionsSortCombo.getValue()).isBlank()) submissionsSortCombo.setValue("Date desc");
+            if (submissionsSortCombo.getValue() == null || String.valueOf(submissionsSortCombo.getValue()).isBlank()) {
+                submissionsSortCombo.setValue("Date desc");
+            }
             submissionsSortCombo.valueProperty().addListener((obs, oldV, newV) -> applySubmissionsFilterAndSort());
         }
     }
@@ -454,7 +588,7 @@ public final class BackProjectsController {
                 controller.setSubmission(submission);
             }
 
-            Scene ownerScene = submissionsList == null ? null : submissionsList.getScene();
+            Scene ownerScene = submissionsTable == null ? null : submissionsTable.getScene();
             Window owner = ownerScene == null ? null : ownerScene.getWindow();
 
             Stage stage = new Stage();
@@ -479,20 +613,19 @@ public final class BackProjectsController {
     @FXML
     private void reloadProjects(ActionEvent event) {
         String q = projectSearchField == null ? "" : String.valueOf(projectSearchField.getText());
-        allProjects.clear();
-        allProjects.addAll(projectRepo.listAll(q));
+        projects.setAll(projectRepo.listAll(q));
         refreshSubmissionCounts();
         applyProjectsSort();
-        // refresh admin cards view when projects change — render from full list
+        // refresh admin cards view when projects change
         renderAdminCards();
-        // show first page
-        projectsCurrentPage = 1;
-        showProjectsPage(projectsCurrentPage);
+        if (!projects.isEmpty() && projectsTable != null && projectsTable.getSelectionModel().getSelectedItem() == null) {
+            projectsTable.getSelectionModel().selectFirst();
+        }
     }
 
     @FXML
     private void editProject(ActionEvent event) {
-        Project sel = projectsList == null ? null : projectsList.getSelectionModel().getSelectedItem();
+        Project sel = projectsTable == null ? null : projectsTable.getSelectionModel().getSelectedItem();
         if (sel == null) {
             info("Modification", "Sélectionnez un projet à modifier.");
             return;
@@ -508,7 +641,9 @@ public final class BackProjectsController {
     @FXML
     private void newProject(ActionEvent event) {
         editingProject = null;
-        if (projectsList != null) projectsList.getSelectionModel().clearSelection();
+        if (projectsTable != null) {
+            projectsTable.getSelectionModel().clearSelection();
+        }
         fillProjectForm(null);
     }
 
@@ -540,31 +675,17 @@ public final class BackProjectsController {
         // Marquer les champs en erreur visuellement
         FormValidator fv = new FormValidator();
         fv.check(titleField, ProjectValidationService.validateTitreProjet(p.getTitle()));
-        ValidationResult dlR = ProjectValidationService.validateDeadlineStr(p.getDeadline());
         if (deadlineDatePicker != null) {
-            fv.check(deadlineDatePicker, dlR);
-            if (deadlineError != null) {
-                boolean has = !dlR.isValid();
-                deadlineError.setVisible(has);
-                deadlineError.setManaged(has);
-                deadlineError.setText(has ? String.join(" ", dlR.getErrors()) : "");
-            }
+            fv.check(deadlineDatePicker, ProjectValidationService.validateDeadlineStr(p.getDeadline()));
         }
         if (descriptionArea != null) {
             ValidationResult descR = new ValidationResult();
+            // description optionnelle mais si renseignée doit avoir du sens
             String desc = p.getDescription();
-            if (desc == null || desc.isBlank()) {
-                descR.addError("La description est obligatoire.");
-            } else if (desc.trim().length() < 10) {
-                descR.addError("La description doit contenir au moins 10 caractères.");
+            if (desc != null && !desc.isBlank() && desc.trim().length() < 10) {
+                descR.addError("La description doit contenir au moins 10 caractères si elle est renseignée.");
             }
             fv.check(descriptionArea, descR);
-            if (descriptionError != null) {
-                boolean has = !descR.isValid();
-                descriptionError.setVisible(has);
-                descriptionError.setManaged(has);
-                descriptionError.setText(has ? String.join(" ", descR.getErrors()) : "");
-            }
         }
 
         if (!result.isValid()) {
@@ -577,11 +698,11 @@ public final class BackProjectsController {
                 p.setCreatedById(AppState.getUserId());
                 projectRepo.create(p);
                 projects.add(0, p);
-                if (projectsList != null) projectsList.getSelectionModel().select(p);
+                if (projectsTable != null) projectsTable.getSelectionModel().select(p);
                 renderAdminCards();
             } else {
                 projectRepo.update(p);
-                if (projectsList != null) projectsList.refresh();
+                if (projectsTable != null) projectsTable.refresh();
                 renderAdminCards();
             }
             info("Projet enregistré", "Le projet a été enregistré.");
@@ -593,7 +714,7 @@ public final class BackProjectsController {
 
     @FXML
     private void deleteProject(ActionEvent event) {
-        Project sel = projectsList == null ? null : projectsList.getSelectionModel().getSelectedItem();
+        Project sel = projectsTable == null ? null : projectsTable.getSelectionModel().getSelectedItem();
         if (sel == null) {
             info("Suppression", "Sélectionnez un projet à supprimer.");
             return;
@@ -660,8 +781,8 @@ public final class BackProjectsController {
         allSubmissions.setAll(submissionRepo.listAll());
         refreshSubmissionCounts();
         applySubmissionsFilterAndSort();
-        if (!submissions.isEmpty() && submissionsList != null && submissionsList.getSelectionModel().getSelectedItem() == null) {
-            submissionsList.getSelectionModel().selectFirst();
+        if (!submissions.isEmpty() && submissionsTable != null && submissionsTable.getSelectionModel().getSelectedItem() == null) {
+            submissionsTable.getSelectionModel().selectFirst();
         }
     }
 
@@ -672,8 +793,8 @@ public final class BackProjectsController {
             if (m != null) {
                 submissionsCountByProject.putAll(m);
             }
-            if (projectsList != null) {
-                projectsList.refresh();
+            if (projectsTable != null) {
+                projectsTable.refresh();
             }
         } catch (Exception ignore) {
         }
@@ -681,19 +802,15 @@ public final class BackProjectsController {
 
     private void applyProjectsSort() {
         String sort = projectsSortCombo == null ? "Date desc" : String.valueOf(projectsSortCombo.getValue());
-        if ("Projet A-Z".equalsIgnoreCase(sort) || "Titre A-Z".equalsIgnoreCase(sort)) {
-            allProjects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()), String.CASE_INSENSITIVE_ORDER));
-        } else if ("Projet Z-A".equalsIgnoreCase(sort)) {
-            allProjects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()), String.CASE_INSENSITIVE_ORDER).reversed());
+        if ("Titre A-Z".equalsIgnoreCase(sort)) {
+            projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()), String.CASE_INSENSITIVE_ORDER));
         } else if ("Deadline".equalsIgnoreCase(sort)) {
-            allProjects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getDeadline())));
+            projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getDeadline())));
         } else if ("Date asc".equalsIgnoreCase(sort)) {
-            allProjects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())));
+            projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())));
         } else {
-            allProjects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())).reversed());
+            projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())).reversed());
         }
-        // refresh current page view after sorting
-        showProjectsPage(projectsCurrentPage <= 0 ? 1 : projectsCurrentPage);
     }
 
     private static LocalDate parseIsoDate(String value) {
@@ -754,11 +871,6 @@ public final class BackProjectsController {
             return v;
         }
         return v.substring(0, Math.max(0, max - 1)).trim() + "…";
-    }
-
-    private static String deadlineChipText(String deadline) {
-        String d = safe(deadline);
-        return d.isBlank() ? "Sans date" : d;
     }
 
     private static void info(String title, String message) {

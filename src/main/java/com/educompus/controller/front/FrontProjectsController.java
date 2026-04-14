@@ -23,8 +23,9 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -157,7 +158,28 @@ public final class FrontProjectsController {
     private VBox kanbanDoneColumn;
 
     @FXML
-    private ListView<ProjectSubmissionView> submissionsList;
+    private TableView<ProjectSubmissionView> submissionsTable;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, Integer> colSubId;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubProject;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubSubmittedAt;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubResponse;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubFile;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, String> colSubZip;
+
+    @FXML
+    private TableColumn<ProjectSubmissionView, Void> colSubActions;
 
     @FXML
     private Label selectedSubmissionLabel;
@@ -370,44 +392,89 @@ public final class FrontProjectsController {
         return false;
     }
 
-        private void setupSubmissionsTable() {
-            if (submissionsList == null) {
-                return;
-            }
-            submissionsList.setItems(submissions);
-            submissionsList.setCellFactory(list -> new ListCell<>() {
-                @Override
-                protected void updateItem(ProjectSubmissionView s, boolean empty) {
-                    super.updateItem(s, empty);
-                    if (empty || s == null) {
-                        setGraphic(null);
-                        setText(null);
-                        return;
-                    }
-                    Label title = new Label(safe(s.getProjectTitle()));
-                    title.getStyleClass().add("stat-value");
+	    private void setupSubmissionsTable() {
+	        if (submissionsTable == null) {
+	            return;
+	        }
+	        submissionsTable.setItems(submissions);
 
-                    Label meta = new Label(safe(s.getSubmittedAt()));
-                    meta.getStyleClass().add("page-subtitle");
+	        if (colSubId != null) {
+	            colSubId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("id"));
+	            colSubId.setVisible(false);
+	        }
+        if (colSubProject != null) {
+            colSubProject.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue() == null ? null : c.getValue().getProjectTitle())));
+        }
+	        if (colSubSubmittedAt != null) {
+	            colSubSubmittedAt.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("submittedAt"));
+	        }
+		        if (colSubResponse != null) {
+		            colSubResponse.setCellValueFactory(c -> new SimpleStringProperty(summarize(safe(c.getValue() == null ? null : c.getValue().getTextResponse()), 120)));
+		        }
+		        setupDownloadColumn(colSubFile, s -> s == null ? null : s.getCahierPath(), "fichier");
+		        setupDownloadColumn(colSubZip, s -> s == null ? null : s.getDossierPath(), "zip");
+		        setupDeleteSubmissionColumn();
 
-                    Label resp = new Label(summarize(safe(s.getTextResponse()), 120));
-                    resp.setWrapText(true);
+	        submissionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+	            selectedSubmission = newV;
+	            updateSelectedSubmissionLabel();
+	        });
+	    }
 
-                    Button dlCahier = new Button("Télécharger");
-                    dlCahier.getStyleClass().add("btn-rgb-compact");
-                    dlCahier.setDisable(safe(s.getCahierPath()).isBlank());
-                    dlCahier.setOnAction(e -> downloadFromPath(s.getCahierPath(), "fichier"));
+	    private void setupDownloadColumn(
+	            TableColumn<ProjectSubmissionView, String> column,
+	            java.util.function.Function<ProjectSubmissionView, String> pathGetter,
+	            String kind
+	    ) {
+	        if (column == null) {
+	            return;
+	        }
+	        column.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue() == null ? null : pathGetter.apply(c.getValue()))));
+		        column.setCellFactory(col -> new TableCell<>() {
+		            private final Button btn = new Button("Télécharger");
+		            {
+		                btn.getStyleClass().add("btn-rgb-compact");
+		                btn.setOnAction(e -> downloadFromPath(getItem(), kind));
+		            }
 
-                    Button dlZip = new Button("Télécharger");
-                    dlZip.getStyleClass().add("btn-rgb-compact");
-                    dlZip.setDisable(safe(s.getDossierPath()).isBlank());
-                    dlZip.setOnAction(e -> downloadFromPath(s.getDossierPath(), "zip"));
+	            @Override
+	            protected void updateItem(String item, boolean empty) {
+	                super.updateItem(item, empty);
+	                if (empty) {
+	                    setGraphic(null);
+	                    setText(null);
+	                    return;
+	                }
+	                boolean has = !safe(item).isBlank();
+	                btn.setDisable(!has);
+	                setGraphic(btn);
+	                setText(null);
+	            }
+	        });
+	    }
 
-                    Button edit = new Button("Modifier");
+	    private void setupDeleteSubmissionColumn() {
+	        if (colSubActions == null) {
+	            return;
+	        }
+            colSubActions.setCellFactory(col -> new TableCell<>() {
+                private final Button edit = new Button();
+                private final Button del = new Button();
+                private final HBox box = new HBox(8);
+                {
+                    // restore emoji text icons and original styles
+                    edit.setGraphic(null);
+                    edit.setText("Modifier");
+                    edit.setTooltip(new Tooltip("Modifier"));
                     edit.getStyleClass().add("btn-rgb-outline");
                     edit.setOnAction(e -> {
+                        if (getTableView() == null) return;
+                        int idx = getIndex();
+                        if (idx < 0 || idx >= getTableView().getItems().size()) return;
+                        ProjectSubmissionView s = getTableView().getItems().get(idx);
+                        if (s == null) return;
+                        // start editing in the submission form below the table
                         startEditingSubmission(s);
-                        submissionsList.getSelectionModel().select(s);
                         Project p = findProjectById(s.getProjectId());
                         if (p == null) {
                             p = new Project();
@@ -419,28 +486,38 @@ public final class FrontProjectsController {
                         }
                         selectedProject = p;
                         showSubmit(p);
+                        // select row
+                        getTableView().getSelectionModel().select(s);
                     });
 
-                    Button del = new Button("Supprimer");
+                    del.setGraphic(null);
+                    del.setText("Supprimer");
+                    del.setTooltip(new Tooltip("Supprimer"));
                     del.getStyleClass().add("btn-danger");
-                    del.setOnAction(e -> deleteSubmissionMine(s));
+                    del.setOnAction(e -> {
+                        if (getTableView() == null) return;
+                        int idx = getIndex();
+                        if (idx < 0 || idx >= getTableView().getItems().size()) return;
+                        ProjectSubmissionView s = getTableView().getItems().get(idx);
+                        deleteSubmissionMine(s);
+                    });
 
-                    HBox right = new HBox(8, dlCahier, dlZip, edit, del);
-                    VBox left = new VBox(4, title, meta, resp);
-                    Region spacer = new Region();
-                    HBox.setHgrow(spacer, Priority.ALWAYS);
-                    HBox row = new HBox(12, left, spacer, right);
-                    row.getStyleClass().add("submission-row");
-                    setGraphic(row);
+                    box.getChildren().addAll(edit, del);
+                }
+
+                @Override
+                protected void updateItem(Void item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
+                    setGraphic(box);
                     setText(null);
                 }
             });
-
-            submissionsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-                selectedSubmission = newV;
-                updateSelectedSubmissionLabel();
-            });
-        }
+	    }
 
 	    private void deleteSubmissionMine(ProjectSubmissionView submission) {
 	        if (submission == null) {
@@ -1100,8 +1177,8 @@ public final class FrontProjectsController {
 
         if (keepId > 0) {
             selectSubmissionById(keepId);
-        } else if (!submissions.isEmpty() && submissionsList != null && submissionsList.getSelectionModel().getSelectedItem() == null) {
-            submissionsList.getSelectionModel().selectFirst();
+        } else if (!submissions.isEmpty() && submissionsTable != null && submissionsTable.getSelectionModel().getSelectedItem() == null) {
+            submissionsTable.getSelectionModel().selectFirst();
         }
     }
 
@@ -1225,17 +1302,17 @@ public final class FrontProjectsController {
     }
 
     private void selectSubmissionById(int id) {
-        if (id <= 0 || submissionsList == null) {
+        if (id <= 0 || submissionsTable == null) {
             return;
         }
         for (ProjectSubmissionView s : submissions) {
             if (s != null && s.getId() == id) {
-                submissionsList.getSelectionModel().select(s);
+                submissionsTable.getSelectionModel().select(s);
                 return;
             }
         }
         if (!submissions.isEmpty()) {
-            submissionsList.getSelectionModel().selectFirst();
+            submissionsTable.getSelectionModel().selectFirst();
         }
     }
 
