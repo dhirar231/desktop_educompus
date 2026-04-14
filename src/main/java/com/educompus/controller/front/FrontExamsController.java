@@ -99,6 +99,11 @@ public final class FrontExamsController {
 
     @FXML
     private void initialize() {
+        // Reload when repository signals changes (add/update/delete/publish)
+        try {
+            com.educompus.repository.ExamRepository.CHANGE_COUNTER.addListener((obs, oldV, newV) -> reloadCatalogue());
+        } catch (Exception ignored) {
+        }
         if (searchField != null) {
             searchField.textProperty().addListener((obs, oldValue, newValue) -> reloadCatalogue());
         }
