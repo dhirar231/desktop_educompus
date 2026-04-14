@@ -15,6 +15,4 @@ Thumbs.db
 # Logs
 *.log
 
-# Runtime files
-/var/
-
+target/classes/com/educompus/service/ServiceExam.class
