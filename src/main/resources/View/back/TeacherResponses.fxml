@@ -10,7 +10,15 @@
                     <Region HBox.hgrow="ALWAYS" />
                 </HBox>
                 <!-- controls are not needed in Responses view (use Table view controls) -->
-            <ListView fx:id="responsesList" prefHeight="600" />
+            <TableView fx:id="responsesTable" prefHeight="600">
+                <columns>
+                        <TableColumn fx:id="colEmail" text="Email" />
+                        <TableColumn fx:id="colCourse" text="Cours" />
+                        <TableColumn fx:id="colAttempts" text="Tentatives" />
+                        <TableColumn fx:id="colPassed" text="Certif" />
+                        <TableColumn fx:id="colCertificate" text="Chemin certificat" />
+                </columns>
+            </TableView>
         </VBox>
     </children>
 </AnchorPane>

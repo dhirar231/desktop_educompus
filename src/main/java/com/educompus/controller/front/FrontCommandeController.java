@@ -324,14 +324,12 @@ public class FrontCommandeController {
         err.setText(msg);
         err.setVisible(true);
         err.setManaged(true);
-        err.getStyleClass().add("field-error");
         field.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 1.5; -fx-border-radius: 10px;");
     }
 
     private void cacher(Label err, javafx.scene.layout.Region field) {
         err.setVisible(false);
         err.setManaged(false);
-        err.getStyleClass().remove("field-error");
         field.setStyle("");
     }
 

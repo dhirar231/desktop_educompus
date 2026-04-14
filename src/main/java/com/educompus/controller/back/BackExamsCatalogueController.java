@@ -298,7 +298,7 @@ public final class BackExamsCatalogueController {
                 info("Examen", "Aucun tableau actif.");
                 return;
             }
-            javafx.scene.control.ListView<?> table = (javafx.scene.control.ListView<?>) split.lookup("#examsList");
+            TableView<?> table = (TableView<?>) split.lookup("#examsTable");
             if (table != null) {
                 table.getSelectionModel().clearSelection();
             }
@@ -326,7 +326,7 @@ public final class BackExamsCatalogueController {
                 info("Examen", "Aucun tableau actif.");
                 return;
             }
-            javafx.scene.control.ListView<?> table = (javafx.scene.control.ListView<?>) split.lookup("#examsList");
+            TableView<?> table = (TableView<?>) split.lookup("#examsTable");
             if (table == null || table.getSelectionModel().getSelectedItem() == null) {
                 info("Examen", "Selectionnez un examen a modifier.");
                 return;
@@ -356,7 +356,7 @@ public final class BackExamsCatalogueController {
             javafx.scene.control.TextField level = (javafx.scene.control.TextField) split.lookup("#levelField");
             javafx.scene.control.TextField domain = (javafx.scene.control.TextField) split.lookup("#domainField");
             javafx.scene.control.TextArea desc = (javafx.scene.control.TextArea) split.lookup("#examDescriptionArea");
-            javafx.scene.control.ListView<?> table = (javafx.scene.control.ListView<?>) split.lookup("#examsList");
+            TableView<?> table = (TableView<?>) split.lookup("#examsTable");
 
             String t = title == null ? "" : safe(title.getText());
             String d = desc == null ? "" : safe(desc.getText());
@@ -431,7 +431,7 @@ public final class BackExamsCatalogueController {
                 info("Examen", "Aucun tableau actif.");
                 return;
             }
-            javafx.scene.control.ListView<?> table = (javafx.scene.control.ListView<?>) split.lookup("#examsList");
+            TableView<?> table = (TableView<?>) split.lookup("#examsTable");
             if (table == null || table.getSelectionModel().getSelectedItem() == null) {
                 info("Examen", "Selectionnez un examen a supprimer.");
                 return;
