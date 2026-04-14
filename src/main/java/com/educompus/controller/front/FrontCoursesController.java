@@ -7,6 +7,7 @@ import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -21,6 +22,7 @@ import javafx.scene.layout.VBox;
 
 import java.io.File;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class FrontCoursesController {
     private final CourseManagementRepository repository = new CourseManagementRepository();
@@ -40,6 +42,11 @@ public final class FrontCoursesController {
         if (searchField != null) {
             searchField.textProperty().addListener((obs, o, n) -> applyFilter(n));
         }
+
+        if (searchField != null) {
+            searchField.textProperty().addListener((obs, o, n) -> applyFilter());
+        }
+
         renderCards(allCourses);
     }
 
@@ -56,10 +63,17 @@ public final class FrontCoursesController {
         }
         String q = query.trim().toLowerCase();
         List<Cours> filtered = allCourses.stream()
-            .filter(c -> safe(c.getTitre()).toLowerCase().contains(q)
-                      || safe(c.getDomaine()).toLowerCase().contains(q)
-                      || safe(c.getNomFormateur()).toLowerCase().contains(q))
-            .toList();
+            .filter(c -> {
+                boolean matchQ = q.isBlank()
+                    || safe(c.getTitre()).toLowerCase().contains(q)
+                    || safe(c.getDomaine()).toLowerCase().contains(q)
+                    || safe(c.getNomFormateur()).toLowerCase().contains(q);
+                boolean matchD = domaine.isBlank() || domaine.equals("Tous les domaines")
+                    || safe(c.getDomaine()).equalsIgnoreCase(domaine);
+                return matchQ && matchD;
+            })
+            .collect(Collectors.toList());
+
         renderCards(filtered);
     }
 

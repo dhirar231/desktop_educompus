@@ -17,6 +17,14 @@ public class AuthUserService {
         return repository.findAll();
     }
 
+    public AuthUser findByEmail(String email) throws SQLException {
+        return repository.findByEmail(email);
+    }
+
+    public AuthUser findById(int id) throws SQLException {
+        return repository.findById(id);
+    }
+
     public int create(AuthUser user, String plainPassword) throws SQLException {
         validateUser(user, null);
         validatePassword(plainPassword, true);
