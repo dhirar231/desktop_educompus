@@ -23,6 +23,16 @@ public class TeacherResponsesController {
     @FXML private ListView<ExamAttemptRecord> responsesList;
 
     private ObservableList<ExamAttemptRecord> data = FXCollections.observableArrayList();
+    private int examId = 0;
+
+    public void setExamId(int examId) {
+        this.examId = examId;
+        try {
+            loadData();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 
     @FXML
     public void initialize() {
@@ -74,7 +84,7 @@ public class TeacherResponsesController {
     private void loadData() {
         try {
             ExamRepository repo = new ExamRepository();
-            List<ExamAttemptRecord> list = repo.listAttemptsForExam(0); // examId 0 = all exams
+            List<ExamAttemptRecord> list = repo.listAttemptsForExam(examId); // 0 = all exams
             master.setAll(list);
             applyFilter();
         } catch (Exception ex) {

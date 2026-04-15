@@ -119,9 +119,9 @@ public final class BackExamsCatalogueController {
         courseTitle.getStyleClass().add("exam-card-title");
         courseTitle.setWrapText(true);
 
-        Button viewBtn = new Button("Voir");
+        Button viewBtn = new Button("Voir réponses");
         viewBtn.getStyleClass().add("btn-rgb-outline");
-        viewBtn.setOnAction(event -> openQuestions(item));
+        viewBtn.setOnAction(event -> openResponsesForExam(item));
 
         Button publishBtn = new Button(item.isPublished() ? "Dépublier" : "Publier");
         publishBtn.getStyleClass().add(item.isPublished() ? "btn-rgb-outline" : "btn-rgb");
@@ -223,6 +223,32 @@ public final class BackExamsCatalogueController {
             reloadCatalogue();
         } catch (Exception e) {
             error("Erreur questions", e);
+        }
+    }
+
+    private void openResponsesForExam(ExamCatalogueItem item) {
+        if (item == null) return;
+        try {
+            FXMLLoader loader = Navigator.loader("View/back/TeacherResponses.fxml");
+            Parent root = loader.load();
+            TeacherResponsesController controller = loader.getController();
+            if (controller != null) controller.setExamId(item.getExamId());
+
+            Window owner = catalogueFlow == null || catalogueFlow.getScene() == null ? null : catalogueFlow.getScene().getWindow();
+            Stage stage = new Stage();
+            stage.setTitle("Réponses - " + item.getExamTitle());
+            stage.initModality(Modality.WINDOW_MODAL);
+            if (owner != null) stage.initOwner(owner);
+
+            Scene scene = new Scene(root, 980, 640);
+            if (catalogueFlow != null && catalogueFlow.getScene() != null) {
+                scene.getStylesheets().setAll(catalogueFlow.getScene().getStylesheets());
+            }
+            Theme.apply(root);
+            stage.setScene(scene);
+            stage.showAndWait();
+        } catch (Exception e) {
+            error("Erreur réponses", e);
         }
     }
 
