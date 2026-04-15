@@ -144,7 +144,7 @@ public final class BackProjectsController {
 
     @FXML
     private void initialize() {
-        boolean adminOnlyCatalogue = AppState.isAdmin();
+        boolean adminOnlyCatalogue = AppState.isAdmin() || AppState.isTeacher();
         if (catalogueMenuItem != null) {
             catalogueMenuItem.setVisible(adminOnlyCatalogue);
             catalogueMenuItem.setDisable(!adminOnlyCatalogue);
@@ -199,7 +199,7 @@ public final class BackProjectsController {
 
     @FXML
     private void showCatalogueView(ActionEvent event) {
-        if (!AppState.isAdmin()) {
+        if (!(AppState.isAdmin() || AppState.isTeacher())) {
             showProjectsView(null);
             return;
         }
@@ -244,7 +244,7 @@ public final class BackProjectsController {
     }
 
     private void renderAdminCards() {
-        if (!AppState.isAdmin() || adminCardsFlow == null) return;
+        if (!(AppState.isAdmin() || AppState.isTeacher()) || adminCardsFlow == null) return;
         adminCardsFlow.getChildren().clear();
         // Aim for 3 cards per row: compute card width based on available width
         double avail = 900;
@@ -318,7 +318,22 @@ public final class BackProjectsController {
         Region grow = new Region();
         HBox.setHgrow(grow, Priority.ALWAYS);
 
-        // removed direct Voir/Éditer buttons from card per admin design
+        // button to view submissions for this project
+        Button btnViewSubs = new Button("Voir soumissions");
+        btnViewSubs.getStyleClass().add("btn-rgb-outline");
+        btnViewSubs.setOnAction(e -> {
+            try {
+                if (submissionsSearchField != null) {
+                    submissionsSearchField.setText(safe(project.getTitle()));
+                }
+                // ensure submissions pane is visible and refreshed
+                setView(submissionsPane);
+                if (projectsMenuButton != null) projectsMenuButton.setText("Soumissions");
+                reloadSubmissions(null);
+            } catch (Exception ex) {
+                error("Erreur", ex);
+            }
+        });
 
         // publish/unpublish button (avoid aggressive red style; use RGB outline when published)
         Button btnPublish = new Button(published ? "Dépublier" : "Publier");
@@ -346,7 +361,11 @@ public final class BackProjectsController {
             }
         });
 
-        HBox actions = new HBox(10, grow, btnPublish);
+        HBox actions = new HBox(10);
+        actions.getChildren().addAll(grow, btnViewSubs);
+        if (AppState.isAdmin()) {
+            actions.getChildren().add(btnPublish);
+        }
         actions.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
         card.getChildren().addAll(container, actions);
