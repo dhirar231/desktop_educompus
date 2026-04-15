@@ -11,6 +11,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -47,6 +48,7 @@ public final class BackExamsCatalogueController {
     private final ExamRepository repository = new ExamRepository();
     private final List<ExamCatalogueItem> catalogue = new ArrayList<>();
     private BackExamsController embeddedTableController;
+    private long lastSeenChangeCounter = Long.MIN_VALUE;
 
     @FXML
     private void initialize() {
@@ -64,11 +66,24 @@ public final class BackExamsCatalogueController {
             catalogueFlow.prefWrapLengthProperty().bind(cardsScroll.widthProperty().subtract(80));
         }
         showCards();
+        observeExamChanges();
 
         boolean allowed = AppState.isAdmin() || AppState.isTeacher();
         if (viewResponsesItem != null) {
             viewResponsesItem.setVisible(allowed);
         }
+    }
+
+    private void observeExamChanges() {
+        lastSeenChangeCounter = ExamRepository.CHANGE_COUNTER.get();
+        ExamRepository.CHANGE_COUNTER.addListener((obs, oldValue, newValue) -> {
+            long next = newValue == null ? Long.MIN_VALUE : newValue.longValue();
+            if (next == lastSeenChangeCounter) {
+                return;
+            }
+            lastSeenChangeCounter = next;
+            Platform.runLater(this::reloadCatalogue);
+        });
     }
 
     @FXML
