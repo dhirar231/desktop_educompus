@@ -230,7 +230,7 @@ public final class FrontExamsController {
 
     private void openSelectedDetail() {
         if (selectedItem == null) {
-            info("Examens", "Selectionnez un examen.");
+            info("Examens", "Sélectionnez un examen.");
             return;
         }
         showSelection(selectedItem);
@@ -256,7 +256,7 @@ public final class FrontExamsController {
         selectedAnswers = new int[activeQuestions.size()];
         java.util.Arrays.fill(selectedAnswers, -1);
         questionIndex = 0;
-        quizResultLabel.setText("Selectionnez une reponse pour continuer.");
+        quizResultLabel.setText("Sélectionnez une réponse pour continuer.");
         renderQuestion();
         showPane(quizPane);
     }
@@ -309,7 +309,7 @@ public final class FrontExamsController {
         }
         int total = activeQuestions.size();
         int percent = total == 0 ? 0 : (int) Math.round((score * 100.0) / total);
-        quizResultLabel.setText("Resultat: %d/%d bonnes reponses (%d%%).".formatted(score, total, percent));
+        quizResultLabel.setText("Résultat: %d/%d bonnes réponses (%d%%).".formatted(score, total, percent));
         nextQuestionButton.setDisable(true);
         submitQuizButton.setDisable(true);
         answersBox.setDisable(true);
@@ -322,7 +322,7 @@ public final class FrontExamsController {
             int prevAttempts = repository.getAttemptCount(email, examId);
             int attemptNumber = prevAttempts + 1;
             if (prevAttempts >= 2) {
-                info("Quiz", "Vous avez deja utilise vos 2 essais pour cet examen.");
+                info("Quiz", "Vous avez déjà utilisé vos 2 essais pour cet examen.");
                 return;
             }
             boolean passed = percent >= 50;
@@ -335,10 +335,10 @@ public final class FrontExamsController {
 
                 // show dialog with download button
                 javafx.scene.control.Alert done = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                done.setTitle("Felicitation");
-                done.setHeaderText("Vous avez reussi l'examen !");
-                done.setContentText("Score: " + percent + "%\nCliquez sur 'Telecharger' pour recuperer votre certificat.");
-                javafx.scene.control.ButtonType download = new javafx.scene.control.ButtonType("Telecharger");
+                done.setTitle("Félicitations");
+                done.setHeaderText("Vous avez réussi l'examen !");
+                done.setContentText("Score: " + percent + "%\nCliquez sur 'Télécharger' pour récupérer votre certificat.");
+                javafx.scene.control.ButtonType download = new javafx.scene.control.ButtonType("Télécharger");
                 javafx.scene.control.ButtonType close = javafx.scene.control.ButtonType.OK;
                 done.getButtonTypes().setAll(download, close);
                 java.util.Optional<javafx.scene.control.ButtonType> res = done.showAndWait();
@@ -425,7 +425,7 @@ public final class FrontExamsController {
         }
         if (selectedIndex < 0) {
             if (showWarning) {
-                info("Quiz", "Choisissez une reponse avant de continuer.");
+                info("Quiz", "Choisissez une réponse avant de continuer.");
             }
             return false;
         }
