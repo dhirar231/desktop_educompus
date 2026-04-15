@@ -327,30 +327,36 @@ public final class FrontExamsController {
             }
             boolean passed = percent >= 50;
             String certificatePath = null;
-            if (passed) {
-                // generate certificate
-                String name = com.educompus.app.AppState.getUserDisplayName();
-                certificatePath = repository.createCertificatePdf(name == null ? email : name, email, selectedItem.getExamTitle(), percent, examId);
-                repository.recordAttempt(email, examId, percent, true, certificatePath);
+                if (passed) {
+                    // generate certificate
+                    String name = com.educompus.app.AppState.getUserDisplayName();
+                    certificatePath = repository.createCertificatePdf(name == null ? email : name, email, selectedItem.getExamTitle(), percent, examId);
+                    repository.recordAttempt(email, examId, percent, true, certificatePath);
 
-                // show dialog with download button
-                javafx.scene.control.Alert done = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                done.setTitle("Félicitations");
-                done.setHeaderText("Vous avez réussi l'examen !");
-                done.setContentText("Score: " + percent + "%\nCliquez sur 'Télécharger' pour récupérer votre certificat.");
-                javafx.scene.control.ButtonType download = new javafx.scene.control.ButtonType("Télécharger");
-                javafx.scene.control.ButtonType close = javafx.scene.control.ButtonType.OK;
-                done.getButtonTypes().setAll(download, close);
-                java.util.Optional<javafx.scene.control.ButtonType> res = done.showAndWait();
-                if (res.isPresent() && res.get() == download) {
-                    try {
-                        java.awt.Desktop.getDesktop().open(new java.io.File(certificatePath));
-                    } catch (Exception e) {
-                        info("Fichier", "Impossible d'ouvrir le certificat: " + certificatePath);
+                    // show dialog with download button
+                    javafx.scene.control.Alert done = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                    done.setTitle("Félicitations");
+                    done.setHeaderText("Vous avez réussi l'examen !");
+                    done.setContentText("Score: " + percent + "%\nCliquez sur 'Télécharger' pour récupérer votre certificat.");
+                    javafx.scene.control.ButtonType download = new javafx.scene.control.ButtonType("Télécharger");
+                    javafx.scene.control.ButtonType close = javafx.scene.control.ButtonType.OK;
+                    done.getButtonTypes().setAll(download, close);
+                    java.util.Optional<javafx.scene.control.ButtonType> res = done.showAndWait();
+                    if (res.isPresent() && res.get() == download) {
+                        try {
+                            java.awt.Desktop.getDesktop().open(new java.io.File(certificatePath));
+                        } catch (Exception e) {
+                            info("Fichier", "Impossible d'ouvrir le certificat: " + certificatePath);
+                        }
                     }
-                }
-                return;
-            } else {
+
+                    // refresh UI so the detail view reflects the new passed/certificate state
+                    try {
+                        showSelection(selectedItem);
+                    } catch (Exception ignored) {}
+                    showPane(detailPane);
+                    return;
+                } else {
                 // failed
                 repository.recordAttempt(email, examId, percent, false, null);
                 if (attemptNumber == 1) {
