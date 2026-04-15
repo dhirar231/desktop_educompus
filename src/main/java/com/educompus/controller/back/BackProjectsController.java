@@ -15,13 +15,17 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.TableCell;
@@ -29,6 +33,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.Priority;
@@ -52,6 +58,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public final class BackProjectsController {
     private final ProjectRepository projectRepo = new ProjectRepository();
@@ -368,7 +375,6 @@ public final class BackProjectsController {
         });
         projectsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
             editingProject = newV;
-            fillProjectForm(newV);
         });
         if (projectSearchField != null) projectSearchField.setOnAction(e -> reloadProjects(null));
     }
@@ -497,19 +503,12 @@ public final class BackProjectsController {
             info("Modification", "Sélectionnez un projet à modifier.");
             return;
         }
-        editingProject = sel;
-        fillProjectForm(sel);
-        if (titleField != null) {
-            titleField.requestFocus();
-            titleField.selectAll();
-        }
+        openProjectDialog(sel);
     }
 
     @FXML
     private void newProject(ActionEvent event) {
-        editingProject = null;
-        if (projectsList != null) projectsList.getSelectionModel().clearSelection();
-        fillProjectForm(null);
+        openProjectDialog(null);
     }
 
     @FXML
@@ -610,10 +609,8 @@ public final class BackProjectsController {
 
         try {
             projectRepo.delete(sel.getId());
-            projects.remove(sel);
-            // update admin catalogue after deletion
-            renderAdminCards();
-            newProject(null);
+            info("Suppression", "Projet supprimé.");
+            reloadProjects(null);
         } catch (Exception e) {
             error("Erreur", e);
         }
@@ -653,6 +650,92 @@ public final class BackProjectsController {
         if (publishedCheck != null) {
             publishedCheck.setSelected(p != null && p.isPublished());
         }
+    }
+
+    private void openProjectDialog(Project source) {
+        FormResult<Project> result = showProjectForm(source);
+        if (!result.saved()) return;
+
+        try {
+            Project project = result.value();
+            if (project.getId() <= 0) {
+                project.setCreatedById(AppState.getUserId());
+                projectRepo.create(project);
+                info("Projet enregistré", "Le projet a été ajouté.");
+            } else {
+                projectRepo.update(project);
+                info("Projet enregistré", "Le projet a été mis à jour.");
+            }
+            reloadProjects(null);
+            selectProjectById(project.getId());
+        } catch (Exception e) {
+            error("Erreur", e);
+        }
+    }
+
+    private FormResult<Project> showProjectForm(Project source) {
+        TextField title = field();
+        DatePicker datePicker = new DatePicker();
+        datePicker.getStyleClass().addAll("field", "date-picker");
+        datePicker.setMaxWidth(Double.MAX_VALUE);
+
+        TextField timeField = field();
+        timeField.setPromptText("HH:mm:ss");
+        TextArea description = area();
+        CheckBox published = new CheckBox("Publié");
+
+        if (source != null) {
+            title.setText(safe(source.getTitle()));
+            description.setText(safe(source.getDescription()));
+            published.setSelected(source.isPublished());
+            fillDeadlineFields(source.getDeadline(), datePicker, timeField);
+        }
+
+        GridPane grid = formGrid();
+        Label titleErr = addFormRow(grid, 0, "Titre *", title);
+        HBox deadlineBox = new HBox(8, datePicker, timeField);
+        HBox.setHgrow(datePicker, Priority.ALWAYS);
+        HBox.setHgrow(timeField, Priority.ALWAYS);
+        Label deadlineErr = addFormRow(grid, 1, "Deadline *", deadlineBox);
+        Label descErr = addFormRow(grid, 2, "Description *", description);
+        Label publishedErr = addFormRow(grid, 3, "Publication", published);
+        publishedErr.setText("");
+
+        liveValidate(title, titleErr, () -> ProjectValidationService.validateTitreProjet(title.getText()));
+        datePicker.valueProperty().addListener((obs, o, n) -> validateDeadlineFields(datePicker, timeField, deadlineErr));
+        timeField.textProperty().addListener((obs, o, n) -> validateDeadlineFields(datePicker, timeField, deadlineErr));
+        liveValidate(description, descErr, () -> validateProjectDescription(description.getText()));
+
+        Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Créer un projet" : "Modifier un projet", grid);
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ValidationResult titleResult = ProjectValidationService.validateTitreProjet(title.getText());
+            ValidationResult deadlineResult = ProjectValidationService.validateDeadlineStr(buildDeadline(datePicker, timeField));
+            ValidationResult descResult = validateProjectDescription(description.getText());
+
+            applyValidation(title, titleErr, titleResult);
+            applyValidation(datePicker, deadlineErr, deadlineResult);
+            if (deadlineResult.isValid()) FormValidator.clearError(timeField);
+            else FormValidator.markError(timeField, deadlineResult.firstError());
+            applyValidation(description, descErr, descResult);
+
+            if (!titleResult.isValid() || !deadlineResult.isValid() || !descResult.isValid()) {
+                ev.consume();
+            }
+        });
+
+        Optional<ButtonType> answer = dialog.showAndWait();
+        if (answer.isEmpty() || answer.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) {
+            return FormResult.cancelled();
+        }
+
+        Project project = source == null ? new Project() : source;
+        project.setTitle(text(title));
+        project.setDeadline(buildDeadline(datePicker, timeField));
+        project.setDescription(text(description));
+        project.setPublished(published.isSelected());
+        project.setDeliverables(source == null ? "" : safe(source.getDeliverables()));
+        return FormResult.saved(project);
     }
 
     @FXML
@@ -734,6 +817,131 @@ public final class BackProjectsController {
             filtered.sort((a, b) -> safe(b.getSubmittedAt()).compareTo(safe(a.getSubmittedAt())));
         }
         submissions.setAll(filtered);
+    }
+
+    private Dialog<ButtonType> buildFormDialog(String title, Node content) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(title);
+        dialog.setHeaderText(title);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        dialog.getDialogPane().setPrefWidth(760);
+        styleDialog(dialog);
+        return dialog;
+    }
+
+    private GridPane formGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(14);
+        grid.setVgap(4);
+        return grid;
+    }
+
+    private Label addFormRow(GridPane grid, int row, String label, Node node) {
+        Label formLabel = new Label(label);
+        formLabel.getStyleClass().add("form-label");
+        grid.add(formLabel, 0, row * 2);
+        grid.add(node, 1, row * 2);
+        if (node instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+            GridPane.setHgrow(region, Priority.ALWAYS);
+        }
+        Label err = new Label();
+        err.setStyle("-fx-text-fill: #d6293e; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 0 0 4 2;");
+        err.setWrapText(true);
+        err.setMaxWidth(440);
+        grid.add(err, 1, row * 2 + 1);
+        return err;
+    }
+
+    private void liveValidate(TextInputControl field, Label errLabel, java.util.function.Supplier<ValidationResult> validator) {
+        field.textProperty().addListener((obs, o, n) -> applyValidation(field, errLabel, validator.get()));
+    }
+
+    private void validateDeadlineFields(DatePicker datePicker, TextField timeField, Label errLabel) {
+        ValidationResult result = ProjectValidationService.validateDeadlineStr(buildDeadline(datePicker, timeField));
+        applyValidation(datePicker, errLabel, result);
+        if (result.isValid()) FormValidator.clearError(timeField);
+        else FormValidator.markError(timeField, result.firstError());
+    }
+
+    private void applyValidation(javafx.scene.control.Control field, Label errLabel, ValidationResult result) {
+        if (result == null || result.isValid()) {
+            errLabel.setText("");
+            FormValidator.clearError(field);
+        } else {
+            errLabel.setText("⚠ " + result.firstError());
+            FormValidator.markError(field, result.firstError());
+        }
+    }
+
+    private ValidationResult validateProjectDescription(String value) {
+        ValidationResult result = new ValidationResult();
+        String text = safe(value);
+        if (text.isBlank()) result.addError("La description est obligatoire.");
+        else if (text.length() < 10) result.addError("La description doit contenir au moins 10 caractères.");
+        else if (text.length() > 3000) result.addError("La description ne doit pas dépasser 3000 caractères.");
+        return result;
+    }
+
+    private void fillDeadlineFields(String deadline, DatePicker datePicker, TextField timeField) {
+        String value = safe(deadline);
+        if (value.isBlank()) {
+            datePicker.setValue(null);
+            timeField.setText("");
+            return;
+        }
+        String datePart = value.length() >= 10 ? value.substring(0, 10) : value;
+        try {
+            datePicker.setValue(LocalDate.parse(datePart));
+        } catch (Exception e) {
+            datePicker.setValue(null);
+        }
+        timeField.setText(value.length() > 11 ? value.substring(11) : "");
+    }
+
+    private String buildDeadline(DatePicker datePicker, TextField timeField) {
+        LocalDate date = datePicker == null ? null : datePicker.getValue();
+        if (date == null) return "";
+        String time = timeField == null ? "" : safe(timeField.getText());
+        if (time.isBlank()) time = "00:00:00";
+        return date + " " + time;
+    }
+
+    private TextField field() {
+        TextField field = new TextField();
+        field.getStyleClass().add("field");
+        return field;
+    }
+
+    private TextArea area() {
+        TextArea area = new TextArea();
+        area.getStyleClass().addAll("field", "area");
+        area.setPrefRowCount(6);
+        area.setWrapText(true);
+        return area;
+    }
+
+    private void selectProjectById(int projectId) {
+        if (projectId <= 0) return;
+        int index = -1;
+        for (int i = 0; i < allProjects.size(); i++) {
+            if (allProjects.get(i).getId() == projectId) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) return;
+        int page = (index / projectsPageSize) + 1;
+        showProjectsPage(page);
+        for (Project project : projects) {
+            if (project.getId() == projectId) {
+                projectsList.getSelectionModel().select(project);
+                projectsList.scrollTo(project);
+                editingProject = project;
+                return;
+            }
+        }
     }
 
     private static String text(TextField tf) {
@@ -825,5 +1033,10 @@ public final class BackProjectsController {
             if (Character.isDigit(c)) return true;
         }
         return false;
+    }
+
+    private record FormResult<T>(T value, boolean saved) {
+        static <T> FormResult<T> saved(T value) { return new FormResult<>(value, true); }
+        static <T> FormResult<T> cancelled() { return new FormResult<>(null, false); }
     }
 }
