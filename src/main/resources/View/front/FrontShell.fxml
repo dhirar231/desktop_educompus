@@ -86,7 +86,7 @@
                         </graphic>
                     </Button>
 
-                    <Label text="COMMUNAUTÉ" styleClass="nav-section"/>
+                    <!--<Label text="COMMUNAUTÉ" styleClass="nav-section"/>
                     <Button fx:id="navClubsBtn" text="Clubs" onAction="#navClubs" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>
@@ -108,7 +108,7 @@
                                 <SVGPath styleClass="side-svg" content="M19 4H18V2H16V4H8V2H6V4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20ZM19 7H5V6H19V7ZM12 12L13.24 14.51L16 14.91L14 16.86L14.47 19.58L12 18.27L9.53 19.58L10 16.86L8 14.91L10.76 14.51Z"/>
                             </StackPane>
                         </graphic>
-                    </Button>
+                    </Button>-->
 
                     <Label text="MARKETPLACE" styleClass="nav-section"/>
                     <Button fx:id="navMarketplaceBtn" text="Marketplace" onAction="#navMarketplace" maxWidth="1.7976931348623157E308">
@@ -124,7 +124,7 @@
                     </Button>
 
                     <Label text="OUTILS" styleClass="nav-section"/>
-                    <Button fx:id="navCalendarBtn" text="Calendrier" onAction="#navCalendar" maxWidth="1.7976931348623157E308">
+                   <!-- <Button fx:id="navCalendarBtn" text="Calendrier" onAction="#navCalendar" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>
                             <String fx:value="side-menu-btn"/>
@@ -134,7 +134,7 @@
                                 <SVGPath styleClass="side-svg" content="M19 4H18V2H16V4H8V2H6V4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20ZM19 7H5V6H19V7Z"/>
                             </StackPane>
                         </graphic>
-                    </Button>
+                    </Button>-->
                     <Button fx:id="navProfileBtn" text="Profil" onAction="#navProfile" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>
