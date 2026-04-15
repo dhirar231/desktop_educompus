@@ -19,7 +19,7 @@
     </padding>
 
     <VBox spacing="4">
-        <Label text="Questions &amp; reponses" styleClass="page-title"/>
+        <Label text="Questions &amp; réponses" styleClass="page-title"/>
         <Label fx:id="examContextLabel" text="Examen" styleClass="page-subtitle" wrapText="true"/>
     </VBox>
 
@@ -40,26 +40,26 @@
                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                 <Label text="Edition question" styleClass="stat-title"/>
                 <TextArea fx:id="questionTextArea" promptText="Texte de la question" styleClass="field area" prefRowCount="4" wrapText="true"/>
-                <TextField fx:id="durationField" promptText="Duree en secondes" styleClass="field"/>
+                <TextField fx:id="durationField" promptText="Durée en secondes" styleClass="field"/>
                 <HBox spacing="8">
-                    <Label text="Reponses" styleClass="stat-title"/>
+                    <Label text="Réponses" styleClass="stat-title"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="Nouvelle" onAction="#newAnswer" styleClass="btn-rgb"/>
                     <Button text="Supprimer" onAction="#deleteAnswer" styleClass="btn-rgb-outline"/>
                 </HBox>
                 <ListView fx:id="answersList" prefHeight="200" VBox.vgrow="ALWAYS" />
-                <TextField fx:id="answerTextField" promptText="Texte de la reponse" styleClass="field"/>
-                <Label fx:id="answerHintLabel" text="Choisissez si cette reponse est correcte." styleClass="page-subtitle"/>
+                <TextField fx:id="answerTextField" promptText="Texte de la réponse" styleClass="field"/>
+                <Label fx:id="answerHintLabel" text="Choisissez si cette réponse est correcte." styleClass="page-subtitle"/>
                 <HBox spacing="8">
                     <Button fx:id="answerCorrectBtn" text="Correcte" onAction="#markAnswerCorrect" styleClass="btn-rgb-outline"/>
                     <Button fx:id="answerWrongBtn" text="Incorrecte" onAction="#markAnswerWrong" styleClass="btn-rgb-outline"/>
                     <Region HBox.hgrow="ALWAYS"/>
                 </HBox>
                 <HBox spacing="10">
-                    <Label fx:id="selectedQuestionLabel" text="Aucune question selectionnee" styleClass="chip chip-outline"/>
+                    <Label fx:id="selectedQuestionLabel" text="Aucune question sélectionnée" styleClass="chip chip-outline"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button text="Enregistrer question" onAction="#saveQuestion" styleClass="btn-rgb"/>
-                    <Button text="Enregistrer reponse" onAction="#saveAnswer" styleClass="btn-rgb-outline"/>
+                    <Button text="Enregistrer réponse" onAction="#saveAnswer" styleClass="btn-rgb-outline"/>
                 </HBox>
             </VBox>
         </items>
