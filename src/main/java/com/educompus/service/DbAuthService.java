@@ -95,7 +95,7 @@ public final class DbAuthService {
             throw new IllegalArgumentException("Le mot de passe est obligatoire.");
         }
         if (emailExists(mail)) {
-            throw new IllegalStateException("Cet email existe deja.");
+            throw new IllegalStateException("Cet email existe déjà.");
         }
 
         String hash = BCrypt.withDefaults().hashToString(12, pass.toCharArray());

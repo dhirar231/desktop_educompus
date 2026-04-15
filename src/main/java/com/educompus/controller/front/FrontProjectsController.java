@@ -287,10 +287,10 @@ public final class FrontProjectsController {
     private static String validateSubmissionFields(String response, String cahierPath, String dossierPath) {
         String r = safe(response);
         if (r.isBlank()) {
-            return "Reponse requise (texte + chiffres).";
+            return "Réponse requise (texte + chiffres).";
         }
         if (!isSubmissionResponseValid(r)) {
-            return "Reponse invalide (autorise: lettres, chiffres, espaces).";
+            return "Réponse invalide (autorisé: lettres, chiffres, espaces).";
         }
 
         String c = safe(cahierPath);
@@ -802,7 +802,7 @@ public final class FrontProjectsController {
     @FXML
     private void editSelectedSubmission(ActionEvent event) {
         if (selectedSubmission == null) {
-            info("Soumission", "SÃ©lectionnez une soumission Ã  modifier.");
+            info("Soumission", "Sélectionnez une soumission à modifier.");
             return;
         }
         Project p = findProjectById(selectedSubmission.getProjectId());
@@ -1266,19 +1266,19 @@ public final class FrontProjectsController {
                 if (Desktop.isDesktopSupported()) {
                     Desktop.getDesktop().browse(URI.create(p));
                 } else {
-                    info("Telecharger", "Lien: " + p);
+                    info("Télécharger", "Lien: " + p);
                 }
                 return;
             }
 
             File src = new File(p);
             if (!src.exists() || !src.isFile()) {
-                info("Telecharger", "Fichier introuvable: " + p);
+                info("Télécharger", "Fichier introuvable: " + p);
                 return;
             }
 
             FileChooser fc = new FileChooser();
-            fc.setTitle("Telecharger " + (kind == null ? "fichier" : kind));
+            fc.setTitle("Télécharger " + (kind == null ? "fichier" : kind));
             fc.setInitialFileName(src.getName());
             String ext = ProjectRules.extensionOf(src.getName());
             if (!ext.isBlank()) {
@@ -1294,7 +1294,7 @@ public final class FrontProjectsController {
                 dest = new File(dest.getParentFile(), dest.getName() + "." + ext);
             }
             Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            info("Telecharger", "Enregistre: " + dest.getAbsolutePath());
+            info("Télécharger", "Enregistre: " + dest.getAbsolutePath());
             if (Desktop.isDesktopSupported()) {
                 try {
                     Desktop.getDesktop().open(dest);
@@ -1303,7 +1303,7 @@ public final class FrontProjectsController {
                 }
             }
         } catch (Exception e) {
-            error("Telecharger", e);
+            error("Télécharger", e);
         }
     }
 
