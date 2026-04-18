@@ -23,7 +23,7 @@
 
     <VBox spacing="4">
         <Label text="Gestion des examens" styleClass="page-title"/>
-        <Label text="Page admin principale pour gerer les examens. Publiez ou depubliez les examens depuis les cartes." styleClass="page-subtitle" wrapText="true"/>
+        <Label text="Page admin principale pour gérer les examens. Publiez ou dépubliez les examens depuis les cartes." styleClass="page-subtitle" wrapText="true"/>
     </VBox>
 
     <HBox spacing="10">
@@ -46,7 +46,7 @@
         <Button text="Nouveau" onAction="#newExam" styleClass="btn-rgb"/>
         <Button text="Modifier" onAction="#editExam" styleClass="btn-rgb-outline"/>
         <Button text="Supprimer" onAction="#deleteExam" styleClass="btn-rgb-outline"/>
-        <Button text="Enregistrer" onAction="#saveExam" styleClass="btn-rgb"/>
+        <Button text="Questions &amp; réponses" onAction="#openQuestionsForSelectedExam" styleClass="btn-rgb-outline"/>
         <Region HBox.hgrow="ALWAYS"/>
     </HBox>
 

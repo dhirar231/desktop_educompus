@@ -43,3 +43,17 @@ Le schéma minimal pour **Project / ProjectSubmission / KanbanTask** est dans :
 
 - `src/main/resources/sql/projects_schema.sql`
 
+## Exécuter les Tests
+
+Pour lancer tous les tests unitaires :
+
+```bash
+mvn test
+```
+
+Pour lancer un fichier de test spécifique (ex: `AuthUserServiceTest`) :
+
+```bash
+mvn test -Dtest=AuthUserServiceTest
+```
+

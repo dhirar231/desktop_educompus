@@ -1,11 +1,39 @@
 package com.educompus.util;
 
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 
 public final class Dialogs {
     private Dialogs() {}
+
+    public static void info(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        style(alert);
+        alert.showAndWait();
+    }
+
+    public static void warning(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        style(alert);
+        alert.showAndWait();
+    }
+
+    public static void error(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        style(alert);
+        alert.showAndWait();
+    }
 
     public static void style(Dialog<?> d) {
         if (d == null || d.getDialogPane() == null) return;

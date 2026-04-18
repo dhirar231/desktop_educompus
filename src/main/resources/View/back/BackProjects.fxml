@@ -2,20 +2,15 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -38,14 +33,13 @@
             <items>
                 <MenuItem text="Projets" onAction="#showProjectsView"/>
                 <MenuItem text="Soumissions" onAction="#showSubmissionsView"/>
-                <!-- Tableau Kanban accessible from submissions table; removed duplicate menu item -->
                 <MenuItem fx:id="catalogueMenuItem" text="Catalogue (cartes)" onAction="#showCatalogueView"/>
             </items>
         </MenuButton>
+        <Button fx:id="sendMailButton" text="Envoyer mail" onAction="#openMailingDialog" styleClass="btn-rgb-outline"/>
     </HBox>
 
     <StackPane fx:id="viewStack" VBox.vgrow="ALWAYS">
-        <!-- Projets -->
         <VBox fx:id="projectsPane" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
             <BorderPane>
                 <top>
@@ -58,45 +52,21 @@
                     </HBox>
                 </top>
                 <center>
-                    <SplitPane dividerPositions="0.62" BorderPane.alignment="CENTER">
-                        <items>
-                            <VBox styleClass="card" spacing="10">
-                                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                                <Label text="Liste des projets" styleClass="stat-title"/>
-                                        <TableView fx:id="projectsTable" VBox.vgrow="ALWAYS">
-                                            <columns>
-                                                <TableColumn fx:id="colProjectId" text="ID" prefWidth="64"/>
-                                                <TableColumn fx:id="colProjectTitle" text="Titre" prefWidth="240"/>
-                                                <TableColumn fx:id="colProjectSubmissions" text="Soumissions" prefWidth="120"/>
-                                                <TableColumn fx:id="colProjectDeadline" text="Deadline" prefWidth="140"/>
-                                                <TableColumn fx:id="colProjectPublished" text="Publié" prefWidth="90"/>
-                                                <TableColumn fx:id="colProjectCreatedAt" text="Créé le" prefWidth="160"/>
-                                            </columns>
-                                        </TableView>
-                            </VBox>
-                            <VBox styleClass="card" spacing="10">
-                                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                                <Label text="Édition" styleClass="stat-title"/>
-                                <TextField fx:id="titleField" promptText="Titre" styleClass="field"/>
-                                        <HBox spacing="8">
-                                            <DatePicker fx:id="deadlineDatePicker" promptText="Date" styleClass="field"/>
-                                            <TextField fx:id="deadlineTimeField" promptText="HH:mm:ss" prefWidth="120" styleClass="field"/>
-                                        </HBox>
-                                <TextArea fx:id="deliverablesArea" promptText="Livrables (ex: PDF, ZIP...)" styleClass="field area" prefRowCount="3" wrapText="true"/>
-                                <TextArea fx:id="descriptionArea" promptText="Description" styleClass="field area" prefRowCount="5" wrapText="true" VBox.vgrow="ALWAYS"/>
-                                <CheckBox fx:id="publishedCheck" text="Publié"/>
-                                <HBox spacing="10">
-                                    <Region HBox.hgrow="ALWAYS"/>
-                                    <Button text="Enregistrer" onAction="#saveProject" styleClass="btn-rgb"/>
-                                </HBox>
-                            </VBox>
-                        </items>
-                    </SplitPane>
+                    <VBox styleClass="card" spacing="10" BorderPane.alignment="CENTER">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Liste des projets" styleClass="stat-title"/>
+                        <ListView fx:id="projectsList" VBox.vgrow="ALWAYS"/>
+                        <HBox spacing="8" alignment="CENTER" styleClass="pagination" prefHeight="36">
+                            <padding><Insets top="8" bottom="0" left="0" right="0"/></padding>
+                            <Button fx:id="projectsPrevBtn" text="Page Précédente" onAction="#onProjectsPrev" styleClass="btn-rgb-outline"/>
+                            <Label fx:id="projectsPageLabel" text="Page 1 / 1"/>
+                            <Button fx:id="projectsNextBtn" text="Page Suivante" onAction="#onProjectsNext" styleClass="btn-rgb-outline"/>
+                        </HBox>
+                    </VBox>
                 </center>
             </BorderPane>
         </VBox>
 
-        <!-- Soumissions -->
         <VBox fx:id="submissionsPane" visible="false" managed="false" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
             <BorderPane>
                 <top>
@@ -110,24 +80,12 @@
                 <center>
                     <VBox styleClass="card" spacing="10">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <TableView fx:id="submissionsTable" VBox.vgrow="ALWAYS">
-                            <columns>
-                                <TableColumn fx:id="colSubId" text="ID" prefWidth="64"/>
-                                <TableColumn fx:id="colSubProject" text="Projet" prefWidth="220"/>
-                                <TableColumn fx:id="colSubStudent" text="Étudiant" prefWidth="180"/>
-                                <TableColumn fx:id="colSubSubmittedAt" text="Soumis le" prefWidth="160"/>
-                                <TableColumn fx:id="colSubResponse" text="Réponse" prefWidth="260"/>
-                                <TableColumn fx:id="colSubFile" text="Cahier" prefWidth="120"/>
-                                <TableColumn fx:id="colSubZip" text="Dossier" prefWidth="120"/>
-                                <TableColumn fx:id="colSubActions" text="Action" prefWidth="140"/>
-                            </columns>
-                        </TableView>
+                        <ListView fx:id="submissionsList" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </center>
             </BorderPane>
         </VBox>
 
-        <!-- Catalogue (cartes) -->
         <VBox fx:id="cataloguePane" visible="false" managed="false" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
             <VBox spacing="12" VBox.vgrow="ALWAYS">
                 <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>

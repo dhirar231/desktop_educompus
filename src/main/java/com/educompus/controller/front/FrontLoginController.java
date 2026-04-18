@@ -359,8 +359,8 @@ public final class FrontLoginController {
             boolean exists = DbAuthService.emailExists(mail);
             if (forgotInfoLabel != null) {
                 forgotInfoLabel.setText(exists
-                        ? "Si ce compte existe, un lien de rÃ©initialisation sera envoyÃ© (Ã  brancher sur Symfony)."
-                        : "Si ce compte existe, un lien de rÃ©initialisation sera envoyÃ© (Ã  brancher sur Symfony).");
+                    ? "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony)."
+                    : "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony).");
                 forgotInfoLabel.setManaged(true);
                 forgotInfoLabel.setVisible(true);
             }

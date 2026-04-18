@@ -6,7 +6,10 @@ import com.educompus.model.KanbanTask;
 import com.educompus.model.Project;
 import com.educompus.model.ProjectSubmission;
 import com.educompus.model.ProjectSubmissionView;
+import com.educompus.service.JcefBrowserService;
+import com.educompus.service.ProjectMeetingService;
 import com.educompus.repository.KanbanTaskRepository;
+import com.educompus.repository.NotificationRepository;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.util.ProjectRules;
@@ -23,9 +26,8 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -35,6 +37,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -95,6 +98,21 @@ public final class FrontProjectsController {
     private Label viewDescLabel;
 
     @FXML
+    private Label viewMeetingStatusLabel;
+
+    @FXML
+    private Label viewMeetingLinkLabel;
+
+    @FXML
+    private Button viewMeetingOpenButton;
+
+    @FXML
+    private Button viewMeetingMutedButton;
+
+    @FXML
+    private Button viewMeetingCopyButton;
+
+    @FXML
     private Label submitTitleLabel;
 
     @FXML
@@ -105,6 +123,18 @@ public final class FrontProjectsController {
 
     @FXML
     private Label selectedProjectLabel;
+
+    @FXML
+    private Label submitMeetingStatusLabel;
+
+    @FXML
+    private Button submitMeetingOpenButton;
+
+    @FXML
+    private Button submitMeetingMutedButton;
+
+    @FXML
+    private Button submitMeetingCopyButton;
 
     @FXML
     private TextArea responseArea;
@@ -158,28 +188,7 @@ public final class FrontProjectsController {
     private VBox kanbanDoneColumn;
 
     @FXML
-    private TableView<ProjectSubmissionView> submissionsTable;
-
-    @FXML
-    private TableColumn<ProjectSubmissionView, Integer> colSubId;
-
-    @FXML
-    private TableColumn<ProjectSubmissionView, String> colSubProject;
-
-    @FXML
-    private TableColumn<ProjectSubmissionView, String> colSubSubmittedAt;
-
-    @FXML
-    private TableColumn<ProjectSubmissionView, String> colSubResponse;
-
-    @FXML
-    private TableColumn<ProjectSubmissionView, String> colSubFile;
-
-    @FXML
-    private TableColumn<ProjectSubmissionView, String> colSubZip;
-
-    @FXML
-    private TableColumn<ProjectSubmissionView, Void> colSubActions;
+    private ListView<ProjectSubmissionView> submissionsList;
 
     @FXML
     private Label selectedSubmissionLabel;
@@ -187,7 +196,10 @@ public final class FrontProjectsController {
     // repositories used by this controller
     private final ProjectRepository projectRepo = new ProjectRepository();
     private final ProjectSubmissionRepository submissionRepo = new ProjectSubmissionRepository();
+    private final NotificationRepository notificationRepo = new NotificationRepository();
     private final KanbanTaskRepository kanbanRepo = new KanbanTaskRepository();
+    private final ProjectMeetingService projectMeetingService = new ProjectMeetingService();
+    private final JcefBrowserService browserService = JcefBrowserService.getInstance();
 
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
     private final ObservableList<Project> allProjects = FXCollections.observableArrayList();
@@ -309,10 +321,10 @@ public final class FrontProjectsController {
     private static String validateSubmissionFields(String response, String cahierPath, String dossierPath) {
         String r = safe(response);
         if (r.isBlank()) {
-            return "Reponse requise (texte + chiffres).";
+            return "Réponse requise (texte + chiffres).";
         }
         if (!isSubmissionResponseValid(r)) {
-            return "Reponse invalide (autorise: lettres, chiffres, espaces).";
+            return "Réponse invalide (autorisé: lettres, chiffres, espaces).";
         }
 
         String c = safe(cahierPath);
@@ -392,89 +404,44 @@ public final class FrontProjectsController {
         return false;
     }
 
-	    private void setupSubmissionsTable() {
-	        if (submissionsTable == null) {
-	            return;
-	        }
-	        submissionsTable.setItems(submissions);
+        private void setupSubmissionsTable() {
+            if (submissionsList == null) {
+                return;
+            }
+            submissionsList.setItems(submissions);
+            submissionsList.setCellFactory(list -> new ListCell<>() {
+                @Override
+                protected void updateItem(ProjectSubmissionView s, boolean empty) {
+                    super.updateItem(s, empty);
+                    if (empty || s == null) {
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
+                    Label title = new Label(safe(s.getProjectTitle()));
+                    title.getStyleClass().add("stat-value");
 
-	        if (colSubId != null) {
-	            colSubId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("id"));
-	            colSubId.setVisible(false);
-	        }
-        if (colSubProject != null) {
-            colSubProject.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue() == null ? null : c.getValue().getProjectTitle())));
-        }
-	        if (colSubSubmittedAt != null) {
-	            colSubSubmittedAt.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("submittedAt"));
-	        }
-		        if (colSubResponse != null) {
-		            colSubResponse.setCellValueFactory(c -> new SimpleStringProperty(summarize(safe(c.getValue() == null ? null : c.getValue().getTextResponse()), 120)));
-		        }
-		        setupDownloadColumn(colSubFile, s -> s == null ? null : s.getCahierPath(), "fichier");
-		        setupDownloadColumn(colSubZip, s -> s == null ? null : s.getDossierPath(), "zip");
-		        setupDeleteSubmissionColumn();
+                    Label meta = new Label(safe(s.getSubmittedAt()));
+                    meta.getStyleClass().add("page-subtitle");
 
-	        submissionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-	            selectedSubmission = newV;
-	            updateSelectedSubmissionLabel();
-	        });
-	    }
+                    Label resp = new Label(summarize(safe(s.getTextResponse()), 120));
+                    resp.setWrapText(true);
 
-	    private void setupDownloadColumn(
-	            TableColumn<ProjectSubmissionView, String> column,
-	            java.util.function.Function<ProjectSubmissionView, String> pathGetter,
-	            String kind
-	    ) {
-	        if (column == null) {
-	            return;
-	        }
-	        column.setCellValueFactory(c -> new SimpleStringProperty(safe(c.getValue() == null ? null : pathGetter.apply(c.getValue()))));
-		        column.setCellFactory(col -> new TableCell<>() {
-		            private final Button btn = new Button("Télécharger");
-		            {
-		                btn.getStyleClass().add("btn-rgb-compact");
-		                btn.setOnAction(e -> downloadFromPath(getItem(), kind));
-		            }
+                    Button dlCahier = new Button("Télécharger");
+                    dlCahier.getStyleClass().add("btn-rgb-compact");
+                    dlCahier.setDisable(safe(s.getCahierPath()).isBlank());
+                    dlCahier.setOnAction(e -> downloadFromPath(s.getCahierPath(), "fichier"));
 
-	            @Override
-	            protected void updateItem(String item, boolean empty) {
-	                super.updateItem(item, empty);
-	                if (empty) {
-	                    setGraphic(null);
-	                    setText(null);
-	                    return;
-	                }
-	                boolean has = !safe(item).isBlank();
-	                btn.setDisable(!has);
-	                setGraphic(btn);
-	                setText(null);
-	            }
-	        });
-	    }
+                    Button dlZip = new Button("Télécharger");
+                    dlZip.getStyleClass().add("btn-rgb-compact");
+                    dlZip.setDisable(safe(s.getDossierPath()).isBlank());
+                    dlZip.setOnAction(e -> downloadFromPath(s.getDossierPath(), "zip"));
 
-	    private void setupDeleteSubmissionColumn() {
-	        if (colSubActions == null) {
-	            return;
-	        }
-            colSubActions.setCellFactory(col -> new TableCell<>() {
-                private final Button edit = new Button();
-                private final Button del = new Button();
-                private final HBox box = new HBox(8);
-                {
-                    // restore emoji text icons and original styles
-                    edit.setGraphic(null);
-                    edit.setText("Modifier");
-                    edit.setTooltip(new Tooltip("Modifier"));
+                    Button edit = new Button("Modifier");
                     edit.getStyleClass().add("btn-rgb-outline");
                     edit.setOnAction(e -> {
-                        if (getTableView() == null) return;
-                        int idx = getIndex();
-                        if (idx < 0 || idx >= getTableView().getItems().size()) return;
-                        ProjectSubmissionView s = getTableView().getItems().get(idx);
-                        if (s == null) return;
-                        // start editing in the submission form below the table
                         startEditingSubmission(s);
+                        submissionsList.getSelectionModel().select(s);
                         Project p = findProjectById(s.getProjectId());
                         if (p == null) {
                             p = new Project();
@@ -486,38 +453,28 @@ public final class FrontProjectsController {
                         }
                         selectedProject = p;
                         showSubmit(p);
-                        // select row
-                        getTableView().getSelectionModel().select(s);
                     });
 
-                    del.setGraphic(null);
-                    del.setText("Supprimer");
-                    del.setTooltip(new Tooltip("Supprimer"));
+                    Button del = new Button("Supprimer");
                     del.getStyleClass().add("btn-danger");
-                    del.setOnAction(e -> {
-                        if (getTableView() == null) return;
-                        int idx = getIndex();
-                        if (idx < 0 || idx >= getTableView().getItems().size()) return;
-                        ProjectSubmissionView s = getTableView().getItems().get(idx);
-                        deleteSubmissionMine(s);
-                    });
+                    del.setOnAction(e -> deleteSubmissionMine(s));
 
-                    box.getChildren().addAll(edit, del);
-                }
-
-                @Override
-                protected void updateItem(Void item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty) {
-                        setGraphic(null);
-                        setText(null);
-                        return;
-                    }
-                    setGraphic(box);
+                    HBox right = new HBox(8, dlCahier, dlZip, edit, del);
+                    VBox left = new VBox(4, title, meta, resp);
+                    Region spacer = new Region();
+                    HBox.setHgrow(spacer, Priority.ALWAYS);
+                    HBox row = new HBox(12, left, spacer, right);
+                    row.getStyleClass().add("submission-row");
+                    setGraphic(row);
                     setText(null);
                 }
             });
-	    }
+
+            submissionsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+                selectedSubmission = newV;
+                updateSelectedSubmissionLabel();
+            });
+        }
 
 	    private void deleteSubmissionMine(ProjectSubmissionView submission) {
 	        if (submission == null) {
@@ -796,15 +753,18 @@ public final class FrontProjectsController {
         if (project == null) {
             return;
         }
+        project = refreshProjectState(project);
         setView(viewPane);
         setTopControlsVisible(true);
         fillProjectLabels(project, viewTitleLabel, viewMetaLabel, viewDescLabel);
+        updateMeetingPanel(project);
     }
 
     private void showSubmit(Project project) {
         if (project == null) {
             return;
         }
+        project = refreshProjectState(project);
         setView(submitPane);
         setTopControlsVisible(true);
         fillProjectLabels(project, submitTitleLabel, submitMetaLabel, submitDescLabel);
@@ -812,6 +772,8 @@ public final class FrontProjectsController {
 	        if (selectedProjectLabel != null) {
 	            selectedProjectLabel.setText("Projet: " + safe(project.getTitle()));
 	        }
+
+            updateMeetingPanel(project);
 
 		        refreshSubmitInfo();
 		        updateSubmitButtonLabel();
@@ -879,7 +841,7 @@ public final class FrontProjectsController {
     @FXML
     private void editSelectedSubmission(ActionEvent event) {
         if (selectedSubmission == null) {
-            info("Soumission", "SÃ©lectionnez une soumission Ã  modifier.");
+            info("Soumission", "Sélectionnez une soumission à modifier.");
             return;
         }
         Project p = findProjectById(selectedSubmission.getProjectId());
@@ -1014,6 +976,132 @@ public final class FrontProjectsController {
         }
     }
 
+    @FXML
+    private void refreshProjectMeetingStatus(ActionEvent event) {
+        if (selectedProject == null) {
+            info("Meeting", "Selectionnez un projet.");
+            return;
+        }
+        Project refreshed = refreshProjectState(selectedProject);
+        if (viewPane != null && viewPane.isVisible()) {
+            showView(refreshed);
+        } else if (submitPane != null && submitPane.isVisible()) {
+            showSubmit(refreshed);
+        } else {
+            updateMeetingPanel(refreshed);
+        }
+    }
+
+    @FXML
+    private void joinProjectMeeting(ActionEvent event) {
+        openProjectMeeting(false);
+    }
+
+    @FXML
+    private void joinProjectMeetingMuted(ActionEvent event) {
+        openProjectMeeting(true);
+    }
+
+    @FXML
+    private void copyProjectMeetingLink(ActionEvent event) {
+        Project project = refreshProjectState(selectedProject);
+        if (project == null || !project.isMeetingActive() || safe(project.getMeetingUrl()).isBlank()) {
+            info("Meeting", "Le professeur n'a pas encore ouvert de salle pour ce projet.");
+            return;
+        }
+        ClipboardContent content = new ClipboardContent();
+        content.putString(project.getMeetingUrl());
+        Clipboard.getSystemClipboard().setContent(content);
+        updateMeetingPanel(project);
+        info("Meeting", "Lien de meeting copie.");
+    }
+
+    private void openProjectMeeting(boolean muted) {
+        Project project = refreshProjectState(selectedProject);
+        if (project == null) {
+            info("Meeting", "Selectionnez un projet.");
+            return;
+        }
+        if (!project.isMeetingActive()) {
+            updateMeetingPanel(project);
+            info("Meeting", "Le professeur n'a pas encore ouvert de salle pour ce projet.");
+            return;
+        }
+        try {
+            String joinUrl = projectMeetingService.joinUrl(project, muted);
+            String room = safe(project.getMeetingRoom());
+            String title = "EduCompus | Meeting | " + (room.isBlank() ? ("Project " + project.getId()) : room);
+            browserService.openMeetingDialog(title, joinUrl);
+            updateMeetingPanel(project);
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private Project refreshProjectState(Project project) {
+        Project refreshed = projectMeetingService.refresh(project);
+        if (refreshed != null) {
+            selectedProject = refreshed;
+            replaceProjectInCollections(refreshed);
+            return refreshed;
+        }
+        return project;
+    }
+
+    private void replaceProjectInCollections(Project updated) {
+        replaceProjectInList(allProjects, updated);
+        replaceProjectInList(projects, updated);
+    }
+
+    private static void replaceProjectInList(ObservableList<Project> list, Project updated) {
+        if (list == null || updated == null) {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Project current = list.get(i);
+            if (current != null && current.getId() == updated.getId()) {
+                list.set(i, updated);
+                return;
+            }
+        }
+    }
+
+    private void updateMeetingPanel(Project project) {
+        String status = projectMeetingService.statusText(project);
+        String link = project == null || safe(project.getMeetingUrl()).isBlank()
+                ? "Invite link will appear here when the teacher opens the room."
+                : project.getMeetingUrl();
+        boolean active = project != null && project.isMeetingActive() && !safe(project.getMeetingUrl()).isBlank();
+
+        if (viewMeetingStatusLabel != null) {
+            viewMeetingStatusLabel.setText(status);
+        }
+        if (submitMeetingStatusLabel != null) {
+            submitMeetingStatusLabel.setText(status);
+        }
+        if (viewMeetingLinkLabel != null) {
+            viewMeetingLinkLabel.setText(link);
+        }
+        if (viewMeetingOpenButton != null) {
+            viewMeetingOpenButton.setDisable(!active);
+        }
+        if (viewMeetingMutedButton != null) {
+            viewMeetingMutedButton.setDisable(!active);
+        }
+        if (viewMeetingCopyButton != null) {
+            viewMeetingCopyButton.setDisable(!active);
+        }
+        if (submitMeetingOpenButton != null) {
+            submitMeetingOpenButton.setDisable(!active);
+        }
+        if (submitMeetingMutedButton != null) {
+            submitMeetingMutedButton.setDisable(!active);
+        }
+        if (submitMeetingCopyButton != null) {
+            submitMeetingCopyButton.setDisable(!active);
+        }
+    }
+
     private void setView(VBox active) {
         setPaneVisible(cataloguePane, active == cataloguePane);
         setPaneVisible(viewPane, active == viewPane);
@@ -1136,6 +1224,12 @@ public final class FrontProjectsController {
 
         try {
             submissionRepo.create(s);
+            notificationRepo.createProjectSubmissionNotifications(
+                    selectedProject.getId(),
+                    uid,
+                    AppState.getUserEmail(),
+                    selectedProject.getTitle()
+            );
             resetSubmitFormFields();
             info("Soumission", "Votre soumission a été enregistrée.");
             refreshSubmitInfo();
@@ -1177,8 +1271,8 @@ public final class FrontProjectsController {
 
         if (keepId > 0) {
             selectSubmissionById(keepId);
-        } else if (!submissions.isEmpty() && submissionsTable != null && submissionsTable.getSelectionModel().getSelectedItem() == null) {
-            submissionsTable.getSelectionModel().selectFirst();
+        } else if (!submissions.isEmpty() && submissionsList != null && submissionsList.getSelectionModel().getSelectedItem() == null) {
+            submissionsList.getSelectionModel().selectFirst();
         }
     }
 
@@ -1302,17 +1396,17 @@ public final class FrontProjectsController {
     }
 
     private void selectSubmissionById(int id) {
-        if (id <= 0 || submissionsTable == null) {
+        if (id <= 0 || submissionsList == null) {
             return;
         }
         for (ProjectSubmissionView s : submissions) {
             if (s != null && s.getId() == id) {
-                submissionsTable.getSelectionModel().select(s);
+                submissionsList.getSelectionModel().select(s);
                 return;
             }
         }
         if (!submissions.isEmpty()) {
-            submissionsTable.getSelectionModel().selectFirst();
+            submissionsList.getSelectionModel().selectFirst();
         }
     }
 
@@ -1343,19 +1437,19 @@ public final class FrontProjectsController {
                 if (Desktop.isDesktopSupported()) {
                     Desktop.getDesktop().browse(URI.create(p));
                 } else {
-                    info("Telecharger", "Lien: " + p);
+                    info("Télécharger", "Lien: " + p);
                 }
                 return;
             }
 
             File src = new File(p);
             if (!src.exists() || !src.isFile()) {
-                info("Telecharger", "Fichier introuvable: " + p);
+                info("Télécharger", "Fichier introuvable: " + p);
                 return;
             }
 
             FileChooser fc = new FileChooser();
-            fc.setTitle("Telecharger " + (kind == null ? "fichier" : kind));
+            fc.setTitle("Télécharger " + (kind == null ? "fichier" : kind));
             fc.setInitialFileName(src.getName());
             String ext = ProjectRules.extensionOf(src.getName());
             if (!ext.isBlank()) {
@@ -1371,7 +1465,7 @@ public final class FrontProjectsController {
                 dest = new File(dest.getParentFile(), dest.getName() + "." + ext);
             }
             Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            info("Telecharger", "Enregistre: " + dest.getAbsolutePath());
+            info("Télécharger", "Enregistre: " + dest.getAbsolutePath());
             if (Desktop.isDesktopSupported()) {
                 try {
                     Desktop.getDesktop().open(dest);
@@ -1380,7 +1474,7 @@ public final class FrontProjectsController {
                 }
             }
         } catch (Exception e) {
-            error("Telecharger", e);
+            error("Télécharger", e);
         }
     }
 

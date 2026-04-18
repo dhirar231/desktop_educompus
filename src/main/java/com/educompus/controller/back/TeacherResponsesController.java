@@ -7,9 +7,12 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 
 import java.util.Comparator;
 import java.util.List;
@@ -17,46 +20,56 @@ import java.util.List;
 public class TeacherResponsesController {
 
     @FXML private ChoiceBox<String> filterChoice;
-    @FXML private TableView<ExamAttemptRecord> responsesTable;
-    @FXML private TableColumn<ExamAttemptRecord, String> colEmail;
-    @FXML private TableColumn<ExamAttemptRecord, String> colCourse;
-    @FXML private TableColumn<ExamAttemptRecord, Integer> colAttempts;
-    @FXML private TableColumn<ExamAttemptRecord, String> colPassed;
-    @FXML private TableColumn<ExamAttemptRecord, String> colCertificate;
+    @FXML private ListView<ExamAttemptRecord> responsesList;
 
     private ObservableList<ExamAttemptRecord> data = FXCollections.observableArrayList();
+    private int examId = 0;
+
+    public void setExamId(int examId) {
+        this.examId = examId;
+        try {
+            loadData();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 
     @FXML
     public void initialize() {
-        colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
-        colCourse.setCellValueFactory(new PropertyValueFactory<>("courseName"));
-        colAttempts.setCellValueFactory(new PropertyValueFactory<>("attempts"));
-        // show Oui/Non for passed
-        colPassed.setCellValueFactory(cell -> {
-            boolean passed = cell.getValue() != null && cell.getValue().isPassed();
-            return new javafx.beans.property.SimpleStringProperty(passed ? "Oui" : "Non");
-        });
-        colCertificate.setCellValueFactory(new PropertyValueFactory<>("certificatePath"));
-
-        // style passed cell as badge
-        colPassed.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
+        // Configure ListView cell rendering
+        responsesList.setCellFactory(lv -> new ListCell<>() {
+            private final VBox left = new VBox();
+            private final HBox root = new HBox(12);
+            private final javafx.scene.control.Label emailLbl = new javafx.scene.control.Label();
+            private final javafx.scene.control.Label courseLbl = new javafx.scene.control.Label();
+            private final javafx.scene.control.Label attemptsLbl = new javafx.scene.control.Label();
             private final javafx.scene.control.Label badge = new javafx.scene.control.Label();
+            private final javafx.scene.control.Label certLbl = new javafx.scene.control.Label();
             {
                 badge.getStyleClass().add("chip");
+                left.getChildren().addAll(emailLbl, courseLbl);
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+                root.getChildren().addAll(left, spacer, attemptsLbl, badge, certLbl);
             }
 
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(ExamAttemptRecord item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
-                    setGraphic(null);
                     setText(null);
+                    setGraphic(null);
                     return;
                 }
-                badge.setText(item);
+                emailLbl.setText(item.getEmail());
+                courseLbl.setText(item.getCourseName());
+                attemptsLbl.setText(String.valueOf(item.getAttempts()));
+                String passed = item.isPassed() ? "Oui" : "Non";
+                badge.setText(passed);
                 badge.getStyleClass().removeAll("chip-success", "chip-outline");
-                badge.getStyleClass().add("Oui".equalsIgnoreCase(item) ? "chip-success" : "chip-outline");
-                setGraphic(badge);
+                badge.getStyleClass().add("Oui".equalsIgnoreCase(passed) ? "chip-success" : "chip-outline");
+                certLbl.setText(item.getCertificatePath() == null ? "" : item.getCertificatePath());
+                setGraphic(root);
                 setText(null);
             }
         });
@@ -71,7 +84,7 @@ public class TeacherResponsesController {
     private void loadData() {
         try {
             ExamRepository repo = new ExamRepository();
-            List<ExamAttemptRecord> list = repo.listAttemptsForExam(0); // examId 0 = all exams
+            List<ExamAttemptRecord> list = repo.listAttemptsForExam(examId); // 0 = all exams
             master.setAll(list);
             applyFilter();
         } catch (Exception ex) {
@@ -92,7 +105,7 @@ public class TeacherResponsesController {
         } else {
             data.setAll(master);
         }
-        responsesTable.setItems(data);
+        responsesList.setItems(data);
     }
 
     private void sortByAttemptsDesc() {

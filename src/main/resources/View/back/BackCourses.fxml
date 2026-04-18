@@ -94,7 +94,11 @@
                             <ComboBox fx:id="coursSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un cours" onAction="#createCours" styleClass="btn-rgb"/>
                         </HBox>
+<<<<<<< HEAD
                         <ListView fx:id="coursListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
+=======
+                        <ListView fx:id="coursListView" VBox.vgrow="ALWAYS"/>
+>>>>>>> 2e756f91d6f9e7a148a86c47917d30d9665be5f7
                     </VBox>
                 </content>
             </Tab>
@@ -109,7 +113,11 @@
                             <ComboBox fx:id="chapitreSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un chapitre" onAction="#createChapitre" styleClass="btn-rgb"/>
                         </HBox>
+<<<<<<< HEAD
                         <ListView fx:id="chapitreListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
+=======
+                        <ListView fx:id="chapitreListView" VBox.vgrow="ALWAYS"/>
+>>>>>>> 2e756f91d6f9e7a148a86c47917d30d9665be5f7
                     </VBox>
                 </content>
             </Tab>
@@ -124,7 +132,11 @@
                             <ComboBox fx:id="tdSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un TD" onAction="#createTd" styleClass="btn-rgb"/>
                         </HBox>
+<<<<<<< HEAD
                         <ListView fx:id="tdListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
+=======
+                        <ListView fx:id="tdListView" VBox.vgrow="ALWAYS"/>
+>>>>>>> 2e756f91d6f9e7a148a86c47917d30d9665be5f7
                     </VBox>
                 </content>
             </Tab>
@@ -139,7 +151,11 @@
                             <ComboBox fx:id="videoSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer une vidéo" onAction="#createVideo" styleClass="btn-rgb"/>
                         </HBox>
+<<<<<<< HEAD
                         <ListView fx:id="videoListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
+=======
+                        <ListView fx:id="videoListView" VBox.vgrow="ALWAYS"/>
+>>>>>>> 2e756f91d6f9e7a148a86c47917d30d9665be5f7
                     </VBox>
                 </content>
             </Tab>

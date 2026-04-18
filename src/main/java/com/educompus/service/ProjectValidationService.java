@@ -3,6 +3,7 @@ package com.educompus.service;
 import com.educompus.model.Project;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 /**
@@ -96,17 +97,33 @@ public final class ProjectValidationService {
 
     private static void validateDeadline(String deadline, ValidationResult r) {
         if (deadline == null || deadline.isBlank()) {
-            // deadline optionnelle
+            r.addError("La deadline est obligatoire.");
             return;
         }
         String dl = deadline.trim();
-        // Extraire la partie date (YYYY-MM-DD)
-        String datePart = dl.length() >= 10 ? dl.substring(0, 10) : dl;
-        LocalDate date;
-        try {
-            date = LocalDate.parse(datePart);
-        } catch (DateTimeParseException e) {
-            r.addError("Format de deadline invalide. Attendu : YYYY-MM-DD (ex: 2026-06-30).");
+        // Séparer date et heure (ex: "2026-06-30 17:00" ou "5/8/2026 17.00:00")
+        String[] parts = dl.split("\\s+");
+        String datePart = parts.length > 0 ? parts[0] : dl;
+        String timePart = parts.length > 1 ? parts[1].trim() : null;
+
+        // Essayer plusieurs formats de date courants
+        LocalDate date = null;
+        DateTimeFormatter[] dateFormats = new DateTimeFormatter[] {
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("d/M/yyyy"),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+                DateTimeFormatter.ofPattern("M/d/yyyy"),
+                DateTimeFormatter.ofPattern("MM/dd/yyyy")
+        };
+        for (DateTimeFormatter fmt : dateFormats) {
+            try {
+                date = LocalDate.parse(datePart, fmt);
+                break;
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        if (date == null) {
+            r.addError("Format de deadline invalide. Attendu : YYYY-MM-DD ou d/M/yyyy (ex: 2026-06-30 ou 30/06/2026). ");
             return;
         }
         if (date.isBefore(LocalDate.now())) {
@@ -116,9 +133,10 @@ public final class ProjectValidationService {
             r.addError("La deadline semble trop lointaine (plus de 5 ans).");
         }
         // Valider la partie heure si présente
-        if (dl.length() > 11) {
-            String timePart = dl.substring(11).trim();
-            if (!timePart.matches("\\d{2}:\\d{2}(:\\d{2})?")) {
+        if (timePart != null && !timePart.isBlank()) {
+            // Normaliser séparateurs courants (ex: 17.00 -> 17:00)
+            String normalized = timePart.replace('.', ':');
+            if (!normalized.matches("\\d{1,2}:\\d{2}(:\\d{2})?")) {
                 r.addError("Format d'heure invalide. Attendu : HH:MM ou HH:MM:SS.");
             }
         }

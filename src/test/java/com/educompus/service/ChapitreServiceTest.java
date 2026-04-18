@@ -9,7 +9,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests unitaires pour ChapitreService.
+ * Tests unitaires pour ChapitreService test.
  * Nécessite une connexion MySQL active (base educompus) et au moins un cours existant.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -36,10 +36,10 @@ class ChapitreServiceTest {
         coursService.creer(support);
 
         idCoursSupport = coursService.listerTous("").stream()
-            .filter(c -> c.getTitre().equals("Cours Support Chapitre Test"))
-            .mapToInt(Cours::getId)
-            .findFirst()
-            .orElse(0);
+                .filter(c -> c.getTitre().equals("Cours Support Chapitre Test"))
+                .mapToInt(Cours::getId)
+                .findFirst()
+                .orElse(0);
 
         System.out.println("Cours support créé avec ID : " + idCoursSupport);
     }
@@ -72,15 +72,14 @@ class ChapitreServiceTest {
         List<Chapitre> liste = service.listerTous("");
         assertFalse(liste.isEmpty(), "La liste ne doit pas être vide après ajout.");
         assertTrue(
-            liste.stream().anyMatch(c -> c.getTitre().equals("Chapitre Test JUnit")),
-            "Le chapitre ajouté doit être présent dans la liste."
-        );
+                liste.stream().anyMatch(c -> c.getTitre().equals("Chapitre Test JUnit")),
+                "Le chapitre ajouté doit être présent dans la liste.");
 
         idChapitreTest = liste.stream()
-            .filter(c -> c.getTitre().equals("Chapitre Test JUnit"))
-            .mapToInt(Chapitre::getId)
-            .findFirst()
-            .orElse(0);
+                .filter(c -> c.getTitre().equals("Chapitre Test JUnit"))
+                .mapToInt(Chapitre::getId)
+                .findFirst()
+                .orElse(0);
 
         assertTrue(idChapitreTest > 0, "L'ID du chapitre ajouté doit être positif.");
         System.out.println("Chapitre ajouté avec ID : " + idChapitreTest);
@@ -104,9 +103,10 @@ class ChapitreServiceTest {
     void testModifierChapitre() {
         List<Chapitre> liste = service.listerTous("");
         Chapitre cible = liste.stream()
-            .filter(ch -> ch.getTitre().equals("Chapitre Test JUnit") || ch.getTitre().equals("Chapitre Modifie JUnit"))
-            .findFirst()
-            .orElse(null);
+                .filter(ch -> ch.getTitre().equals("Chapitre Test JUnit")
+                        || ch.getTitre().equals("Chapitre Modifie JUnit"))
+                .findFirst()
+                .orElse(null);
 
         assertNotNull(cible, "Le chapitre de test doit exister pour être modifié.");
 
@@ -128,9 +128,10 @@ class ChapitreServiceTest {
     void testSupprimerChapitre() {
         List<Chapitre> liste = service.listerTous("");
         Chapitre cible = liste.stream()
-            .filter(ch -> ch.getTitre().equals("Chapitre Modifie JUnit") || ch.getTitre().equals("Chapitre Test JUnit"))
-            .findFirst()
-            .orElse(null);
+                .filter(ch -> ch.getTitre().equals("Chapitre Modifie JUnit")
+                        || ch.getTitre().equals("Chapitre Test JUnit"))
+                .findFirst()
+                .orElse(null);
 
         assertNotNull(cible, "Le chapitre de test doit exister pour être supprimé.");
         int id = cible.getId();
@@ -153,9 +154,9 @@ class ChapitreServiceTest {
     @Order(5)
     void testValidationChapitreInvalide() {
         Chapitre invalide = new Chapitre();
-        invalide.setTitre("AB");       // trop court
-        invalide.setOrdre(0);          // invalide
-        invalide.setCoursId(0);        // invalide
+        invalide.setTitre("AB"); // trop court
+        invalide.setOrdre(0); // invalide
+        invalide.setCoursId(0); // invalide
         invalide.setFichierC("doc.docx"); // pas un PDF
 
         ValidationResult result = service.validerSansException(invalide);

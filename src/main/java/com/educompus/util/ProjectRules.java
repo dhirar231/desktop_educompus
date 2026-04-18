@@ -10,10 +10,10 @@ public final class ProjectRules {
     public static String validateSubmissionFields(String response, String cahierPath, String dossierPath) {
         String r = safe(response);
         if (r.isBlank()) {
-            return "Reponse requise (texte + chiffres).";
+            return "Réponse requise (texte + chiffres).";
         }
         if (!isSubmissionResponseValid(r)) {
-            return "Reponse invalide (autorise: lettres, chiffres, espaces).";
+            return "Réponse invalide (autorisé: lettres, chiffres, espaces).";
         }
 
         String c = safe(cahierPath);
@@ -21,7 +21,7 @@ public final class ProjectRules {
             return "Fichier cahier requis (pdf/doc/pptx/image/... ).";
         }
         if (!isFilePathValid(c, List.of("pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "jpg", "jpeg", "png"))) {
-            return "Cahier invalide (type/chemin). Formats acceptes: pdf, doc, docx, ppt, pptx, xls, xlsx, jpg, jpeg, png.";
+            return "Cahier invalide (type/chemin). Formats acceptés: pdf, doc, docx, ppt, pptx, xls, xlsx, jpg, jpeg, png.";
         }
 
         String d = safe(dossierPath);
@@ -59,13 +59,13 @@ public final class ProjectRules {
             return "Titre trop court (min 2 lettres).";
         }
         if (v.length() > 16) {
-            return "Titre trop long (max 16 caracteres).";
+            return "Titre trop long (max 16 caractères).";
         }
         if (!Character.isLetter(v.codePointAt(0))) {
             return "Le titre doit commencer par une lettre.";
         }
         if (!v.matches("^[\\p{L}][\\p{L}\\s'\\-]{1,15}$")) {
-            return "Caracteres invalides: utilisez seulement lettres, espaces, apostrophe ou tiret.";
+            return "Caractères invalides: utilisez seulement lettres, espaces, apostrophe ou tiret.";
         }
         return null;
     }
