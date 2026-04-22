@@ -26,6 +26,50 @@ public class ServiceStatistiques {
         return queryDouble("SELECT COALESCE(AVG(note), 0) FROM avis");
     }
 
+    // ── Stats d'un produit spécifique ────────────────────────────────────────
+
+    public static class ProduitStatDetail {
+        public final double noteMoyenne;
+        public final int    nbAvis;
+        public final int    nbCommandes;   // fois commandé
+        public final double caTotal;       // chiffre d'affaires généré
+
+        public ProduitStatDetail(double noteMoyenne, int nbAvis, int nbCommandes, double caTotal) {
+            this.noteMoyenne = noteMoyenne;
+            this.nbAvis      = nbAvis;
+            this.nbCommandes = nbCommandes;
+            this.caTotal     = caTotal;
+        }
+    }
+
+    public ProduitStatDetail statsProduit(int produitId) throws SQLException {
+        // Note moyenne + nb avis
+        double note = 0; int nbAvis = 0;
+        String sqlAvis = "SELECT COALESCE(AVG(note),0), COUNT(*) FROM avis WHERE produit_id=?";
+        Connection conn = EducompusDB.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sqlAvis);
+        try {
+            ps.setInt(1, produitId);
+            ResultSet rs = ps.executeQuery();
+            try { if (rs.next()) { note = rs.getDouble(1); nbAvis = rs.getInt(2); } }
+            finally { rs.close(); }
+        } finally { ps.close(); conn.close(); }
+
+        // Nb commandes + CA
+        int nbCmd = 0; double ca = 0;
+        String sqlCmd = "SELECT COUNT(*), COALESCE(SUM(prix_unitaire * quantite),0) FROM ligne_commande WHERE produit_id=?";
+        conn = EducompusDB.getConnection();
+        ps = conn.prepareStatement(sqlCmd);
+        try {
+            ps.setInt(1, produitId);
+            ResultSet rs = ps.executeQuery();
+            try { if (rs.next()) { nbCmd = rs.getInt(1); ca = rs.getDouble(2); } }
+            finally { rs.close(); }
+        } finally { ps.close(); conn.close(); }
+
+        return new ProduitStatDetail(note, nbAvis, nbCmd, ca);
+    }
+
     // ── Répartition par catégorie ─────────────────────────────────────────────
 
     /** Retourne { catégorie → nombre de produits } */

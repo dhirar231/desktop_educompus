@@ -6,6 +6,8 @@ import com.educompus.model.Produit;
 import com.educompus.nav.Navigator;
 import com.educompus.service.ServicePanier;
 import com.educompus.service.ServiceProduit;
+import com.educompus.service.ServiceStatistiques;
+import com.educompus.service.TextToSpeechService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -40,6 +42,7 @@ public class FrontMarketplaceController {
 
     private final ServiceProduit service = new ServiceProduit();
     private final ServicePanier servicePanier = new ServicePanier();
+    private final ServiceStatistiques serviceStats = new ServiceStatistiques();
     private List<Produit> allProduits;
     private List<Produit> produitsFiltres;
 
@@ -326,15 +329,36 @@ public class FrontMarketplaceController {
 
         prixRow.getChildren().addAll(prix, spacer, stockLbl);
 
-        // Bouton panier pleine largeur
-        Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "🛒  Ajouter au panier");
+        // Boutons TTS : 🔊 Start  |  ⏹ Stop
+        Button btnStart = new Button("🔊");
+        btnStart.getStyleClass().add("btn-ghost");
+        btnStart.setStyle("-fx-font-size: 13px; -fx-min-width: 34px;");
+        btnStart.setTooltip(new Tooltip("Écouter les statistiques"));
+
+        Button btnStop = new Button("⏹");
+        btnStop.getStyleClass().add("btn-ghost");
+        btnStop.setStyle("-fx-font-size: 13px; -fx-min-width: 34px; -fx-text-fill: #e74c3c;");
+        btnStop.setTooltip(new Tooltip("Arrêter la lecture"));
+        btnStop.setDisable(true); // désactivé au départ
+
+        btnStart.setOnMouseClicked(e -> e.consume());
+        btnStop.setOnMouseClicked(e -> e.consume());
+        btnStart.setOnAction(e -> lireStatsProduit(p, btnStart, btnStop));
+        btnStop.setOnAction(e -> stopperVoix(btnStart, btnStop));
+
+        // Bouton panier
+        Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "🛒  Ajouter");
         btnAdd.getStyleClass().add(p.getStock() == 0 ? "btn-ghost" : "btn-primary");
+        HBox.setHgrow(btnAdd, Priority.ALWAYS);
         btnAdd.setMaxWidth(Double.MAX_VALUE);
         btnAdd.setDisable(p.getStock() == 0);
         btnAdd.setOnMouseClicked(e -> e.consume());
         btnAdd.setOnAction(e -> onAjouterPanier(p));
 
-        body.getChildren().addAll(nom, type, description, sep, prixRow, btnAdd);
+        HBox btnRow = new HBox(4, btnStart, btnStop, btnAdd);
+        btnRow.setAlignment(Pos.CENTER_LEFT);
+
+        body.getChildren().addAll(nom, type, description, sep, prixRow, btnRow);
         card.getChildren().addAll(imgWrap, body);
         return card;
     }
@@ -413,7 +437,60 @@ public class FrontMarketplaceController {
         return null;
     }
 
-    // ── Panier (depuis carte) ─────────────────────────────────────────────────
+    // ── Text-to-Speech stats produit ─────────────────────────────────────────
+
+    private final java.util.concurrent.atomic.AtomicBoolean ttsEnCours =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    private void lireStatsProduit(Produit p, Button btnStart, Button btnStop) {
+        if (ttsEnCours.get()) return; // déjà en lecture
+        ttsEnCours.set(true);
+        btnStart.setDisable(true);
+        btnStop.setDisable(false);
+
+        new Thread(() -> {
+            try {
+                ServiceStatistiques.ProduitStatDetail stats = serviceStats.statsProduit(p.getId());
+                String texte = String.format(
+                    "%s. Prix : %.0f dinars. Stock : %d unités. " +
+                    "Note moyenne : %.1f sur 5, soit %s. " +
+                    "%d avis clients. Commandé %d fois. " +
+                    "Chiffre d affaires généré : %.0f dinars.",
+                    p.getNom(), p.getPrix(), p.getStock(),
+                    stats.noteMoyenne, construireEtoiles(stats.noteMoyenne),
+                    stats.nbAvis, stats.nbCommandes, stats.caTotal
+                );
+                TextToSpeechService.lire(texte); // bloquant jusqu'à fin ou arrêt
+            } catch (Exception ex) {
+                System.err.println("[TTS] " + ex.getMessage());
+            } finally {
+                ttsEnCours.set(false);
+                javafx.application.Platform.runLater(() -> {
+                    btnStart.setDisable(false);
+                    btnStop.setDisable(true);
+                });
+            }
+        }, "tts-stats").start();
+    }
+
+    private void stopperVoix(Button btnStart, Button btnStop) {
+        TextToSpeechService.arreter();
+        ttsEnCours.set(false);
+        btnStart.setDisable(false);
+        btnStop.setDisable(true);
+    }
+
+    private String construireEtoiles(double note) {
+        int n = (int) Math.round(note);
+        return switch (n) {
+            case 1 -> "une étoile";
+            case 2 -> "deux étoiles";
+            case 3 -> "trois étoiles";
+            case 4 -> "quatre étoiles";
+            case 5 -> "cinq étoiles";
+            default -> "pas encore noté";
+        };
+    }
 
     private void onAjouterPanier(Produit p) {
         try {
