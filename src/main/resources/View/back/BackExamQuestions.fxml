@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackExamQuestionsController"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Questions &amp; réponses" styleClass="page-title"/>
+        <Label fx:id="examContextLabel" text="Examen" styleClass="page-subtitle" wrapText="true"/>
+    </VBox>
+
+    <SplitPane dividerPositions="0.44" VBox.vgrow="ALWAYS">
+        <items>
+            <VBox styleClass="card" spacing="10">
+                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                <HBox spacing="8">
+                    <Label text="Questions" styleClass="stat-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Nouvelle" onAction="#newQuestion" styleClass="btn-rgb"/>
+                    <Button text="Supprimer" onAction="#deleteQuestion" styleClass="btn-rgb-outline"/>
+                </HBox>
+                <ListView fx:id="questionsList" VBox.vgrow="ALWAYS" />
+            </VBox>
+
+            <VBox styleClass="card" spacing="10">
+                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                <Label text="Edition question" styleClass="stat-title"/>
+                <TextArea fx:id="questionTextArea" promptText="Texte de la question" styleClass="field area" prefRowCount="4" wrapText="true"/>
+                <TextField fx:id="durationField" promptText="Durée en secondes" styleClass="field"/>
+                <HBox spacing="8">
+                    <Label text="Réponses" styleClass="stat-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Nouvelle" onAction="#newAnswer" styleClass="btn-rgb"/>
+                    <Button text="Supprimer" onAction="#deleteAnswer" styleClass="btn-rgb-outline"/>
+                </HBox>
+                <ListView fx:id="answersList" prefHeight="200" VBox.vgrow="ALWAYS" />
+                <TextField fx:id="answerTextField" promptText="Texte de la réponse" styleClass="field"/>
+                <Label fx:id="answerHintLabel" text="Choisissez si cette réponse est correcte." styleClass="page-subtitle"/>
+                <HBox spacing="8">
+                    <Button fx:id="answerCorrectBtn" text="Correcte" onAction="#markAnswerCorrect" styleClass="btn-rgb-outline"/>
+                    <Button fx:id="answerWrongBtn" text="Incorrecte" onAction="#markAnswerWrong" styleClass="btn-rgb-outline"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <HBox spacing="10">
+                    <Label fx:id="selectedQuestionLabel" text="Aucune question sélectionnée" styleClass="chip chip-outline"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Enregistrer question" onAction="#saveQuestion" styleClass="btn-rgb"/>
+                    <Button text="Enregistrer réponse" onAction="#saveAnswer" styleClass="btn-rgb-outline"/>
+                </HBox>
+            </VBox>
+        </items>
+    </SplitPane>
+</VBox>

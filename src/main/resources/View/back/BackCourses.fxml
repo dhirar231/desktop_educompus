@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackCoursesController"
+      styleClass="content" spacing="20">
+    <padding>
+        <Insets top="24" right="24" bottom="24" left="24"/>
+    </padding>
+
+    <!-- ── Header ── -->
+    <HBox alignment="CENTER_LEFT" spacing="14">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Gestion des cours" styleClass="page-title"/>
+            <Label text="Gérez vos cours, chapitres, TDs et vidéos explicatives." styleClass="page-subtitle"/>
+        </VBox>
+        <Button text="🔄  Actualiser" onAction="#refreshAll" styleClass="btn-rgb-outline"/>
+    </HBox>
+
+    <!-- ── Stats cards ── -->
+    <HBox spacing="14">
+        <VBox styleClass="back-stat-card" spacing="6" HBox.hgrow="ALWAYS">
+            <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <StackPane styleClass="back-stat-icon back-stat-icon-blue">
+                    <SVGPath styleClass="back-stat-svg"
+                             content="M18 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V4C20 2.9 19.1 2 18 2ZM18 20H6V4H18V20ZM8 6H16V8H8ZM8 10H16V12H8ZM8 14H13V16H8Z"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label text="Cours" styleClass="stat-title"/>
+                    <Label fx:id="statsCoursLabel" text="0" styleClass="stat-value"/>
+                </VBox>
+            </HBox>
+        </VBox>
+        <VBox styleClass="back-stat-card" spacing="6" HBox.hgrow="ALWAYS">
+            <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <StackPane styleClass="back-stat-icon back-stat-icon-purple">
+                    <SVGPath styleClass="back-stat-svg"
+                             content="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label text="Chapitres" styleClass="stat-title"/>
+                    <Label fx:id="statsChapitreLabel" text="0" styleClass="stat-value"/>
+                </VBox>
+            </HBox>
+        </VBox>
+        <VBox styleClass="back-stat-card" spacing="6" HBox.hgrow="ALWAYS">
+            <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <StackPane styleClass="back-stat-icon back-stat-icon-green">
+                    <SVGPath styleClass="back-stat-svg"
+                             content="M19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V21C3 22.1 3.9 23 5 23H19C20.1 23 21 22.1 21 21V5C21 3.9 20.1 3 19 3ZM12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3ZM19 21H5V5H7V7H17V5H19V21Z"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label text="TD" styleClass="stat-title"/>
+                    <Label fx:id="statsTdLabel" text="0" styleClass="stat-value"/>
+                </VBox>
+            </HBox>
+        </VBox>
+        <VBox styleClass="back-stat-card" spacing="6" HBox.hgrow="ALWAYS">
+            <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <StackPane styleClass="back-stat-icon back-stat-icon-orange">
+                    <SVGPath styleClass="back-stat-svg"
+                             content="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                </StackPane>
+                <VBox spacing="2">
+                    <Label text="Vidéos" styleClass="stat-title"/>
+                    <Label fx:id="statsVideoLabel" text="0" styleClass="stat-value"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- ── Tabs ── -->
+    <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="tabs">
+        <tabs>
+
+            <!-- Cours -->
+            <Tab text="📚  Cours">
+                <content>
+                    <VBox spacing="14" styleClass="card">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <TextField fx:id="coursSearchField" promptText="🔍  Rechercher un cours..." styleClass="field" HBox.hgrow="ALWAYS"/>
+                            <ComboBox fx:id="coursSortCombo" styleClass="combo-rgb" prefWidth="160"/>
+                            <Button text="➕  Créer un cours" onAction="#createCours" styleClass="btn-rgb"/>
+                        </HBox>
+                        <ListView fx:id="coursListView" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </content>
+            </Tab>
+
+            <!-- Chapitres -->
+            <Tab text="📄  Chapitres">
+                <content>
+                    <VBox spacing="14" styleClass="card">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <TextField fx:id="chapitreSearchField" promptText="🔍  Rechercher un chapitre..." styleClass="field" HBox.hgrow="ALWAYS"/>
+                            <ComboBox fx:id="chapitreSortCombo" styleClass="combo-rgb" prefWidth="160"/>
+                            <Button text="➕  Créer un chapitre" onAction="#createChapitre" styleClass="btn-rgb"/>
+                        </HBox>
+                        <ListView fx:id="chapitreListView" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </content>
+            </Tab>
+
+            <!-- TD -->
+            <Tab text="📝  TD">
+                <content>
+                    <VBox spacing="14" styleClass="card">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <TextField fx:id="tdSearchField" promptText="🔍  Rechercher un TD..." styleClass="field" HBox.hgrow="ALWAYS"/>
+                            <ComboBox fx:id="tdSortCombo" styleClass="combo-rgb" prefWidth="160"/>
+                            <Button text="➕  Créer un TD" onAction="#createTd" styleClass="btn-rgb"/>
+                        </HBox>
+                        <ListView fx:id="tdListView" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </content>
+            </Tab>
+
+            <!-- Vidéos -->
+            <Tab text="🎬  Vidéos">
+                <content>
+                    <VBox spacing="14" styleClass="card">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <TextField fx:id="videoSearchField" promptText="🔍  Rechercher une vidéo..." styleClass="field" HBox.hgrow="ALWAYS"/>
+                            <ComboBox fx:id="videoSortCombo" styleClass="combo-rgb" prefWidth="160"/>
+                            <Button text="➕  Créer une vidéo" onAction="#createVideo" styleClass="btn-rgb"/>
+                        </HBox>
+                        <ListView fx:id="videoListView" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </content>
+            </Tab>
+
+        </tabs>
+    </TabPane>
+</VBox>

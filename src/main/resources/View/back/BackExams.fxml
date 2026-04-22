@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackExamsController"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Gestion des examens" styleClass="page-title"/>
+        <Label text="Page admin principale pour gérer les examens. Les questions et réponses sont maintenant ouvertes dans une page dédiée." styleClass="page-subtitle" wrapText="true"/>
+    </VBox>
+
+    <HBox spacing="12">
+        <VBox styleClass="card exam-stat-card" spacing="4">
+            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+            <Label text="Examens" styleClass="stat-title"/>
+            <Label fx:id="totalExamsLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+            <VBox styleClass="card exam-stat-card" spacing="4">
+            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+            <Label text="Cours liés" styleClass="stat-title"/>
+            <Label fx:id="totalCoursesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="card exam-stat-card" spacing="4">
+            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+            <Label text="Examens prêts" styleClass="stat-title"/>
+            <Label fx:id="readyQuizzesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+    </HBox>
+
+    <BorderPane VBox.vgrow="ALWAYS">
+        <top>
+            <HBox spacing="10" BorderPane.alignment="CENTER">
+                <TextField fx:id="searchField" promptText="Rechercher un examen, un cours, un niveau..." styleClass="field" HBox.hgrow="ALWAYS"/>
+                <ComboBox fx:id="examSortCombo" prefWidth="160" styleClass="combo-rgb"/>
+                <Button text="Nouveau" onAction="#newExam" styleClass="btn-rgb"/>
+                <Button text="Modifier" onAction="#editExam" styleClass="btn-rgb-outline"/>
+                <Button text="Supprimer" onAction="#deleteExam" styleClass="btn-rgb-outline"/>
+                <Button text="Questions &amp; réponses" onAction="#openQuestionsPage" styleClass="btn-rgb-outline"/>
+            </HBox>
+        </top>
+        <center>
+            <VBox fx:id="examsTablePane" styleClass="card" spacing="10" BorderPane.alignment="CENTER">
+                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                <Label text="Liste des examens" styleClass="stat-title"/>
+                <ListView fx:id="examsList" VBox.vgrow="ALWAYS"/>
+                <HBox spacing="8" alignment="CENTER" styleClass="pagination" prefHeight="36">
+                    <padding><Insets top="8" bottom="0" left="0" right="0"/></padding>
+                    <Button fx:id="examsPrevBtn" text="Page Précédente" onAction="#onExamsPrev" styleClass="btn-rgb-outline"/>
+                    <Label fx:id="examsPageLabel" text="Page 1 / 1"/>
+                    <Button fx:id="examsNextBtn" text="Page Suivante" onAction="#onExamsNext" styleClass="btn-rgb-outline"/>
+                </HBox>
+            </VBox>
+        </center>
+    </BorderPane>
+</VBox>

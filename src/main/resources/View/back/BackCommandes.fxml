@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackCommandesController"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Commandes &amp; Livraisons" styleClass="page-title"/>
+            <Label text="Liste de toutes les commandes clients avec leurs informations de livraison."
+                   styleClass="page-subtitle"/>
+        </VBox>
+        <Button text="↻  Actualiser" styleClass="btn-ghost" onAction="#onActualiser"/>
+    </HBox>
+
+    <!-- Filtres -->
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="🔍  Rechercher par ville, adresse, téléphone…"
+                   styleClass="field" HBox.hgrow="ALWAYS" onKeyReleased="#onSearch"/>
+        <ComboBox fx:id="filterStatut" promptText="Statut livraison" prefWidth="180"
+                  styleClass="field" onAction="#onSearch"/>
+        <ComboBox fx:id="sortCombo" promptText="Trier par…" prefWidth="170"
+                  styleClass="field" onAction="#onSort"/>
+        <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
+    </HBox>
+
+    <!-- ListView commandes -->
+    <VBox styleClass="card" spacing="0" VBox.vgrow="ALWAYS">
+        <padding><Insets top="0" right="0" bottom="0" left="0"/></padding>
+        <ListView fx:id="listeCommandes" VBox.vgrow="ALWAYS"
+                  style="-fx-background-color: transparent; -fx-border-color: transparent;">
+            <placeholder>
+                <Label text="Aucune commande enregistrée." styleClass="page-subtitle"/>
+            </placeholder>
+        </ListView>
+    </VBox>
+
+    <!-- Compteur -->
+    <HBox alignment="CENTER_RIGHT">
+        <Label fx:id="lblCount" text="0 commande(s)" styleClass="page-subtitle"/>
+    </HBox>
+</VBox>

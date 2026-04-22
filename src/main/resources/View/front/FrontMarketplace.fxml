@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.front.FrontMarketplaceController"
+      styleClass="content" spacing="18">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Marketplace" styleClass="page-title"/>
+            <Label text="Découvrez notre catalogue de produits éducatifs." styleClass="page-subtitle"/>
+        </VBox>
+        <Button text="📋  Mes commandes" styleClass="btn-ghost"
+                onAction="#onVoirMesCommandes"/>
+        <Button fx:id="btnPanier" text="🛒  Mon panier" styleClass="btn-rgb-outline"
+                onAction="#onOuvrirPanier"/>
+    </HBox>
+
+    <!-- Barre de recherche -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="searchField"
+                   promptText="🔍  Rechercher un produit par nom…"
+                   styleClass="field"
+                   HBox.hgrow="ALWAYS"
+                   onKeyReleased="#onSearch"/>
+        <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
+        <Label fx:id="lblCount" text="" styleClass="page-subtitle"/>
+    </HBox>
+
+    <!-- Grille de cartes dans un ScrollPane -->
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" VBox.vgrow="ALWAYS"
+                hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                styleClass="catalog-scroll">
+        <content>
+            <VBox spacing="0">
+                <FlowPane fx:id="cardsPane"
+                          hgap="18" vgap="18"
+                          styleClass="project-catalog"
+                          style="-fx-padding: 4;"/>
+            </VBox>
+        </content>
+    </ScrollPane>
+
+    <!-- État vide -->
+    <VBox fx:id="emptyState" alignment="CENTER" spacing="10"
+          managed="false" visible="false" VBox.vgrow="ALWAYS">
+        <Label text="Aucun produit trouvé" styleClass="empty-title"/>
+        <Label text="Essayez un autre mot-clé ou revenez plus tard."
+               styleClass="empty-subtitle" wrapText="true" textAlignment="CENTER"/>
+    </VBox>
+</VBox>

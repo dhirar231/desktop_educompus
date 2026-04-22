@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackProjectsController"
+      styleClass="content" spacing="16">
+    <padding>
+        <Insets top="22" right="22" bottom="22" left="22"/>
+    </padding>
+
+    <VBox spacing="4">
+        <Label text="Gestion des projets" styleClass="page-title"/>
+        <Label text="Gestion professionnelle des projets, soumissions étudiantes et tableau Kanban." styleClass="page-subtitle"/>
+    </VBox>
+
+    <HBox spacing="10">
+        <MenuButton fx:id="projectsMenuButton" text="Projets" styleClass="btn-rgb-outline">
+            <items>
+                <MenuItem text="Projets" onAction="#showProjectsView"/>
+                <MenuItem text="Soumissions" onAction="#showSubmissionsView"/>
+                <MenuItem fx:id="catalogueMenuItem" text="Catalogue (cartes)" onAction="#showCatalogueView"/>
+            </items>
+        </MenuButton>
+    </HBox>
+
+    <StackPane fx:id="viewStack" VBox.vgrow="ALWAYS">
+        <VBox fx:id="projectsPane" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
+            <BorderPane>
+                <top>
+                    <HBox spacing="10" BorderPane.alignment="CENTER">
+                        <TextField fx:id="projectSearchField" promptText="Rechercher (titre, description...)" styleClass="field" HBox.hgrow="ALWAYS"/>
+                        <ComboBox fx:id="projectsSortCombo" prefWidth="150" styleClass="combo-rgb"/>
+                        <Button text="Nouveau" onAction="#newProject" styleClass="btn-rgb"/>
+                        <Button text="Modifier" onAction="#editProject" styleClass="btn-rgb-outline"/>
+                        <Button text="Supprimer" onAction="#deleteProject" styleClass="btn-rgb-outline"/>
+                    </HBox>
+                </top>
+                <center>
+                    <VBox styleClass="card" spacing="10" BorderPane.alignment="CENTER">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Liste des projets" styleClass="stat-title"/>
+                        <ListView fx:id="projectsList" VBox.vgrow="ALWAYS"/>
+                        <HBox spacing="8" alignment="CENTER" styleClass="pagination" prefHeight="36">
+                            <padding><Insets top="8" bottom="0" left="0" right="0"/></padding>
+                            <Button fx:id="projectsPrevBtn" text="Page Précédente" onAction="#onProjectsPrev" styleClass="btn-rgb-outline"/>
+                            <Label fx:id="projectsPageLabel" text="Page 1 / 1"/>
+                            <Button fx:id="projectsNextBtn" text="Page Suivante" onAction="#onProjectsNext" styleClass="btn-rgb-outline"/>
+                        </HBox>
+                    </VBox>
+                </center>
+            </BorderPane>
+        </VBox>
+
+        <VBox fx:id="submissionsPane" visible="false" managed="false" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
+            <BorderPane>
+                <top>
+                    <HBox spacing="10" BorderPane.alignment="CENTER">
+                        <Label text="Soumissions des étudiants" styleClass="stat-title"/>
+                        <TextField fx:id="submissionsSearchField" promptText="Rechercher (projet, réponse...)" styleClass="field" HBox.hgrow="ALWAYS"/>
+                        <ComboBox fx:id="submissionsSortCombo" prefWidth="170" styleClass="combo-rgb"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </top>
+                <center>
+                    <VBox styleClass="card" spacing="10">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <ListView fx:id="submissionsList" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </center>
+            </BorderPane>
+        </VBox>
+
+        <VBox fx:id="cataloguePane" visible="false" managed="false" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
+            <VBox spacing="12" VBox.vgrow="ALWAYS">
+                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" hbarPolicy="NEVER" styleClass="catalog-scroll">
+                    <content>
+                        <FlowPane fx:id="adminCardsFlow" hgap="14" vgap="14" prefWrapLength="900" styleClass="project-catalog"/>
+                    </content>
+                </ScrollPane>
+            </VBox>
+        </VBox>
+    </StackPane>
+</VBox>
