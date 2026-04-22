@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 /**
  * Filtre de mots interdits multilingue (FR / EN / AR).
  * Détecte les variantes avec espaces, chiffres substitués (l33t speak),
- * répétitions de lettres et séparateurs.
+ * répétitions de lettres et séparateurs.hhhhhhhhhhhhhhhhh
  */
 public final class BadWordsFilter {
 
