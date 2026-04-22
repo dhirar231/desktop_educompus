@@ -1,8 +1,11 @@
 package com.educompus.controller.front;
 
+import com.educompus.app.AppState;
 import com.educompus.model.Cours;
+import com.educompus.repository.CourseFavoriteRepository;
 import com.educompus.repository.CourseManagementRepository;
 import com.educompus.nav.Navigator;
+import javafx.animation.ScaleTransition;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -18,12 +21,17 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.SVGPath;
+import javafx.util.Duration;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class FrontCoursesController {
     private final CourseManagementRepository repository = new CourseManagementRepository();
+    private final CourseFavoriteRepository favRepo      = new CourseFavoriteRepository();
 
     @FXML private FlowPane cardsFlow;
     @FXML private Label totalCoursesLabel;
@@ -32,9 +40,16 @@ public final class FrontCoursesController {
     @FXML private VBox emptyState;
 
     private List<Cours> allCourses;
+    private final Set<Integer> favoriteIds = new HashSet<>();
+    private int studentId;
 
     @FXML
     private void initialize() {
+        studentId = AppState.getUserId();
+        try {
+            favoriteIds.addAll(favRepo.listFavoriteCourseIds(studentId));
+        } catch (Exception ignored) {}
+
         allCourses = repository.listCours("");
         if (totalCoursesLabel != null) totalCoursesLabel.setText(String.valueOf(allCourses.size()));
         if (searchField != null) {
@@ -78,7 +93,7 @@ public final class FrontCoursesController {
         card.setPrefWidth(270);
         card.setMaxWidth(270);
         card.setStyle("-fx-cursor: hand;");
-        card.setOnMouseClicked(e -> openDetail(cours));
+        // Le handler openDetail est défini plus bas, après la création du bouton cœur
 
         StackPane banner = new StackPane();
         banner.setMinHeight(150);
@@ -102,9 +117,16 @@ public final class FrontCoursesController {
         StackPane.setAlignment(niveauChip, Pos.TOP_LEFT);
         StackPane.setMargin(niveauChip, new Insets(10));
 
+        // Bouton cœur favori (bottom-right de la bannière)
+        boolean isFav = favoriteIds.contains(cours.getId());
+        StackPane favBtn = buildFavBtn(cours, isFav);
+        StackPane.setAlignment(favBtn, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(favBtn, new Insets(0, 10, 10, 0));
+
         banner.getChildren().add(iv);
         if (!domainChip.getText().isBlank()) banner.getChildren().add(domainChip);
         if (!niveauChip.getText().isBlank()) banner.getChildren().add(niveauChip);
+        banner.getChildren().add(favBtn);
 
         VBox body = new VBox(8);
         body.setPadding(new Insets(14, 16, 14, 16));
@@ -140,8 +162,61 @@ public final class FrontCoursesController {
 
         footer.getChildren().addAll(formateur, spacer, duree, chapitres);
         body.getChildren().addAll(title, desc, footer);
+
+        // Clic carte → détail ; le bouton cœur consomme lui-même l'événement (e.consume() dans buildFavBtn)
+        card.setOnMouseClicked(e -> openDetail(cours));
+
         card.getChildren().addAll(banner, body);
         return card;
+    }
+
+    // ── Bouton cœur ──────────────────────────────────────────────────────────────
+
+    private StackPane buildFavBtn(Cours cours, boolean isFav) {
+        SVGPath heart = new SVGPath();
+        updateHeartStyle(heart, isFav);
+
+        StackPane btn = new StackPane(heart);
+        btn.getStyleClass().add("fav-btn");
+        btn.setMinSize(32, 32);
+        btn.setPrefSize(32, 32);
+        btn.setMaxSize(32, 32);
+        Tooltip.install(btn, new Tooltip(isFav ? "Retirer des favoris" : "Ajouter aux favoris"));
+
+        btn.setOnMouseClicked(e -> {
+            e.consume();
+            boolean nowFav = favoriteIds.contains(cours.getId());
+            toggleFavorite(cours, heart, btn, !nowFav);
+        });
+        return btn;
+    }
+
+    private void toggleFavorite(Cours cours, SVGPath heart, StackPane btn, boolean addToFav) {
+        ScaleTransition st = new ScaleTransition(Duration.millis(150), btn);
+        st.setFromX(1.0); st.setFromY(1.0);
+        st.setToX(1.35);  st.setToY(1.35);
+        st.setAutoReverse(true);
+        st.setCycleCount(2);
+        st.play();
+        try {
+            if (addToFav) {
+                favRepo.addFavorite(studentId, cours.getId());
+                favoriteIds.add(cours.getId());
+            } else {
+                favRepo.removeFavorite(studentId, cours.getId());
+                favoriteIds.remove(cours.getId());
+            }
+            updateHeartStyle(heart, addToFav);
+            Tooltip.install(btn, new Tooltip(addToFav ? "Retirer des favoris" : "Ajouter aux favoris"));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void updateHeartStyle(SVGPath heart, boolean filled) {
+        heart.getStyleClass().removeAll("fav-btn-filled", "fav-btn-outline");
+        heart.setContent("M12 21.35L10.55 20.03C5.4 15.36 2 12.27 2 8.5C2 5.41 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.08C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.41 22 8.5C22 12.27 18.6 15.36 13.45 20.03L12 21.35Z");
+        heart.getStyleClass().add(filled ? "fav-btn-filled" : "fav-btn-outline");
     }
 
     private Image loadCourseImage(Cours cours) {

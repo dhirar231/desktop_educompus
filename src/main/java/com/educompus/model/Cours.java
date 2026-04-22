@@ -11,6 +11,18 @@ public final class Cours {
     private String nomFormateur;
     private int dureeTotaleHeures;
     private int chapitreCount;
+    private CoursStatut statut = CoursStatut.EN_ATTENTE;
+    private String commentaireAdmin;
+    private int createdById;
+    private String driveFolderId;
+
+    public String getDriveFolderId() {
+        return driveFolderId;
+    }
+
+    public void setDriveFolderId(String driveFolderId) {
+        this.driveFolderId = driveFolderId;
+    }
 
     public int getId() {
         return id;
@@ -90,6 +102,30 @@ public final class Cours {
 
     public void setChapitreCount(int chapitreCount) {
         this.chapitreCount = chapitreCount;
+    }
+
+    public CoursStatut getStatut() {
+        return statut;
+    }
+
+    public void setStatut(CoursStatut statut) {
+        this.statut = statut == null ? CoursStatut.EN_ATTENTE : statut;
+    }
+
+    public String getCommentaireAdmin() {
+        return commentaireAdmin;
+    }
+
+    public void setCommentaireAdmin(String commentaireAdmin) {
+        this.commentaireAdmin = commentaireAdmin;
+    }
+
+    public int getCreatedById() {
+        return createdById;
+    }
+
+    public void setCreatedById(int createdById) {
+        this.createdById = createdById;
     }
 
     @Override

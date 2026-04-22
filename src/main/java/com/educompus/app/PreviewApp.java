@@ -10,6 +10,7 @@ import javafx.stage.StageStyle;
 
 import com.educompus.controller.front.SplashController;
 import com.educompus.nav.Navigator;
+import com.educompus.util.DatabaseSetup;
 import com.educompus.util.Theme;
 
 import java.io.File;
@@ -17,6 +18,9 @@ import java.io.File;
 public final class PreviewApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
+        // Configurer la base de données au démarrage
+        DatabaseSetup.ensureTablesExist();
+        
         String fxmlPath = System.getProperty("fxml", "View/front/FrontLogin.fxml");
         String cssPath = System.getProperty("css", "styles/educompus.css");
         String title = System.getProperty("title", "EduCampus");

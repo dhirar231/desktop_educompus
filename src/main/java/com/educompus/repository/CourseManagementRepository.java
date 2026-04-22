@@ -2,6 +2,7 @@ package com.educompus.repository;
 
 import com.educompus.model.Chapitre;
 import com.educompus.model.Cours;
+import com.educompus.model.CoursStatut;
 import com.educompus.model.Td;
 import com.educompus.model.VideoExplicative;
 
@@ -21,12 +22,14 @@ public final class CourseManagementRepository {
         String q = safe(query);
         String sql = """
                 SELECT c.id, c.titre, c.description, c.niveau, c.domaine, c.image, c.date_creation,
-                       c.nom_formateur, c.duree_totale_heures, COUNT(ch.id) AS chapitre_count
+                       c.nom_formateur, c.duree_totale_heures,
+                       c.statut, c.commentaire_admin, c.created_by_id, c.drive_folder_id,
+                       COUNT(ch.id) AS chapitre_count
                 FROM cours c
                 LEFT JOIN chapitre ch ON ch.cours_id = c.id
                 %s
                 GROUP BY c.id, c.titre, c.description, c.niveau, c.domaine, c.image, c.date_creation,
-                         c.nom_formateur, c.duree_totale_heures
+                         c.nom_formateur, c.duree_totale_heures, c.statut, c.commentaire_admin, c.created_by_id, c.drive_folder_id
                 ORDER BY c.date_creation DESC, c.id DESC
                 """.formatted(q.isBlank() ? "" : """
                         WHERE c.titre LIKE ? OR c.description LIKE ? OR c.niveau LIKE ? OR c.domaine LIKE ?
@@ -240,8 +243,11 @@ public final class CourseManagementRepository {
 
     public void createCours(Cours cours) {
         String sql = """
-                INSERT INTO cours (titre, description, niveau, domaine, image, date_creation, nom_formateur, duree_totale_heures)
-                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
+                INSERT INTO cours (
+                    titre, description, niveau, domaine, image, date_creation,
+                    nom_formateur, duree_totale_heures, statut, commentaire_admin, created_by_id, drive_folder_id
+                )
+                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -252,6 +258,10 @@ public final class CourseManagementRepository {
             ps.setString(5, emptyToNull(cours.getImage()));
             ps.setString(6, cours.getNomFormateur());
             ps.setInt(7, cours.getDureeTotaleHeures());
+            ps.setString(8, cours.getStatut().name());
+            ps.setString(9, emptyToNull(cours.getCommentaireAdmin()));
+            ps.setInt(10, Math.max(0, cours.getCreatedById()));
+            ps.setString(11, emptyToNull(cours.getDriveFolderId()));
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -266,7 +276,8 @@ public final class CourseManagementRepository {
     public void updateCours(Cours cours) {
         String sql = """
                 UPDATE cours
-                SET titre = ?, description = ?, niveau = ?, domaine = ?, image = ?, nom_formateur = ?, duree_totale_heures = ?
+                SET titre = ?, description = ?, niveau = ?, domaine = ?, image = ?, nom_formateur = ?, duree_totale_heures = ?,
+                    statut = ?, commentaire_admin = ?, created_by_id = ?, drive_folder_id = ?
                 WHERE id = ?
                 """;
         try (Connection conn = EducompusDB.getConnection();
@@ -278,7 +289,11 @@ public final class CourseManagementRepository {
             ps.setString(5, emptyToNull(cours.getImage()));
             ps.setString(6, cours.getNomFormateur());
             ps.setInt(7, cours.getDureeTotaleHeures());
-            ps.setInt(8, cours.getId());
+            ps.setString(8, cours.getStatut().name());
+            ps.setString(9, emptyToNull(cours.getCommentaireAdmin()));
+            ps.setInt(10, Math.max(0, cours.getCreatedById()));
+            ps.setString(11, emptyToNull(cours.getDriveFolderId()));
+            ps.setInt(12, cours.getId());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new IllegalStateException("Impossible de modifier le cours: " + safeMsg(e), e);
@@ -513,6 +528,18 @@ public final class CourseManagementRepository {
             if (!columnExists(conn, "cours", "image")) {
                 executeIgnore(conn, "ALTER TABLE cours ADD COLUMN image VARCHAR(255) NULL");
             }
+            if (!columnExists(conn, "cours", "statut")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN statut VARCHAR(32) NOT NULL DEFAULT 'EN_ATTENTE'");
+            }
+            if (!columnExists(conn, "cours", "commentaire_admin")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN commentaire_admin TEXT NULL");
+            }
+            if (!columnExists(conn, "cours", "created_by_id")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN created_by_id INT NOT NULL DEFAULT 0");
+            }
+            if (!columnExists(conn, "cours", "drive_folder_id")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN drive_folder_id VARCHAR(128) NULL");
+            }
             if (!columnExists(conn, "chapitre", "niveau")) {
                 executeIgnore(conn, "ALTER TABLE chapitre ADD COLUMN niveau VARCHAR(32) NULL");
             }
@@ -584,6 +611,10 @@ public final class CourseManagementRepository {
         cours.setNomFormateur(rs.getString("nom_formateur"));
         cours.setDureeTotaleHeures(rs.getInt("duree_totale_heures"));
         cours.setChapitreCount(rs.getInt("chapitre_count"));
+        cours.setStatut(CoursStatut.fromString(rs.getString("statut")));
+        cours.setCommentaireAdmin(rs.getString("commentaire_admin"));
+        cours.setCreatedById(rs.getInt("created_by_id"));
+        cours.setDriveFolderId(rs.getString("drive_folder_id"));
         return cours;
     }
 

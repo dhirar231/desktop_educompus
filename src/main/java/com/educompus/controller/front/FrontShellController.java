@@ -96,6 +96,11 @@ public final class FrontShellController {
     @FXML
     private Button navProfileBtn;
 
+    @FXML
+    private Button navFavoritesBtn;
+
+    // navTranslatorBtn supprimé — bouton retiré de la sidebar
+
     private final List<Button> navButtons = new ArrayList<>();
 
     @FXML
@@ -108,6 +113,7 @@ public final class FrontShellController {
 
         navButtons.add(navDashboardBtn);
         navButtons.add(navMyCoursesBtn);
+        navButtons.add(navFavoritesBtn);
         navButtons.add(navExamsBtn);
         navButtons.add(navProjectsBtn);
         navButtons.add(navClubsBtn);
@@ -152,6 +158,12 @@ public final class FrontShellController {
     }
 
     @FXML
+    private void navFavorites(ActionEvent event) {
+        setContent(safeLoad("View/front/FrontFavorites.fxml"));
+        setActive(navFavoritesBtn);
+    }
+
+    @FXML
     private void navExams(ActionEvent event) {
         setContent(safeLoad("View/front/FrontExams.fxml"));
         setActive(navExamsBtn);
@@ -191,6 +203,11 @@ public final class FrontShellController {
     private void navProfile(ActionEvent event) {
         setContent(safeLoad("View/front/FrontProfile.fxml"));
         setActive(navProfileBtn);
+    }
+
+    @FXML
+    private void navTranslator(ActionEvent event) {
+        // Traducteur retiré de la sidebar - accessible via Mes cours
     }
 
     private void setContent(Node node) {

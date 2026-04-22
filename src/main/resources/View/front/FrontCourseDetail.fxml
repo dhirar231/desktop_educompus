@@ -2,9 +2,12 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -20,6 +23,16 @@
         <padding><Insets top="12" right="22" bottom="12" left="22"/></padding>
         <Button fx:id="btnBack" styleClass="btn-rgb-outline" onAction="#onBack" text="← Retour aux cours"/>
         <Region HBox.hgrow="ALWAYS"/>
+
+        <!-- Barre de traduction MyMemory -->
+        <HBox spacing="8" alignment="CENTER_LEFT" styleClass="translate-bar">
+            <Label text="🌐" style="-fx-font-size: 15px;"/>
+            <ComboBox fx:id="langCombo" prefWidth="130" styleClass="translate-combo"/>
+            <Button fx:id="btnTranslate" styleClass="btn-translate" text="Traduire" onAction="#onTranslate"/>
+            <ProgressIndicator fx:id="translateSpinner" prefWidth="20" prefHeight="20"/>
+            <Label fx:id="translateStatusLabel" styleClass="translate-status"/>
+        </HBox>
+
         <Label fx:id="breadcrumb" styleClass="page-subtitle"/>
     </HBox>
 
@@ -143,10 +156,81 @@
                             <Label fx:id="chapitresCountLabel" text="0 chapitres" styleClass="course-info-value"/>
                         </VBox>
 
+                        <!-- Google Drive -->
+                        <VBox fx:id="driveCard" styleClass="card" spacing="10" visible="false" managed="false">
+                            <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+                            <Label text="Espace Google Drive" styleClass="course-detail-section-title"/>
+                            <Separator/>
+                            <Label text="Les fichiers de ce cours sont synchronisés sur Drive." styleClass="page-subtitle" wrapText="true"/>
+                            <Button fx:id="btnOpenDrive" styleClass="btn-primary" text="Accéder aux fichiers" />
+                        </VBox>
+
                     </VBox>
                 </HBox>
 
             </VBox>
         </content>
     </ScrollPane>
+
+    <!-- ── Widget Traducteur Mini Flottant ── -->
+    <StackPane fx:id="miniTranslatorWidget" 
+               styleClass="mini-translator-widget" 
+               visible="true" managed="true"
+               StackPane.alignment="BOTTOM_RIGHT"
+               style="-fx-background-color: white; -fx-background-radius: 16px; -fx-border-color: #e8eaed; -fx-border-radius: 16px; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 0, 3); -fx-padding: 14; -fx-max-width: 320; -fx-max-height: 240;">
+        <StackPane.margin>
+            <Insets bottom="20" right="20"/>
+        </StackPane.margin>
+        
+        <VBox spacing="10">
+            <!-- Header mini -->
+            <HBox alignment="CENTER_LEFT" spacing="6">
+                <Label text="🌐" style="-fx-font-size: 13px;"/>
+                <Label text="Traduction rapide" style="-fx-font-size: 11px; -fx-font-weight: 700; -fx-text-fill: #202124;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnCloseMiniWidget" text="✕" onAction="#onCloseMiniTranslator"
+                        style="-fx-background-color: transparent; -fx-text-fill: #5f6368; -fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 2 5 2 5;"/>
+            </HBox>
+            
+            <!-- Sélecteurs de langues compacts -->
+            <HBox spacing="5" alignment="CENTER">
+                <ComboBox fx:id="miniSourceLang" styleClass="mini-translator-combo" prefWidth="100"/>
+                <Button fx:id="btnMiniSwap" onAction="#onMiniSwapLangs"
+                        style="-fx-background-color: transparent; -fx-border-color: #dadce0; -fx-border-radius: 50%; -fx-background-radius: 50%; -fx-border-width: 1; -fx-padding: 3; -fx-cursor: hand; -fx-pref-width: 24; -fx-pref-height: 24;">
+                    <graphic>
+                        <SVGPath content="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z" 
+                                 style="-fx-fill: #5f6368;" scaleX="0.5" scaleY="0.5"/>
+                    </graphic>
+                </Button>
+                <ComboBox fx:id="miniTargetLang" styleClass="mini-translator-combo" prefWidth="100"/>
+            </HBox>
+            
+            <!-- Zone de texte source compacte -->
+            <javafx.scene.control.TextField fx:id="miniSourceText" promptText="Mot ou phrase..." 
+                       style="-fx-font-size: 11px; -fx-padding: 7; -fx-background-color: #f8f9fa; -fx-border-color: #e8eaed; -fx-border-radius: 8px; -fx-background-radius: 8px;"/>
+            
+            <!-- Bouton traduire + spinner -->
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <Button fx:id="btnMiniTranslate" text="Traduire" onAction="#onMiniTranslate"
+                        styleClass="btn-translate-mini" style="-fx-font-size: 10px; -fx-padding: 5 12 5 12;"/>
+                <ProgressIndicator fx:id="miniSpinner" prefWidth="14" prefHeight="14" visible="false" managed="false"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="miniStatus" styleClass="translate-status" style="-fx-font-size: 9px;" visible="false" managed="false"/>
+            </HBox>
+            
+            <!-- Résultat compact -->
+            <VBox spacing="3">
+                <Label text="Traduction :" style="-fx-font-size: 9px; -fx-text-fill: #5f6368; -fx-font-weight: 600;"/>
+                <Label fx:id="miniResultText" text="" wrapText="true"
+                       style="-fx-font-size: 11px; -fx-text-fill: #202124; -fx-padding: 7; -fx-background-color: #f8f9fa; -fx-background-radius: 8px; -fx-border-color: #e8eaed; -fx-border-radius: 8px; -fx-border-width: 1; -fx-min-height: 40;"/>
+            </VBox>
+            
+            <!-- Bouton copier -->
+            <HBox alignment="CENTER_RIGHT">
+                <Button fx:id="btnMiniCopy" text="📋 Copier" onAction="#onMiniCopy"
+                        style="-fx-background-color: transparent; -fx-text-fill: -edu-primary; -fx-font-size: 9px; -fx-font-weight: 600; -fx-cursor: hand; -fx-padding: 3 6 3 6;"/>
+            </HBox>
+        </VBox>
+    </StackPane>
+
 </VBox>

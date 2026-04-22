@@ -7,12 +7,19 @@ import com.educompus.model.Td;
 import com.educompus.model.VideoExplicative;
 import com.educompus.repository.ChapitreProgressRepository;
 import com.educompus.repository.CourseManagementRepository;
+import com.educompus.service.CourseFavoriteService;
+import com.educompus.service.MyMemoryTranslationService;
 import com.educompus.nav.Navigator;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -39,19 +46,239 @@ public final class FrontCourseDetailController {
     @FXML private Label breadcrumb;
     @FXML private Label niveauInfoLabel;
     @FXML private VBox chapitresBox;
+    @FXML private VBox driveCard;
+    @FXML private Button btnOpenDrive;
+    @FXML private ComboBox<MyMemoryTranslationService.Language> langCombo;
+    @FXML private Button btnTranslate;
+    @FXML private ProgressIndicator translateSpinner;
+    @FXML private Label translateStatusLabel;
+
+    // Widget mini traducteur
+    @FXML private javafx.scene.layout.StackPane miniTranslatorWidget;
+    @FXML private ComboBox<MyMemoryTranslationService.Language> miniSourceLang;
+    @FXML private ComboBox<MyMemoryTranslationService.Language> miniTargetLang;
+    @FXML private javafx.scene.control.TextField miniSourceText;
+    @FXML private Label miniResultText;
+    @FXML private Button btnMiniTranslate;
+    @FXML private Button btnMiniSwap;
+    @FXML private Button btnMiniCopy;
+    @FXML private Button btnCloseMiniWidget;
+    @FXML private ProgressIndicator miniSpinner;
+    @FXML private Label miniStatus;
 
     private final CourseManagementRepository repo = new CourseManagementRepository();
     private final ChapitreProgressRepository progressRepo = new ChapitreProgressRepository();
     private Cours cours;
     private Set<Integer> completedIds;
+    private CourseFavoriteService favoriteService;
+    private int favoriteStudentId;
+
+    // Langue source détectée (toujours "fr" pour ce projet)
+    private static final String SOURCE_LANG = "fr";
+    // Langue actuellement affichée
+    private MyMemoryTranslationService.Language currentLang = MyMemoryTranslationService.Language.FR;
 
     public void setCours(Cours c) {
         this.cours = c;
         populate();
     }
 
+    public void setFavoriteContext(CourseFavoriteService favoriteService, int studentId) {
+        this.favoriteService = favoriteService;
+        this.favoriteStudentId = studentId;
+    }
+
     @FXML
-    private void initialize() {}
+    private void initialize() {
+        // Initialiser le ComboBox des langues
+        if (langCombo != null) {
+            langCombo.setItems(FXCollections.observableArrayList(MyMemoryTranslationService.Language.values()));
+            langCombo.setValue(MyMemoryTranslationService.Language.FR);
+        }
+        if (translateSpinner != null) {
+            translateSpinner.setVisible(false);
+            translateSpinner.setManaged(false);
+        }
+        if (translateStatusLabel != null) {
+            translateStatusLabel.setVisible(false);
+            translateStatusLabel.setManaged(false);
+        }
+
+        // Initialiser le widget mini traducteur
+        if (miniSourceLang != null) {
+            miniSourceLang.setItems(FXCollections.observableArrayList(MyMemoryTranslationService.Language.values()));
+            miniSourceLang.setValue(MyMemoryTranslationService.Language.FR);
+        }
+        if (miniTargetLang != null) {
+            miniTargetLang.setItems(FXCollections.observableArrayList(MyMemoryTranslationService.Language.values()));
+            miniTargetLang.setValue(MyMemoryTranslationService.Language.EN);
+        }
+        if (miniSpinner != null) {
+            miniSpinner.setVisible(false);
+            miniSpinner.setManaged(false);
+        }
+        if (miniStatus != null) {
+            miniStatus.setVisible(false);
+            miniStatus.setManaged(false);
+        }
+    }
+
+    @FXML
+    private void onTranslate() {
+        if (cours == null || langCombo == null) return;
+        MyMemoryTranslationService.Language targetLang = langCombo.getValue();
+        if (targetLang == null) return;
+
+        // Si même langue que la source, recharger l'original
+        if (targetLang == MyMemoryTranslationService.Language.FR) {
+            currentLang = MyMemoryTranslationService.Language.FR;
+            populate();
+            return;
+        }
+
+        setTranslating(true);
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                String toLang = targetLang.code;
+
+                // Traduire titre et description du cours
+                String newTitre = MyMemoryTranslationService.translate(cours.getTitre(), SOURCE_LANG, toLang);
+                String newDesc  = MyMemoryTranslationService.translate(cours.getDescription(), SOURCE_LANG, toLang);
+
+                // Charger et traduire les chapitres, TD et vidéos
+                List<Chapitre> chapitres = repo.listChapitresByCoursId(cours.getId());
+                List<Td> tds = repo.listTdsByCoursId(cours.getId());
+                List<VideoExplicative> videos = repo.listVideosByCoursId(cours.getId());
+
+                // Traduire tous les TD
+                List<Td> translatedTds = new java.util.ArrayList<>();
+                for (Td td : tds) {
+                    String tdTitre = MyMemoryTranslationService.translate(td.getTitre(), SOURCE_LANG, toLang);
+                    String tdDesc  = MyMemoryTranslationService.translate(td.getDescription(), SOURCE_LANG, toLang);
+                    translatedTds.add(cloneTd(td, tdTitre, tdDesc));
+                }
+
+                // Traduire toutes les vidéos
+                List<VideoExplicative> translatedVideos = new java.util.ArrayList<>();
+                for (VideoExplicative video : videos) {
+                    String vidTitre = MyMemoryTranslationService.translate(video.getTitre(), SOURCE_LANG, toLang);
+                    String vidDesc  = MyMemoryTranslationService.translate(video.getDescription(), SOURCE_LANG, toLang);
+                    translatedVideos.add(cloneVideo(video, vidTitre, vidDesc));
+                }
+
+                Platform.runLater(() -> {
+                    currentLang = targetLang;
+                    // Mettre à jour titre et description du cours
+                    coursTitle.setText(newTitre);
+                    coursDescription.setText(newDesc);
+                    if (breadcrumb != null) breadcrumb.setText(newTitre);
+
+                    // Reconstruire les cartes chapitres avec traduction complète
+                    chapitresBox.getChildren().clear();
+                    if (chapitres.isEmpty()) {
+                        Label empty = new Label("Aucun chapitre disponible.");
+                        empty.getStyleClass().add("page-subtitle");
+                        chapitresBox.getChildren().add(empty);
+                    } else {
+                        for (Chapitre ch : chapitres) {
+                            // Traduire titre et description du chapitre
+                            String chTitre = MyMemoryTranslationService.translate(ch.getTitre(), SOURCE_LANG, toLang);
+                            String chDesc  = MyMemoryTranslationService.translate(ch.getDescription(), SOURCE_LANG, toLang);
+                            Chapitre translated = cloneChapitre(ch, chTitre, chDesc);
+                            
+                            // Filtrer les TD et vidéos traduits pour ce chapitre
+                            List<Td> chTds = translatedTds.stream()
+                                    .filter(t -> t.getChapitreId() == ch.getId()).toList();
+                            List<VideoExplicative> chVideos = translatedVideos.stream()
+                                    .filter(v -> v.getChapitreId() == ch.getId()).toList();
+                            
+                            chapitresBox.getChildren().add(buildChapitreCard(translated, chTds, chVideos));
+                        }
+                    }
+                    setTranslating(false);
+                    showStatus("✓ Traduit en " + targetLang.label);
+                });
+                return null;
+            }
+
+            @Override
+            protected void failed() {
+                Platform.runLater(() -> {
+                    setTranslating(false);
+                    showStatus("⚠ Erreur de traduction");
+                });
+            }
+        };
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void setTranslating(boolean loading) {
+        if (translateSpinner != null) {
+            translateSpinner.setVisible(loading);
+            translateSpinner.setManaged(loading);
+        }
+        if (btnTranslate != null) btnTranslate.setDisable(loading);
+        if (langCombo != null) langCombo.setDisable(loading);
+    }
+
+    private void showStatus(String msg) {
+        if (translateStatusLabel == null) return;
+        translateStatusLabel.setText(msg);
+        translateStatusLabel.setVisible(true);
+        translateStatusLabel.setManaged(true);
+        // Masquer après 3 secondes
+        javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3));
+        pause.setOnFinished(e -> {
+            translateStatusLabel.setVisible(false);
+            translateStatusLabel.setManaged(false);
+        });
+        pause.play();
+    }
+
+    /** Clone un chapitre avec un titre et description traduits (sans modifier l'original). */
+    private static Chapitre cloneChapitre(Chapitre original, String newTitre, String newDesc) {
+        Chapitre c = new Chapitre();
+        c.setId(original.getId());
+        c.setOrdre(original.getOrdre());
+        c.setTitre(newTitre);
+        c.setDescription(newDesc);
+        c.setFichierC(original.getFichierC());
+        c.setCoursId(original.getCoursId());
+        return c;
+    }
+
+    /** Clone un TD avec titre et description traduits. */
+    private static Td cloneTd(Td original, String newTitre, String newDesc) {
+        Td td = new Td();
+        td.setId(original.getId());
+        td.setTitre(newTitre);
+        td.setDescription(newDesc);
+        td.setFichier(original.getFichier());
+        td.setChapitreId(original.getChapitreId());
+        td.setCoursId(original.getCoursId());
+        td.setNiveau(original.getNiveau());
+        td.setDomaine(original.getDomaine());
+        return td;
+    }
+
+    /** Clone une vidéo avec titre et description traduits. */
+    private static VideoExplicative cloneVideo(VideoExplicative original, String newTitre, String newDesc) {
+        VideoExplicative video = new VideoExplicative();
+        video.setId(original.getId());
+        video.setTitre(newTitre);
+        video.setDescription(newDesc);
+        video.setUrlVideo(original.getUrlVideo());
+        video.setChapitreId(original.getChapitreId());
+        video.setCoursId(original.getCoursId());
+        video.setNiveau(original.getNiveau());
+        video.setDomaine(original.getDomaine());
+        return video;
+    }
 
     private void populate() {
         if (cours == null) return;
@@ -67,6 +294,21 @@ public final class FrontCourseDetailController {
 
         if (cours.getDateCreation() != null) {
             dateLabel.setText("Créé le " + cours.getDateCreation().toString().substring(0, 10));
+        }
+
+        if (cours.getDriveFolderId() != null && !cours.getDriveFolderId().equals("EN_ATTENTE") && !cours.getDriveFolderId().isBlank()) {
+            if (driveCard != null) {
+                driveCard.setVisible(true);
+                driveCard.setManaged(true);
+            }
+            if (btnOpenDrive != null) {
+                btnOpenDrive.setOnAction(e -> openUrl("https://drive.google.com/drive/folders/" + cours.getDriveFolderId()));
+            }
+        } else {
+            if (driveCard != null) {
+                driveCard.setVisible(false);
+                driveCard.setManaged(false);
+            }
         }
 
         // Charger la progression de l'étudiant
@@ -380,5 +622,104 @@ public final class FrontCourseDetailController {
 
     private static String safe(String s) {
         return s == null ? "" : s.trim();
+    }
+
+    // ── Méthodes Widget Mini Traducteur ──────────────────────────────────────
+
+    @FXML
+    private void onCloseMiniTranslator() {
+        if (miniTranslatorWidget != null) {
+            miniTranslatorWidget.setVisible(false);
+            miniTranslatorWidget.setManaged(false);
+        }
+    }
+
+    @FXML
+    private void onMiniSwapLangs() {
+        if (miniSourceLang == null || miniTargetLang == null) return;
+        MyMemoryTranslationService.Language temp = miniSourceLang.getValue();
+        miniSourceLang.setValue(miniTargetLang.getValue());
+        miniTargetLang.setValue(temp);
+    }
+
+    @FXML
+    private void onMiniTranslate() {
+        if (miniSourceText == null || miniResultText == null) return;
+        String text = miniSourceText.getText();
+        if (text == null || text.isBlank()) {
+            miniResultText.setText("");
+            return;
+        }
+
+        MyMemoryTranslationService.Language sourceLang = miniSourceLang.getValue();
+        MyMemoryTranslationService.Language targetLang = miniTargetLang.getValue();
+        if (sourceLang == null || targetLang == null) return;
+
+        if (sourceLang == targetLang) {
+            miniResultText.setText(text);
+            showMiniStatus("✓ Même langue");
+            return;
+        }
+
+        setMiniTranslating(true);
+
+        Task<String> task = new Task<>() {
+            @Override
+            protected String call() {
+                return MyMemoryTranslationService.translate(text, sourceLang.code, targetLang.code);
+            }
+
+            @Override
+            protected void succeeded() {
+                Platform.runLater(() -> {
+                    miniResultText.setText(getValue());
+                    setMiniTranslating(false);
+                    showMiniStatus("✓ Traduit");
+                });
+            }
+
+            @Override
+            protected void failed() {
+                Platform.runLater(() -> {
+                    setMiniTranslating(false);
+                    showMiniStatus("⚠ Erreur");
+                });
+            }
+        };
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    @FXML
+    private void onMiniCopy() {
+        if (miniResultText == null || miniResultText.getText() == null || miniResultText.getText().isBlank()) return;
+        javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+        javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+        content.putString(miniResultText.getText());
+        clipboard.setContent(content);
+        showMiniStatus("✓ Copié");
+    }
+
+    private void setMiniTranslating(boolean loading) {
+        if (miniSpinner != null) {
+            miniSpinner.setVisible(loading);
+            miniSpinner.setManaged(loading);
+        }
+        if (btnMiniTranslate != null) btnMiniTranslate.setDisable(loading);
+    }
+
+    private void showMiniStatus(String msg) {
+        if (miniStatus == null) return;
+        miniStatus.setText(msg);
+        miniStatus.setVisible(true);
+        miniStatus.setManaged(true);
+        javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(2));
+        pause.setOnFinished(e -> {
+            miniStatus.setVisible(false);
+            miniStatus.setManaged(false);
+        });
+        pause.play();
     }
 }
