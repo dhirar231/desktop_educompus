@@ -4,6 +4,7 @@ import com.educompus.app.AppState;
 import com.educompus.model.Commande;
 import com.educompus.model.LigneCommande;
 import com.educompus.model.Livraison;
+import com.educompus.service.CloudinaryService;
 import com.educompus.service.FacturePNGService;
 import com.educompus.service.ServiceCommande;
 import com.educompus.service.ServiceLigneCommande;
@@ -153,22 +154,22 @@ public class FrontMesCommandesController {
             }
         } catch (Exception ignored) {}
 
-        // ── Pied : infos livraison ──
+        // ── Pied : infos livraison + bouton facture ──
         VBox pied = buildPiedLivraison(cmd.getId());
 
-        // ── Bouton imprimer facture ──
+        // Ajouter le bouton directement dans le pied
         HBox actionBar = new HBox();
         actionBar.setAlignment(Pos.CENTER_RIGHT);
-        actionBar.setPadding(new Insets(10, 16, 12, 16));
+        actionBar.setPadding(new Insets(6, 0, 0, 0));
 
         Button btnPng = new Button("🖼  Télécharger la facture");
-        btnPng.getStyleClass().add("btn-ghost");
-        btnPng.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 700;");
+        btnPng.getStyleClass().add("btn-primary");
+        btnPng.setStyle("-fx-font-size: 11px;");
         btnPng.setOnAction(e -> imprimerFacturePng(cmd, btnPng));
-
         actionBar.getChildren().add(btnPng);
+        pied.getChildren().add(actionBar);
 
-        card.getChildren().addAll(header, corps, pied, actionBar);
+        card.getChildren().addAll(header, corps, pied);
         return card;
     }
 
@@ -255,6 +256,22 @@ public class FrontMesCommandesController {
                 FacturePNGService service = new FacturePNGService();
                 File png = service.genererPng(cmd, lignes, liv);
 
+                // Upload vers Cloudinary
+                String urlCloud = null;
+                String erreurCloud = null;
+                try {
+                    CloudinaryService cloudinary = new CloudinaryService();
+                    urlCloud = cloudinary.uploader(png, "factures");
+                    System.out.println("[Cloudinary] Facture uploadée : " + urlCloud);
+                } catch (Exception ex) {
+                    erreurCloud = ex.getMessage();
+                    System.err.println("[Cloudinary] Upload échoué : " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+
+                final String urlFinale   = urlCloud;
+                final String errFinale   = erreurCloud;
+
                 Platform.runLater(() -> {
                     btn.setDisable(false);
                     btn.setText("🖼  Télécharger la facture");
@@ -263,13 +280,44 @@ public class FrontMesCommandesController {
                             Desktop.getDesktop().open(png);
                     } catch (Exception ignored) {}
 
-                    Alert ok = new Alert(Alert.AlertType.INFORMATION);
-                    ok.setTitle("Facture générée");
-                    ok.setHeaderText(null);
-                    ok.setContentText("Image PNG sauvegardée dans :\n" + png.getAbsolutePath());
+                    // Dialog avec lien cliquable
+                    Dialog<Void> dialog = new Dialog<>();
+                    dialog.setTitle("Facture générée");
+                    dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+                    VBox content = new VBox(10);
+                    content.setPadding(new Insets(10));
+
+                    Label lblLocal = new Label("📁 Fichier local :\n" + png.getAbsolutePath());
+                    lblLocal.setWrapText(true);
+                    lblLocal.getStyleClass().add("page-subtitle");
+                    content.getChildren().add(lblLocal);
+
+                    if (urlFinale != null) {
+                        Label lblCloud = new Label("☁ Disponible en ligne :");
+                        lblCloud.getStyleClass().add("stat-title");
+
+                        Hyperlink lien = new Hyperlink(urlFinale);
+                        lien.setWrapText(true);
+                        lien.setMaxWidth(420);
+                        lien.setStyle("-fx-text-fill: -edu-primary; -fx-font-size: 11px;");
+                        lien.setOnAction(ev -> {
+                            try {
+                                Desktop.getDesktop().browse(new java.net.URI(urlFinale));
+                            } catch (Exception ignored) {}
+                        });
+                        content.getChildren().addAll(lblCloud, lien);
+                    } else if (errFinale != null) {
+                        Label lblErr = new Label("⚠ Upload échoué : " + errFinale);
+                        lblErr.getStyleClass().add("field-error");
+                        lblErr.setWrapText(true);
+                        content.getChildren().add(lblErr);
+                    }
+
+                    dialog.getDialogPane().setContent(content);
                     if (commandesBox.getScene() != null)
-                        ok.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
-                    ok.showAndWait();
+                        dialog.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    dialog.showAndWait();
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {

@@ -22,3 +22,12 @@ src/main/resources/stripe/stripe.properties
 
 # Clés Twilio — ne jamais commiter
 src/main/resources/twilio/twilio.properties
+
+# Clés Cloudinary — ne jamais commiter
+src/main/resources/cloudinary/cloudinary.properties
+
+# Clé Gemini
+src/main/resources/gemini/gemini.properties
+
+# Clé Gemini — ne jamais commiter
+src/main/resources/gemini/gemini.properties

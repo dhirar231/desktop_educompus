@@ -23,6 +23,24 @@
                 onAction="#onOuvrirPanier"/>
     </HBox>
 
+    <!-- Section recommandations IA -->
+    <VBox fx:id="sectionReco" spacing="10" managed="false" visible="false">
+        <HBox alignment="CENTER_LEFT" spacing="8">
+            <Label text="✨  Recommandé pour vous" styleClass="page-title"
+                   style="-fx-font-size: 15px;"/>
+            <Label fx:id="lblRecoStatus" text="" styleClass="page-subtitle"
+                   style="-fx-font-size: 11px; -fx-font-style: italic;"/>
+        </HBox>
+        <ScrollPane fx:id="recoScrollPane" fitToHeight="true"
+                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
+                    styleClass="catalog-scroll" prefHeight="310">
+            <content>
+                <HBox fx:id="recoPane" spacing="14" style="-fx-padding: 4 4 8 4;"/>
+            </content>
+        </ScrollPane>
+        <Region prefHeight="1" style="-fx-background-color: -edu-border;"/>
+    </VBox>
+
     <!-- Barre de recherche -->
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"

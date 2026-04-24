@@ -76,6 +76,7 @@ public class FrontCommandeController {
     private StripePaymentService stripePaymentService;
     private StripePaymentIntent currentPaymentIntent;
     private boolean paymentUiShown = false;
+    private StripeJavaBridge javaBridgeRef; // référence forte pour éviter le GC
 
     private List<FrontPanierController.PanierItem> items;
     private Runnable onRetourCallback;
@@ -337,7 +338,13 @@ public class FrontCommandeController {
                 if (state == Worker.State.SUCCEEDED) {
                     try {
                         JSObject window = (JSObject) engine.executeScript("window");
-                        window.setMember("javaBridge", new JavaBridge());
+                        javaBridgeRef = new StripeJavaBridge(
+                            () -> onPaiementTermine(
+                                    currentPaymentIntent != null ? currentPaymentIntent.id() : "",
+                                    "succeeded"),
+                            msg -> afficher(errPayment, paymentErrorRegion(), msg)
+                        );
+                        window.setMember("javaBridge", javaBridgeRef);
                         System.out.println("[Stripe] WebView chargé, javaBridge injecté.");
                     } catch (Exception e) {
                         System.err.println("[Stripe] Erreur injection javaBridge : " + e.getMessage());
@@ -494,16 +501,6 @@ public class FrontCommandeController {
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
                 .replace("\r", "");
-    }
-
-    private class JavaBridge {
-        public void onPaymentCompleted(String paymentIntentId, String status) {
-            Platform.runLater(() -> onPaiementTermine(paymentIntentId, status));
-        }
-
-        public void onPaymentFailed(String message) {
-            Platform.runLater(() -> afficher(errPayment, paymentErrorRegion(), message));
-        }
     }
 
     // ── Validation complète avant soumission ──────────────────────────────────

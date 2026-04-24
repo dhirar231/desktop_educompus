@@ -2,66 +2,87 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Paiement</title>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
-    :root { color-scheme: light; }
-    body { margin: 0; padding: 14px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #payment-element { margin-top: 10px; }
+    body { margin: 0; padding: 14px; font-family: system-ui, sans-serif; background: #fff; }
+    #payment-element { margin-top: 10px; min-height: 200px; }
     #error { color: #b00020; margin-top: 10px; min-height: 18px; font-size: 13px; }
-    #pay { margin-top: 12px; padding: 10px 14px; border-radius: 10px; border: 0; cursor: pointer; background: #4f46e5; color: white; font-weight: 600; }
-    #pay[disabled] { opacity: .6; cursor: default; }
+    #pay {
+      margin-top: 14px; padding: 12px 20px; border-radius: 10px; border: 0;
+      cursor: pointer; background: #066ac9; color: white; font-weight: 700;
+      font-size: 14px; width: 100%;
+    }
+    #pay:disabled { opacity: .6; cursor: default; }
+    #status { margin-top: 8px; font-size: 12px; color: #555; }
   </style>
 </head>
 <body>
   <div id="payment-element"></div>
-  <button id="pay">Payer</button>
+  <button id="pay">💳  Payer maintenant</button>
   <div id="error"></div>
+  <div id="status"></div>
 
   <script>
-    const PUBLISHABLE_KEY = "__PUBLISHABLE_KEY__";
-    const CLIENT_SECRET = "__CLIENT_SECRET__";
+    var PUBLISHABLE_KEY = "__PUBLISHABLE_KEY__";
+    var CLIENT_SECRET   = "__CLIENT_SECRET__";
 
-    const stripe = Stripe(PUBLISHABLE_KEY);
-    const elements = stripe.elements({ clientSecret: CLIENT_SECRET });
-    const paymentElement = elements.create('payment');
-    paymentElement.mount('#payment-element');
+    var stripe   = Stripe(PUBLISHABLE_KEY);
+    var elements = stripe.elements({ clientSecret: CLIENT_SECRET });
+    var paymentEl = elements.create('payment');
+    paymentEl.mount('#payment-element');
 
-    const payBtn = document.getElementById('pay');
-    const err = document.getElementById('error');
+    var payBtn  = document.getElementById('pay');
+    var errDiv  = document.getElementById('error');
+    var statDiv = document.getElementById('status');
 
     function setError(msg) {
-      err.textContent = msg || '';
-      if (msg && window.javaBridge && typeof window.javaBridge.onPaymentFailed === 'function') {
-        window.javaBridge.onPaymentFailed(String(msg));
+      errDiv.textContent = msg || '';
+      if (msg && window.javaBridge) {
+        try { window.javaBridge.onPaymentFailed(String(msg)); } catch(e) {}
       }
     }
 
-    payBtn.addEventListener('click', async () => {
+    function setStatus(msg) { statDiv.textContent = msg || ''; }
+
+    payBtn.addEventListener('click', function() {
       payBtn.disabled = true;
       setError('');
+      setStatus('Traitement en cours…');
 
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: { return_url: "https://example.com/stripe-return" },
-        redirect: "if_required"
-      });
+      stripe.confirmPayment({
+        elements: elements,
+        confirmParams: { return_url: 'https://example.com/stripe-return' },
+        redirect: 'if_required'
+      }).then(function(result) {
+        if (result.error) {
+          payBtn.disabled = false;
+          setStatus('');
+          setError(result.error.message || 'Paiement échoué.');
+          return;
+        }
 
-      if (error) {
+        var pi     = result.paymentIntent;
+        var status = pi && pi.status ? pi.status : 'unknown';
+        var id     = pi && pi.id     ? pi.id     : '';
+
+        setStatus('Paiement ' + status + ' — confirmation en cours…');
+
+        if (window.javaBridge) {
+          try {
+            window.javaBridge.onPaymentCompleted(String(id), String(status));
+          } catch(e) {
+            setError('Erreur callback Java : ' + e);
+          }
+        } else {
+          setError('javaBridge non disponible — rechargez la page.');
+        }
+      }).catch(function(err) {
         payBtn.disabled = false;
-        setError(error.message || "Paiement échoué.");
-        return;
-      }
-
-      const status = paymentIntent && paymentIntent.status ? paymentIntent.status : "unknown";
-      const id = paymentIntent && paymentIntent.id ? paymentIntent.id : "";
-
-      if (window.javaBridge && typeof window.javaBridge.onPaymentCompleted === 'function') {
-        window.javaBridge.onPaymentCompleted(String(id), String(status));
-      }
+        setStatus('');
+        setError('Erreur inattendue : ' + err);
+      });
     });
   </script>
 </body>
 </html>
-

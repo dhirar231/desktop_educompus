@@ -4,6 +4,7 @@ import com.educompus.app.AppState;
 import com.educompus.model.Panier;
 import com.educompus.model.Produit;
 import com.educompus.nav.Navigator;
+import com.educompus.service.GeminiRecommandationService;
 import com.educompus.service.ServicePanier;
 import com.educompus.service.ServiceProduit;
 import com.educompus.service.ServiceStatistiques;
@@ -37,12 +38,18 @@ public class FrontMarketplaceController {
     @FXML
     private Button btnPanier;
 
+    // Section recommandations IA
+    @FXML private VBox  sectionReco;
+    @FXML private HBox  recoPane;
+    @FXML private Label lblRecoStatus;
+
     // Conteneur parent pour la navigation interne (liste ↔ détail)
     private StackPane parentContainer;
 
     private final ServiceProduit service = new ServiceProduit();
     private final ServicePanier servicePanier = new ServicePanier();
     private final ServiceStatistiques serviceStats = new ServiceStatistiques();
+    private GeminiRecommandationService geminiService; // lazy init
     private List<Produit> allProduits;
     private List<Produit> produitsFiltres;
 
@@ -69,9 +76,112 @@ public class FrontMarketplaceController {
             pageCourante = 0;
             afficherCartes(produitsFiltres);
             mettreAJourBadgePanier();
+            chargerRecommandations(); // IA Gemini en arrière-plan
         } catch (Exception e) {
             afficherErreur(e.getMessage());
         }
+    }
+
+    private void chargerRecommandations() {
+        if (sectionReco == null) return;
+        lblRecoStatus.setText("⏳ Analyse en cours…");
+        sectionReco.setVisible(true);
+        sectionReco.setManaged(true);
+
+        new Thread(() -> {
+            try {
+                // Initialisation lazy — si la clé manque, on cache la section
+                if (geminiService == null) geminiService = new GeminiRecommandationService();
+
+                List<Produit> recommandes = geminiService.recommander(
+                        AppState.getUserId(), allProduits);
+                javafx.application.Platform.runLater(() -> afficherRecommandations(recommandes));
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    sectionReco.setVisible(false);
+                    sectionReco.setManaged(false);
+                    System.err.println("[Gemini] " + e.getMessage());
+                });
+            }
+        }, "gemini-reco").start();
+    }
+
+    private void afficherRecommandations(List<Produit> produits) {
+        recoPane.getChildren().clear();
+        if (produits == null || produits.isEmpty()) {
+            sectionReco.setVisible(false);
+            sectionReco.setManaged(false);
+            return;
+        }
+        lblRecoStatus.setText("— " + produits.size() + " suggestion" +
+                (produits.size() > 1 ? "s" : "") + " par Gemini AI");
+
+        for (Produit p : produits) {
+            recoPane.getChildren().add(buildRecoCard(p));
+        }
+    }
+
+    private VBox buildRecoCard(Produit p) {
+        VBox card = new VBox(0);
+        card.getStyleClass().add("produit-card");
+        card.setPrefWidth(200);
+        card.setMaxWidth(200);
+        card.setMinWidth(200);
+        card.setOnMouseClicked(e -> ouvrirDetail(p));
+
+        // Image
+        StackPane imgWrap = new StackPane();
+        imgWrap.setPrefHeight(120);
+        imgWrap.setMinHeight(120);
+        imgWrap.setMaxHeight(120);
+        imgWrap.getStyleClass().add("produit-card-img-wrap");
+
+        if (p.getImage() != null && !p.getImage().isBlank()) {
+            try {
+                javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(
+                        new javafx.scene.image.Image(p.getImage(), 200, 120, true, true, true));
+                iv.setFitWidth(200); iv.setFitHeight(120); iv.setPreserveRatio(false);
+                imgWrap.getChildren().add(iv);
+            } catch (Exception ignored) {
+                imgWrap.getChildren().add(buildImagePlaceholder(p));
+            }
+        } else {
+            imgWrap.getChildren().add(buildImagePlaceholder(p));
+        }
+
+        // Badge IA
+        Label badgeAi = new Label("✨ IA");
+        badgeAi.setStyle("-fx-background-color: linear-gradient(to right, rgba(0,210,255,0.9), rgba(106,17,203,0.9));" +
+                "-fx-text-fill: white; -fx-background-radius: 6px;" +
+                "-fx-padding: 2 7 2 7; -fx-font-size: 9px; -fx-font-weight: 700;");
+        StackPane.setAlignment(badgeAi, Pos.TOP_RIGHT);
+        StackPane.setMargin(badgeAi, new Insets(7, 7, 0, 0));
+        imgWrap.getChildren().add(badgeAi);
+
+        // Corps
+        VBox body = new VBox(6);
+        body.setPadding(new Insets(10, 12, 12, 12));
+
+        Label nom = new Label(p.getNom());
+        nom.getStyleClass().add("produit-card-title");
+        nom.setWrapText(true);
+        nom.setMaxWidth(176);
+        nom.setStyle("-fx-font-size: 12px; -fx-font-weight: 800;");
+
+        Label prix = new Label(String.format("%.2f TND", p.getPrix()));
+        prix.getStyleClass().add("produit-card-prix");
+        prix.setStyle("-fx-font-size: 13px; -fx-font-weight: 900;");
+
+        Button btnAdd = new Button("🛒");
+        btnAdd.getStyleClass().add("btn-primary");
+        btnAdd.setMaxWidth(Double.MAX_VALUE);
+        btnAdd.setDisable(p.getStock() == 0);
+        btnAdd.setOnMouseClicked(e -> e.consume());
+        btnAdd.setOnAction(e -> onAjouterPanier(p));
+
+        body.getChildren().addAll(nom, prix, btnAdd);
+        card.getChildren().addAll(imgWrap, body);
+        return card;
     }
 
     // ── Recherche ────────────────────────────────────────────────────────────
