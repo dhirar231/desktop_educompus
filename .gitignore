@@ -31,3 +31,6 @@ src/main/resources/gemini/gemini.properties
 
 # Clé Gemini — ne jamais commiter
 src/main/resources/gemini/gemini.properties
+
+# Clé Groq — ne jamais commiter
+src/main/resources/groq/groq.properties

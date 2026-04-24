@@ -57,6 +57,7 @@ com\educompus\controller\front\FrontProjectsController$2.class
 com\educompus\service\CoursValidationService.class
 com\educompus\controller\back\BackExamQuestionsController.class
 com\educompus\controller\front\FrontShellController.class
+com\educompus\service\GroqRecommandationService.class
 com\educompus\repository\AuthUserRepository.class
 com\educompus\controller\front\FrontCourseDetailController.class
 com\educompus\model\ExamAttemptRecord.class
@@ -88,7 +89,6 @@ com\educompus\service\AuthUserService$UserStats.class
 com\educompus\service\ServiceExam.class
 com\educompus\model\ExamAnswer.class
 com\educompus\model\Project.class
-com\educompus\service\GeminiRecommandationService.class
 com\educompus\repository\LivraisonRepository.class
 com\educompus\controller\back\BackExamsController$1.class
 com\educompus\model\Avis.class
@@ -124,7 +124,6 @@ com\educompus\controller\front\FrontMarketplaceController.class
 com\educompus\model\Commande.class
 com\educompus\model\AuthUser.class
 com\educompus\controller\back\BackProjectsController.class
-com\educompus\service\GeminiRecommandationService$ProfilClient.class
 com\educompus\repository\PanierRepository.class
 com\educompus\controller\front\FrontDashboardController.class
 com\educompus\util\ProduitValidator.class
@@ -139,6 +138,7 @@ com\educompus\controller\back\TeacherResponsesController$1.class
 com\educompus\service\DbAuthService.class
 com\educompus\service\TwilioSmsService.class
 com\educompus\controller\back\BackUsersController$3.class
+com\educompus\service\GroqRecommandationService$ProfilClient.class
 com\educompus\repository\ChapitreProgressRepository.class
 com\educompus\controller\back\BackProjectsController$FormResult.class
 com\educompus\controller\back\BackExamsController$3.class

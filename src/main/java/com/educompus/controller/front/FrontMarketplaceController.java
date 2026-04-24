@@ -4,7 +4,7 @@ import com.educompus.app.AppState;
 import com.educompus.model.Panier;
 import com.educompus.model.Produit;
 import com.educompus.nav.Navigator;
-import com.educompus.service.GeminiRecommandationService;
+import com.educompus.service.GroqRecommandationService;
 import com.educompus.service.ServicePanier;
 import com.educompus.service.ServiceProduit;
 import com.educompus.service.ServiceStatistiques;
@@ -25,49 +25,44 @@ import java.util.stream.Collectors;
 
 public class FrontMarketplaceController {
 
-    @FXML
-    private TextField searchField;
-    @FXML
-    private FlowPane cardsPane;
-    @FXML
-    private ScrollPane scrollPane;
-    @FXML
-    private VBox emptyState;
-    @FXML
-    private Label lblCount;
-    @FXML
-    private Button btnPanier;
+    @FXML private TextField  searchField;
+    @FXML private FlowPane   cardsPane;
+    @FXML private ScrollPane scrollPane;
+    @FXML private VBox       emptyState;
+    @FXML private Label      lblCount;
+    @FXML private Button     btnPanier;
 
     // Section recommandations IA
     @FXML private VBox  sectionReco;
     @FXML private HBox  recoPane;
     @FXML private Label lblRecoStatus;
 
-    // Conteneur parent pour la navigation interne (liste ↔ détail)
     private StackPane parentContainer;
 
-    private final ServiceProduit service = new ServiceProduit();
-    private final ServicePanier servicePanier = new ServicePanier();
-    private final ServiceStatistiques serviceStats = new ServiceStatistiques();
-    private GeminiRecommandationService geminiService; // lazy init
+    private final ServiceProduit      service       = new ServiceProduit();
+    private final ServicePanier       servicePanier = new ServicePanier();
+    private final ServiceStatistiques serviceStats  = new ServiceStatistiques();
+    private GroqRecommandationService groqService;  // lazy init
+
     private List<Produit> allProduits;
     private List<Produit> produitsFiltres;
 
-    // Pagination
     private static final int PAGE_SIZE = 6;
     private int pageCourante = 0;
+
+    private final java.util.concurrent.atomic.AtomicBoolean ttsEnCours =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
 
     @FXML
     private void initialize() {
         chargerProduits();
     }
 
-    /** Appelé par le FrontShellController pour passer le StackPane central */
     public void setParentContainer(StackPane container) {
         this.parentContainer = container;
     }
 
-    // ── Chargement ───────────────────────────────────────────────────────────
+    // ── Chargement ────────────────────────────────────────────────────────────
 
     private void chargerProduits() {
         try {
@@ -76,115 +71,160 @@ public class FrontMarketplaceController {
             pageCourante = 0;
             afficherCartes(produitsFiltres);
             mettreAJourBadgePanier();
-            chargerRecommandations(); // IA Gemini en arrière-plan
+            chargerRecommandations();
         } catch (Exception e) {
             afficherErreur(e.getMessage());
         }
     }
 
+    // ── Recommandations Groq ──────────────────────────────────────────────────
+
+    private List<Produit> produitsRecommandes = new java.util.ArrayList<>();
+    private int recoPage = 0;
+    private static final int RECO_PAGE_SIZE = 3;
+
     private void chargerRecommandations() {
         if (sectionReco == null) return;
-        lblRecoStatus.setText("⏳ Analyse en cours…");
+        lblRecoStatus.setText("Analyse en cours...");
         sectionReco.setVisible(true);
         sectionReco.setManaged(true);
 
         new Thread(() -> {
             try {
-                // Initialisation lazy — si la clé manque, on cache la section
-                if (geminiService == null) geminiService = new GeminiRecommandationService();
-
-                List<Produit> recommandes = geminiService.recommander(
-                        AppState.getUserId(), allProduits);
-                javafx.application.Platform.runLater(() -> afficherRecommandations(recommandes));
-            } catch (Exception e) {
+                if (groqService == null) groqService = new GroqRecommandationService();
+                System.out.println("[Groq] Appel API pour userId=" + AppState.getUserId());
+                List<Produit> recommandes = groqService.recommander(AppState.getUserId(), allProduits);
+                System.out.println("[Groq] " + recommandes.size() + " produits recommandes");
                 javafx.application.Platform.runLater(() -> {
-                    sectionReco.setVisible(false);
-                    sectionReco.setManaged(false);
-                    System.err.println("[Gemini] " + e.getMessage());
+                    produitsRecommandes = recommandes;
+                    recoPage = 0;
+                    afficherRecommandations();
                 });
+            } catch (Exception e) {
+                System.err.println("[Groq] ERREUR : " + e.getMessage());
+                javafx.application.Platform.runLater(() ->
+                        lblRecoStatus.setText("Erreur : " + e.getMessage()));
             }
-        }, "gemini-reco").start();
+        }, "groq-reco").start();
     }
 
-    private void afficherRecommandations(List<Produit> produits) {
+    private void afficherRecommandations() {
         recoPane.getChildren().clear();
-        if (produits == null || produits.isEmpty()) {
-            sectionReco.setVisible(false);
-            sectionReco.setManaged(false);
+        if (produitsRecommandes == null || produitsRecommandes.isEmpty()) {
+            lblRecoStatus.setText("Aucune recommandation");
             return;
         }
-        lblRecoStatus.setText("— " + produits.size() + " suggestion" +
-                (produits.size() > 1 ? "s" : "") + " par Gemini AI");
 
-        for (Produit p : produits) {
-            recoPane.getChildren().add(buildRecoCard(p));
+        int total   = produitsRecommandes.size();
+        int debut   = recoPage * RECO_PAGE_SIZE;
+        int fin     = Math.min(debut + RECO_PAGE_SIZE, total);
+        int nbPages = (int) Math.ceil((double) total / RECO_PAGE_SIZE);
+
+        lblRecoStatus.setText((recoPage + 1) + " / " + nbPages);
+
+        // Flèche gauche
+        Button btnPrev = new Button("‹");
+        btnPrev.setStyle("-fx-background-color: rgba(6,106,201,0.12); -fx-text-fill: #2563eb;" +
+                "-fx-background-radius: 999px; -fx-font-size: 18px; -fx-font-weight: 900;" +
+                "-fx-min-width: 32px; -fx-min-height: 32px; -fx-max-width: 32px; -fx-max-height: 32px;" +
+                "-fx-cursor: hand; -fx-border-color: transparent;");
+        btnPrev.setDisable(recoPage == 0);
+        btnPrev.setOpacity(recoPage == 0 ? 0.3 : 1.0);
+        btnPrev.setOnAction(e -> { recoPage--; afficherRecommandations(); });
+
+        // Mini-cards côte à côte
+        HBox cardsRow = new HBox(10);
+        cardsRow.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(cardsRow, Priority.ALWAYS);
+        for (int i = debut; i < fin; i++) {
+            cardsRow.getChildren().add(buildMiniCard(produitsRecommandes.get(i)));
         }
+
+        // Flèche droite
+        Button btnNext = new Button("›");
+        btnNext.setStyle("-fx-background-color: rgba(6,106,201,0.12); -fx-text-fill: #2563eb;" +
+                "-fx-background-radius: 999px; -fx-font-size: 18px; -fx-font-weight: 900;" +
+                "-fx-min-width: 32px; -fx-min-height: 32px; -fx-max-width: 32px; -fx-max-height: 32px;" +
+                "-fx-cursor: hand; -fx-border-color: transparent;");
+        btnNext.setDisable(recoPage >= nbPages - 1);
+        btnNext.setOpacity(recoPage >= nbPages - 1 ? 0.3 : 1.0);
+        btnNext.setOnAction(e -> { recoPage++; afficherRecommandations(); });
+
+        recoPane.getChildren().addAll(btnPrev, cardsRow, btnNext);
     }
 
-    private VBox buildRecoCard(Produit p) {
-        VBox card = new VBox(0);
-        card.getStyleClass().add("produit-card");
-        card.setPrefWidth(200);
-        card.setMaxWidth(200);
-        card.setMinWidth(200);
+    /** Mini-card verticale compacte : image + titre + prix + bouton */
+    private VBox buildMiniCard(Produit p) {
+        VBox card = new VBox(8);
+        card.setAlignment(Pos.TOP_CENTER);
+        card.setPrefWidth(160); card.setMaxWidth(160); card.setMinWidth(160);
+        card.setPadding(new Insets(10, 10, 12, 10));
+        card.setStyle(
+            "-fx-background-color: white;" +
+            "-fx-background-radius: 14px;" +
+            "-fx-border-color: rgba(6,106,201,0.18);" +
+            "-fx-border-radius: 14px;" +
+            "-fx-border-width: 1;" +
+            "-fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.08), 10, 0.10, 0, 3);" +
+            "-fx-cursor: hand;"
+        );
         card.setOnMouseClicked(e -> ouvrirDetail(p));
 
-        // Image
-        StackPane imgWrap = new StackPane();
-        imgWrap.setPrefHeight(120);
-        imgWrap.setMinHeight(120);
-        imgWrap.setMaxHeight(120);
-        imgWrap.getStyleClass().add("produit-card-img-wrap");
+        // Avatar circulaire 48x48
+        StackPane avatar = new StackPane();
+        avatar.setMinWidth(48); avatar.setMaxWidth(48);
+        avatar.setMinHeight(48); avatar.setMaxHeight(48);
+        avatar.setStyle(
+            "-fx-background-color: linear-gradient(to bottom right, rgba(0,210,255,0.2), rgba(106,17,203,0.2));" +
+            "-fx-background-radius: 999px;"
+        );
 
         if (p.getImage() != null && !p.getImage().isBlank()) {
             try {
                 javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(
-                        new javafx.scene.image.Image(p.getImage(), 200, 120, true, true, true));
-                iv.setFitWidth(200); iv.setFitHeight(120); iv.setPreserveRatio(false);
-                imgWrap.getChildren().add(iv);
-            } catch (Exception ignored) {
-                imgWrap.getChildren().add(buildImagePlaceholder(p));
-            }
-        } else {
-            imgWrap.getChildren().add(buildImagePlaceholder(p));
-        }
+                        new javafx.scene.image.Image(p.getImage(), 48, 48, true, true, true));
+                iv.setFitWidth(48); iv.setFitHeight(48);
+                javafx.scene.shape.Circle clip = new javafx.scene.shape.Circle(24, 24, 24);
+                iv.setClip(clip);
+                avatar.getChildren().add(iv);
+            } catch (Exception ignored) { addInitiale(avatar, p); }
+        } else { addInitiale(avatar, p); }
 
-        // Badge IA
-        Label badgeAi = new Label("✨ IA");
-        badgeAi.setStyle("-fx-background-color: linear-gradient(to right, rgba(0,210,255,0.9), rgba(106,17,203,0.9));" +
-                "-fx-text-fill: white; -fx-background-radius: 6px;" +
-                "-fx-padding: 2 7 2 7; -fx-font-size: 9px; -fx-font-weight: 700;");
-        StackPane.setAlignment(badgeAi, Pos.TOP_RIGHT);
-        StackPane.setMargin(badgeAi, new Insets(7, 7, 0, 0));
-        imgWrap.getChildren().add(badgeAi);
-
-        // Corps
-        VBox body = new VBox(6);
-        body.setPadding(new Insets(10, 12, 12, 12));
-
+        // Titre
         Label nom = new Label(p.getNom());
-        nom.getStyleClass().add("produit-card-title");
+        nom.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 800; -fx-text-fill: #1e293b;");
         nom.setWrapText(true);
-        nom.setMaxWidth(176);
-        nom.setStyle("-fx-font-size: 12px; -fx-font-weight: 800;");
+        nom.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        nom.setMaxWidth(140);
 
+        // Prix
         Label prix = new Label(String.format("%.2f TND", p.getPrix()));
-        prix.getStyleClass().add("produit-card-prix");
-        prix.setStyle("-fx-font-size: 13px; -fx-font-weight: 900;");
+        prix.setStyle("-fx-font-size: 12px; -fx-font-weight: 900; -fx-text-fill: #2563eb;");
 
-        Button btnAdd = new Button("🛒");
-        btnAdd.getStyleClass().add("btn-primary");
+        // Bouton
+        Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "+ Panier");
         btnAdd.setMaxWidth(Double.MAX_VALUE);
+        btnAdd.setStyle(p.getStock() == 0
+            ? "-fx-background-color: #f1f5f9; -fx-text-fill: #94a3b8; -fx-background-radius: 8px; -fx-font-size: 10px; -fx-padding: 5 8 5 8;"
+            : "-fx-background-color: #2563eb; -fx-text-fill: white; -fx-background-radius: 8px; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 5 8 5 8; -fx-cursor: hand;");
         btnAdd.setDisable(p.getStock() == 0);
         btnAdd.setOnMouseClicked(e -> e.consume());
         btnAdd.setOnAction(e -> onAjouterPanier(p));
 
-        body.getChildren().addAll(nom, prix, btnAdd);
-        card.getChildren().addAll(imgWrap, body);
+        card.getChildren().addAll(avatar, nom, prix, btnAdd);
         return card;
     }
 
-    // ── Recherche ────────────────────────────────────────────────────────────
+    private void addInitiale(StackPane avatar, Produit p) {
+        String init = p.getNom() != null && !p.getNom().isBlank()
+                ? String.valueOf(p.getNom().charAt(0)).toUpperCase() : "?";
+        Label l = new Label(init);
+        l.setStyle("-fx-font-size: 20px; -fx-font-weight: 900;" +
+                "-fx-text-fill: linear-gradient(to right, #2563eb, #7c3aed);");
+        avatar.getChildren().add(l);
+    }
+
+    // ── Recherche ─────────────────────────────────────────────────────────────
 
     @FXML
     private void onSearch() {
@@ -204,7 +244,7 @@ public class FrontMarketplaceController {
         afficherCartes(produitsFiltres);
     }
 
-    // ── Panier ───────────────────────────────────────────────────────────────
+    // ── Navigation ────────────────────────────────────────────────────────────
 
     @FXML
     private void onVoirMesCommandes(ActionEvent event) {
@@ -212,11 +252,8 @@ public class FrontMarketplaceController {
             FXMLLoader loader = Navigator.loader("View/front/FrontMesCommandes.fxml");
             Node view = loader.load();
             FrontMesCommandesController ctrl = loader.getController();
-
             StackPane container = getParentStackPane();
-            if (container == null)
-                return;
-
+            if (container == null) return;
             Node listeView = container.getChildren().get(0);
             ctrl.setOnRetour(() -> container.getChildren().setAll(listeView));
             container.getChildren().setAll(view);
@@ -231,19 +268,13 @@ public class FrontMarketplaceController {
             FXMLLoader loader = Navigator.loader("View/front/FrontPanier.fxml");
             Node panierView = loader.load();
             FrontPanierController ctrl = loader.getController();
-
             StackPane container = getParentStackPane();
-            if (container == null)
-                return;
-
+            if (container == null) return;
             Node listeView = container.getChildren().get(0);
-
-            // "Continuer mes achats" → retour à la liste
             ctrl.setOnContinuer(() -> {
                 container.getChildren().setAll(listeView);
                 mettreAJourBadgePanier();
             });
-
             container.getChildren().setAll(panierView);
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Erreur", e.getMessage());
@@ -253,57 +284,43 @@ public class FrontMarketplaceController {
     private void mettreAJourBadgePanier() {
         try {
             int nb = servicePanier.afficherByUser(AppState.getUserId()).size();
-            btnPanier.setText("🛒  Mon panier" + (nb > 0 ? "  (" + nb + ")" : ""));
-        } catch (Exception ignored) {
-        }
+            btnPanier.setText("Mon panier" + (nb > 0 ? " (" + nb + ")" : ""));
+        } catch (Exception ignored) {}
     }
 
-    // ── Affichage cartes ─────────────────────────────────────────────────────
+    // ── Affichage cartes ──────────────────────────────────────────────────────
 
     private void afficherCartes(List<Produit> produits) {
         cardsPane.getChildren().clear();
-
         boolean vide = produits == null || produits.isEmpty();
         emptyState.setVisible(vide);
         emptyState.setManaged(vide);
         scrollPane.setVisible(!vide);
         scrollPane.setManaged(!vide);
 
-        if (vide) {
-            lblCount.setText("0 produit");
-            return;
-        }
+        if (vide) { lblCount.setText("0 produit"); return; }
 
-        int total = produits.size();
-        int debut = pageCourante * PAGE_SIZE;
-        int fin = Math.min(debut + PAGE_SIZE, total);
+        int total   = produits.size();
+        int debut   = pageCourante * PAGE_SIZE;
+        int fin     = Math.min(debut + PAGE_SIZE, total);
         int nbPages = (int) Math.ceil((double) total / PAGE_SIZE);
 
-        lblCount.setText(total + " produit" + (total > 1 ? "s" : "")
-                + "  —  page " + (pageCourante + 1) + " / " + nbPages);
+        lblCount.setText(total + " produit" + (total > 1 ? "s" : "") +
+                "  —  page " + (pageCourante + 1) + " / " + nbPages);
 
-        // Cartes de la page courante
-        for (int i = debut; i < fin; i++) {
-            cardsPane.getChildren().add(buildCard(produits.get(i)));
-        }
+        for (int i = debut; i < fin; i++) cardsPane.getChildren().add(buildCard(produits.get(i)));
 
-        // Barre de pagination
         if (nbPages > 1) {
             HBox pagination = new HBox(8);
             pagination.setAlignment(Pos.CENTER);
             pagination.setPadding(new Insets(12, 0, 4, 0));
             pagination.setMaxWidth(Double.MAX_VALUE);
 
-            Button btnPrev = new Button("← Précédent");
+            Button btnPrev = new Button("Precedent");
             btnPrev.getStyleClass().add("btn-ghost");
             btnPrev.setDisable(pageCourante == 0);
-            btnPrev.setOnAction(e -> {
-                pageCourante--;
-                afficherCartes(produits);
-                scrollPane.setVvalue(0);
-            });
+            btnPrev.setOnAction(e -> { pageCourante--; afficherCartes(produits); scrollPane.setVvalue(0); });
 
-            // Numéros de pages
             for (int i = 0; i < nbPages; i++) {
                 final int idx = i;
                 Button btnPage = new Button(String.valueOf(i + 1));
@@ -311,29 +328,18 @@ public class FrontMarketplaceController {
                     btnPage.getStyleClass().add("btn-primary");
                 } else {
                     btnPage.getStyleClass().add("btn-ghost");
-                    btnPage.setOnAction(e -> {
-                        pageCourante = idx;
-                        afficherCartes(produits);
-                        scrollPane.setVvalue(0);
-                    });
+                    btnPage.setOnAction(e -> { pageCourante = idx; afficherCartes(produits); scrollPane.setVvalue(0); });
                 }
                 pagination.getChildren().add(btnPage);
             }
 
-            Button btnNext = new Button("Suivant →");
+            Button btnNext = new Button("Suivant");
             btnNext.getStyleClass().add("btn-ghost");
             btnNext.setDisable(pageCourante >= nbPages - 1);
-            btnNext.setOnAction(e -> {
-                pageCourante++;
-                afficherCartes(produits);
-                scrollPane.setVvalue(0);
-            });
+            btnNext.setOnAction(e -> { pageCourante++; afficherCartes(produits); scrollPane.setVvalue(0); });
 
             pagination.getChildren().addAll(0, List.of(btnPrev));
             pagination.getChildren().add(btnNext);
-
-            // Ajouter la pagination dans le FlowPane comme élément pleine largeur
-            // On l'ajoute dans un VBox wrapper dans le ScrollPane
             cardsPane.getChildren().add(pagination);
         }
     }
@@ -341,86 +347,59 @@ public class FrontMarketplaceController {
     private VBox buildCard(Produit p) {
         VBox card = new VBox(0);
         card.getStyleClass().add("produit-card");
-        card.setPrefWidth(260);
-        card.setMaxWidth(260);
-        card.setMinWidth(260);
-
-        // Clic sur la carte → page détail (pas sur le bouton)
+        card.setPrefWidth(260); card.setMaxWidth(260); card.setMinWidth(260);
         card.setOnMouseClicked(e -> ouvrirDetail(p));
 
-        // ── Image ──────────────────────────────────────────────────────────
         StackPane imgWrap = new StackPane();
-        imgWrap.setPrefHeight(160);
-        imgWrap.setMinHeight(160);
-        imgWrap.setMaxHeight(160);
+        imgWrap.setPrefHeight(160); imgWrap.setMinHeight(160); imgWrap.setMaxHeight(160);
         imgWrap.getStyleClass().add("produit-card-img-wrap");
 
         if (p.getImage() != null && !p.getImage().isBlank()) {
             try {
                 ImageView iv = new ImageView(new Image(p.getImage(), 260, 160, true, true, true));
-                iv.setFitWidth(260);
-                iv.setFitHeight(160);
-                iv.setPreserveRatio(false);
+                iv.setFitWidth(260); iv.setFitHeight(160); iv.setPreserveRatio(false);
                 imgWrap.getChildren().add(iv);
-            } catch (Exception ignored) {
-                imgWrap.getChildren().add(buildImagePlaceholder(p));
-            }
-        } else {
-            imgWrap.getChildren().add(buildImagePlaceholder(p));
-        }
+            } catch (Exception ignored) { imgWrap.getChildren().add(buildImagePlaceholder(p)); }
+        } else { imgWrap.getChildren().add(buildImagePlaceholder(p)); }
 
-        // Badge catégorie — haut gauche
         Label badgeCat = new Label(p.getCategorie());
         badgeCat.getStyleClass().addAll("chip", "chip-info");
         badgeCat.setStyle("-fx-font-size: 10.5px; -fx-font-weight: 700;");
         StackPane.setAlignment(badgeCat, Pos.TOP_LEFT);
         StackPane.setMargin(badgeCat, new Insets(9, 0, 0, 9));
 
-        // Badge stock — haut droite
         Label badgeStock = buildBadgeStock(p);
         StackPane.setAlignment(badgeStock, Pos.TOP_RIGHT);
         StackPane.setMargin(badgeStock, new Insets(9, 9, 0, 0));
-
         imgWrap.getChildren().addAll(badgeCat, badgeStock);
-      
 
-        // ── Corps ──────────────────────────────────────────────────────────
         VBox body = new VBox(0);
         body.setPadding(new Insets(14, 16, 16, 16));
-        body.setSpacing(0);
 
-        // Nom
         Label nom = new Label(p.getNom());
         nom.getStyleClass().add("produit-card-title");
-        nom.setWrapText(true);
-        nom.setMaxWidth(228);
+        nom.setWrapText(true); nom.setMaxWidth(228);
         nom.setStyle("-fx-font-size: 13.5px; -fx-font-weight: 800;");
         VBox.setMargin(nom, new Insets(0, 0, 4, 0));
 
-        // Type chip
         Label type = new Label(p.getType());
         type.getStyleClass().addAll("chip", "chip-outline");
         type.setStyle("-fx-font-size: 10px;");
         VBox.setMargin(type, new Insets(0, 0, 10, 0));
 
-        // Description tronquée
         String desc = p.getDescription() != null ? p.getDescription() : "";
-        if (desc.length() > 72)
-            desc = desc.substring(0, 72) + "…";
+        if (desc.length() > 72) desc = desc.substring(0, 72) + "...";
         Label description = new Label(desc);
         description.getStyleClass().add("produit-card-type");
-        description.setWrapText(true);
-        description.setMaxWidth(228);
+        description.setWrapText(true); description.setMaxWidth(228);
         description.setStyle("-fx-font-size: 11px; -fx-text-fill: -edu-text-muted;");
         VBox.setMargin(description, new Insets(0, 0, 12, 0));
 
-        // Séparateur
         Region sep = new Region();
         sep.setPrefHeight(1);
         sep.setStyle("-fx-background-color: -edu-border;");
         VBox.setMargin(sep, new Insets(0, 0, 12, 0));
 
-        // Prix + stock
         HBox prixRow = new HBox();
         prixRow.setAlignment(Pos.CENTER_LEFT);
         VBox.setMargin(prixRow, new Insets(0, 0, 12, 0));
@@ -436,28 +415,25 @@ public class FrontMarketplaceController {
         stockLbl.setStyle(p.getStock() == 0
                 ? "-fx-font-size: 11px; -fx-text-fill: #e74c3c; -fx-font-weight: 700;"
                 : "-fx-font-size: 11px; -fx-text-fill: -edu-text-muted;");
-
         prixRow.getChildren().addAll(prix, spacer, stockLbl);
 
-        // Boutons TTS : 🔊 Start  |  ⏹ Stop
         Button btnStart = new Button("🔊");
         btnStart.getStyleClass().add("btn-ghost");
-        btnStart.setStyle("-fx-font-size: 13px; -fx-min-width: 34px;");
-        btnStart.setTooltip(new Tooltip("Écouter les statistiques"));
+        btnStart.setStyle("-fx-font-size: 14px; -fx-min-width: 34px;");
+        btnStart.setTooltip(new Tooltip("Ecouter les statistiques"));
 
         Button btnStop = new Button("⏹");
         btnStop.getStyleClass().add("btn-ghost");
-        btnStop.setStyle("-fx-font-size: 13px; -fx-min-width: 34px; -fx-text-fill: #e74c3c;");
-        btnStop.setTooltip(new Tooltip("Arrêter la lecture"));
-        btnStop.setDisable(true); // désactivé au départ
+        btnStop.setStyle("-fx-font-size: 14px; -fx-min-width: 34px; -fx-text-fill: #e74c3c;");
+        btnStop.setTooltip(new Tooltip("Arreter la lecture"));
+        btnStop.setDisable(true);
 
         btnStart.setOnMouseClicked(e -> e.consume());
         btnStop.setOnMouseClicked(e -> e.consume());
         btnStart.setOnAction(e -> lireStatsProduit(p, btnStart, btnStop));
         btnStop.setOnAction(e -> stopperVoix(btnStart, btnStop));
 
-        // Bouton panier
-        Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "🛒  Ajouter");
+        Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "Ajouter");
         btnAdd.getStyleClass().add(p.getStock() == 0 ? "btn-ghost" : "btn-primary");
         HBox.setHgrow(btnAdd, Priority.ALWAYS);
         btnAdd.setMaxWidth(Double.MAX_VALUE);
@@ -475,11 +451,9 @@ public class FrontMarketplaceController {
 
     private Label buildImagePlaceholder(Produit p) {
         String initiale = p.getNom() != null && !p.getNom().isBlank()
-                ? String.valueOf(p.getNom().charAt(0)).toUpperCase()
-                : "?";
+                ? String.valueOf(p.getNom().charAt(0)).toUpperCase() : "?";
         Label lbl = new Label(initiale);
-        lbl.setStyle("-fx-font-size: 52px; -fx-font-weight: 900;" +
-                "-fx-text-fill: -edu-primary; -fx-opacity: 0.22;");
+        lbl.setStyle("-fx-font-size: 52px; -fx-font-weight: 900; -fx-text-fill: -edu-primary; -fx-opacity: 0.22;");
         return lbl;
     }
 
@@ -488,23 +462,20 @@ public class FrontMarketplaceController {
         if (p.getStock() == 0) {
             badge = new Label("Rupture");
             badge.setStyle("-fx-background-color: rgba(214,41,62,0.82); -fx-text-fill: white;" +
-                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8;" +
-                    "-fx-font-size: 10px; -fx-font-weight: 700;");
+                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8; -fx-font-size: 10px; -fx-font-weight: 700;");
         } else if (p.getStock() <= 5) {
             badge = new Label("Stock faible");
             badge.setStyle("-fx-background-color: rgba(247,195,46,0.88); -fx-text-fill: #5a4000;" +
-                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8;" +
-                    "-fx-font-size: 10px; -fx-font-weight: 700;");
+                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8; -fx-font-size: 10px; -fx-font-weight: 700;");
         } else {
-            badge = new Label("✓ Disponible");
+            badge = new Label("Disponible");
             badge.setStyle("-fx-background-color: rgba(12,188,135,0.82); -fx-text-fill: white;" +
-                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8;" +
-                    "-fx-font-size: 10px; -fx-font-weight: 700;");
+                    "-fx-background-radius: 6px; -fx-padding: 3 8 3 8; -fx-font-size: 10px; -fx-font-weight: 700;");
         }
         return badge;
     }
 
-    // ── Navigation vers le détail ─────────────────────────────────────────────
+    // ── Detail produit ────────────────────────────────────────────────────────
 
     private void ouvrirDetail(Produit p) {
         try {
@@ -512,16 +483,10 @@ public class FrontMarketplaceController {
             Node detailView = loader.load();
             FrontProduitDetailController ctrl = loader.getController();
             ctrl.setProduit(p);
-
-            // Récupérer le StackPane parent (center-wrap du shell)
             StackPane container = getParentStackPane();
             if (container != null) {
-                // Sauvegarder la vue liste et afficher le détail
                 Node listeView = container.getChildren().get(0);
-                ctrl.setOnRetour(() -> {
-                    container.getChildren().setAll(listeView);
-                    mettreAJourBadgePanier();
-                });
+                ctrl.setOnRetour(() -> { container.getChildren().setAll(listeView); mettreAJourBadgePanier(); });
                 container.getChildren().setAll(detailView);
             }
         } catch (Exception e) {
@@ -530,47 +495,38 @@ public class FrontMarketplaceController {
     }
 
     private StackPane getParentStackPane() {
-        if (parentContainer != null)
-            return parentContainer;
-        // Remonter dans le scène graph pour trouver le contentWrap du shell
+        if (parentContainer != null) return parentContainer;
         try {
             Node node = searchField;
             while (node.getParent() != null) {
                 node = node.getParent();
-                if (node instanceof StackPane sp && sp.getId() != null
-                        && sp.getId().equals("contentWrap")) {
+                if (node instanceof StackPane sp && sp.getId() != null && sp.getId().equals("contentWrap"))
                     return sp;
-                }
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
         return null;
     }
 
-    // ── Text-to-Speech stats produit ─────────────────────────────────────────
+    // ── TTS ───────────────────────────────────────────────────────────────────
 
-    private final java.util.concurrent.atomic.AtomicBoolean ttsEnCours =
-            new java.util.concurrent.atomic.AtomicBoolean(false);
+    private Thread ttsThread = null;
 
     private void lireStatsProduit(Produit p, Button btnStart, Button btnStop) {
-        if (ttsEnCours.get()) return; // déjà en lecture
+        if (ttsEnCours.get()) return;
         ttsEnCours.set(true);
         btnStart.setDisable(true);
         btnStop.setDisable(false);
 
-        new Thread(() -> {
+        ttsThread = new Thread(() -> {
             try {
                 ServiceStatistiques.ProduitStatDetail stats = serviceStats.statsProduit(p.getId());
                 String texte = String.format(
-                    "%s. Prix : %.0f dinars. Stock : %d unités. " +
-                    "Note moyenne : %.1f sur 5, soit %s. " +
-                    "%d avis clients. Commandé %d fois. " +
-                    "Chiffre d affaires généré : %.0f dinars.",
+                    "%s. Prix : %.0f dinars. Stock : %d unites. " +
+                    "Note moyenne : %.1f sur 5. %d avis clients. " +
+                    "Commande %d fois. Chiffre d affaires : %.0f dinars.",
                     p.getNom(), p.getPrix(), p.getStock(),
-                    stats.noteMoyenne, construireEtoiles(stats.noteMoyenne),
-                    stats.nbAvis, stats.nbCommandes, stats.caTotal
-                );
-                TextToSpeechService.lire(texte); // bloquant jusqu'à fin ou arrêt
+                    stats.noteMoyenne, stats.nbAvis, stats.nbCommandes, stats.caTotal);
+                TextToSpeechService.lire(texte);
             } catch (Exception ex) {
                 System.err.println("[TTS] " + ex.getMessage());
             } finally {
@@ -580,27 +536,20 @@ public class FrontMarketplaceController {
                     btnStop.setDisable(true);
                 });
             }
-        }, "tts-stats").start();
+        }, "tts-stats");
+        ttsThread.setDaemon(true);
+        ttsThread.start();
     }
 
     private void stopperVoix(Button btnStart, Button btnStop) {
-        TextToSpeechService.arreter();
+        TextToSpeechService.arreter();  // tue le processus PowerShell
+        if (ttsThread != null) ttsThread.interrupt(); // débloque waitFor()
         ttsEnCours.set(false);
         btnStart.setDisable(false);
         btnStop.setDisable(true);
     }
 
-    private String construireEtoiles(double note) {
-        int n = (int) Math.round(note);
-        return switch (n) {
-            case 1 -> "une étoile";
-            case 2 -> "deux étoiles";
-            case 3 -> "trois étoiles";
-            case 4 -> "quatre étoiles";
-            case 5 -> "cinq étoiles";
-            default -> "pas encore noté";
-        };
-    }
+    // ── Panier ────────────────────────────────────────────────────────────────
 
     private void onAjouterPanier(Produit p) {
         try {
@@ -610,36 +559,29 @@ public class FrontMarketplaceController {
             panier.setQuantite(1);
             servicePanier.ajouter(panier);
             mettreAJourBadgePanier();
-            showInfo("Panier", "« " + p.getNom() + " » ajouté au panier.");
+            showInfo("Panier", p.getNom() + " ajoute au panier.");
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Erreur", e.getMessage());
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void showInfo(String title, String msg) {
         Alert a = new Alert(Alert.AlertType.INFORMATION);
-        a.setTitle(title);
-        a.setHeaderText(null);
-        a.setContentText(msg);
-        styleAlert(a);
-        a.showAndWait();
+        a.setTitle(title); a.setHeaderText(null); a.setContentText(msg);
+        styleAlert(a); a.showAndWait();
     }
 
     private void showAlert(Alert.AlertType type, String title, String msg) {
         Alert a = new Alert(type);
-        a.setTitle(title);
-        a.setHeaderText(null);
-        a.setContentText(msg);
-        styleAlert(a);
-        a.showAndWait();
+        a.setTitle(title); a.setHeaderText(null); a.setContentText(msg);
+        styleAlert(a); a.showAndWait();
     }
 
     private void styleAlert(Alert a) {
-        if (searchField.getScene() != null) {
+        if (searchField.getScene() != null)
             a.getDialogPane().getStylesheets().addAll(searchField.getScene().getStylesheets());
-        }
     }
 
     private void afficherErreur(String msg) {

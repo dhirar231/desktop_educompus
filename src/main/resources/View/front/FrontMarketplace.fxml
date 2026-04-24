@@ -17,60 +17,66 @@
             <Label text="Marketplace" styleClass="page-title"/>
             <Label text="Découvrez notre catalogue de produits éducatifs." styleClass="page-subtitle"/>
         </VBox>
-        <Button text="📋  Mes commandes" styleClass="btn-ghost"
-                onAction="#onVoirMesCommandes"/>
-        <Button fx:id="btnPanier" text="🛒  Mon panier" styleClass="btn-rgb-outline"
-                onAction="#onOuvrirPanier"/>
+        <Button text="Mes commandes" styleClass="btn-ghost" onAction="#onVoirMesCommandes"/>
+        <Button fx:id="btnPanier" text="Mon panier" styleClass="btn-rgb-outline" onAction="#onOuvrirPanier"/>
     </HBox>
 
-    <!-- Section recommandations IA -->
-    <VBox fx:id="sectionReco" spacing="10" managed="false" visible="false">
-        <HBox alignment="CENTER_LEFT" spacing="8">
-            <Label text="✨  Recommandé pour vous" styleClass="page-title"
-                   style="-fx-font-size: 15px;"/>
+    <!-- Section recommandations IA — bandeau compact horizontal -->
+    <VBox fx:id="sectionReco" spacing="10" managed="false" visible="false"
+          style="-fx-background-color: rgba(6,106,201,0.06);
+                 -fx-background-radius: 16px;
+                 -fx-border-color: rgba(6,106,201,0.18);
+                 -fx-border-radius: 16px;
+                 -fx-border-width: 1;
+                 -fx-effect: dropshadow(three-pass-box, rgba(6,106,201,0.14), 20, 0.16, 0, 5);
+                 -fx-padding: 12 16 12 16;">
+        <VBox.margin><Insets bottom="4"/></VBox.margin>
+
+        <!-- Titre + badge -->
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Label text="Recommande pour vous" styleClass="page-title"
+                   style="-fx-font-size: 13px;"/>
+            <Label text="  Groq AI  "
+                   style="-fx-background-color: linear-gradient(to right, #7c3aed, #2563eb);
+                          -fx-text-fill: white; -fx-background-radius: 999px;
+                          -fx-padding: 2 8 2 8; -fx-font-size: 9px; -fx-font-weight: 800;"/>
+            <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="lblRecoStatus" text="" styleClass="page-subtitle"
-                   style="-fx-font-size: 11px; -fx-font-style: italic;"/>
+                   style="-fx-font-size: 10px; -fx-font-style: italic;"/>
         </HBox>
-        <ScrollPane fx:id="recoScrollPane" fitToHeight="true"
-                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
-                    styleClass="catalog-scroll" prefHeight="310">
-            <content>
-                <HBox fx:id="recoPane" spacing="14" style="-fx-padding: 4 4 8 4;"/>
-            </content>
-        </ScrollPane>
-        <Region prefHeight="1" style="-fx-background-color: -edu-border;"/>
+
+        <!-- Flèches + cartes horizontales -->
+        <HBox fx:id="recoPane" spacing="8" alignment="CENTER_LEFT"/>
     </VBox>
 
     <!-- Barre de recherche -->
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"
-                   promptText="🔍  Rechercher un produit par nom…"
+                   promptText="Rechercher un produit par nom..."
                    styleClass="field"
                    HBox.hgrow="ALWAYS"
                    onKeyReleased="#onSearch"/>
-        <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
+        <Button text="Reinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
         <Label fx:id="lblCount" text="" styleClass="page-subtitle"/>
     </HBox>
 
-    <!-- Grille de cartes dans un ScrollPane -->
+    <!-- Grille de cartes -->
     <ScrollPane fx:id="scrollPane" fitToWidth="true" VBox.vgrow="ALWAYS"
                 hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                 styleClass="catalog-scroll">
         <content>
             <VBox spacing="0">
-                <FlowPane fx:id="cardsPane"
-                          hgap="18" vgap="18"
-                          styleClass="project-catalog"
-                          style="-fx-padding: 4;"/>
+                <FlowPane fx:id="cardsPane" hgap="18" vgap="18"
+                          styleClass="project-catalog" style="-fx-padding: 4;"/>
             </VBox>
         </content>
     </ScrollPane>
 
-    <!-- État vide -->
+    <!-- Etat vide -->
     <VBox fx:id="emptyState" alignment="CENTER" spacing="10"
           managed="false" visible="false" VBox.vgrow="ALWAYS">
-        <Label text="Aucun produit trouvé" styleClass="empty-title"/>
-        <Label text="Essayez un autre mot-clé ou revenez plus tard."
+        <Label text="Aucun produit trouve" styleClass="empty-title"/>
+        <Label text="Essayez un autre mot-cle ou revenez plus tard."
                styleClass="empty-subtitle" wrapText="true" textAlignment="CENTER"/>
     </VBox>
 </VBox>
