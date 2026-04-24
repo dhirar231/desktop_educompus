@@ -59,7 +59,31 @@ public class GroqRecommandationService {
                 : recommandes;
     }
 
-    // ── Génération de description marketing ──────────────────────────────────
+    // ── Chatbot assistant de vente ────────────────────────────────────────────
+
+    /**
+     * Répond à une question client sur un produit avec une offre proactive.
+     * @param nomProduit   nom du produit consulté
+     * @param nomClient    prénom du client connecté
+     * @param nbConsultations nombre de fois que le client a consulté ce produit
+     * @param question     question posée par le client
+     */
+    public String repondreAssistant(String nomProduit, String nomClient,
+                                     int nbConsultations, String question) throws Exception {
+        String prompt = "Agis en tant qu'assistant de vente intelligent pour la Marketplace éducative EduCampus.\n\n" +
+                "Contexte : L'utilisateur(trice) nommé(e) '" + nomClient + "' a consulté la fiche du produit '" +
+                nomProduit + "' " + nbConsultations + " fois sans l'acheter. " +
+                "Il/Elle vient de poser cette question : \"" + question + "\"\n\n" +
+                "Ta mission :\n" +
+                "1. Réponds brièvement à sa curiosité de manière chaleureuse et encourageante.\n" +
+                "2. Si nbConsultations >= 2, déclenche une offre proactive : propose le code promo STUDENT10 (-10%) valable 1 heure.\n" +
+                "3. Utilise un ton amical, jeune et motivant (style Smart Campus).\n" +
+                "4. Sois court et percutant — max 4 lignes, idéal pour une petite fenêtre de chat JavaFX.\n" +
+                "5. L'offre ne doit pas paraître forcée, mais comme un coup de pouce naturel.\n\n" +
+                "Réponds directement sans introduction ni explication.";
+
+        return appellerGroq(prompt).trim();
+    }
 
     /**
      * Génère une description marketing professionnelle pour un produit éducatif.

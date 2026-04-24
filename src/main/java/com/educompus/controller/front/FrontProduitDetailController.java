@@ -4,6 +4,7 @@ import com.educompus.app.AppState;
 import com.educompus.model.Avis;
 import com.educompus.model.Panier;
 import com.educompus.model.Produit;
+import com.educompus.service.GroqRecommandationService;
 import com.educompus.service.ServiceAvis;
 import com.educompus.service.ServicePanier;
 import com.educompus.util.BadWordsFilter;
@@ -48,6 +49,13 @@ public class FrontProduitDetailController {
 
     private final ServiceAvis   serviceAvis   = new ServiceAvis();
     private final ServicePanier servicePanier = new ServicePanier();
+    private final GroqRecommandationService groqService = new GroqRecommandationService();
+
+    // Chat
+    @FXML private ScrollPane chatScrollPane;
+    @FXML private VBox       chatMessages;
+    @FXML private TextField  chatInput;
+    private int nbConsultations = 0;
 
     private Produit produit;
     private Runnable onRetourCallback;
@@ -74,8 +82,10 @@ public class FrontProduitDetailController {
 
     public void setProduit(Produit p) {
         this.produit = p;
+        nbConsultations++;  // incrémenter à chaque ouverture de la fiche
         remplirInfos();
         chargerAvis();
+        ajouterMessageAssistant("Bonjour ! Je suis votre assistant EduCampus. Posez-moi vos questions sur \"" + p.getNom() + "\" !");
     }
 
     public void setOnRetour(Runnable callback) {
@@ -126,7 +136,92 @@ public class FrontProduitDetailController {
         return l;
     }
 
-    // ── Panier ───────────────────────────────────────────────────────────────
+    // ── Chat assistant ────────────────────────────────────────────────────────
+
+    @FXML
+    private void onEnvoyerMessage(ActionEvent event) {
+        if (chatInput == null) return;
+        String question = chatInput.getText().trim();
+        if (question.isBlank()) return;
+
+        // Afficher la question du client
+        ajouterMessageClient(question);
+        chatInput.clear();
+
+        // Indicateur de frappe
+        Label typing = new Label("Assistant en train d'écrire...");
+        typing.setStyle("-fx-font-size: 10px; -fx-text-fill: #94a3b8; -fx-font-style: italic;");
+        if (chatMessages != null) chatMessages.getChildren().add(typing);
+        scrollerChat();
+
+        String nomClient = AppState.getUserDisplayName();
+        if (nomClient == null || nomClient.isBlank()) nomClient = "Etudiant";
+        final String nomFinal = nomClient;
+
+        new Thread(() -> {
+            try {
+                String reponse = groqService.repondreAssistant(
+                        produit.getNom(), nomFinal, nbConsultations, question);
+                final String rep = reponse;
+                javafx.application.Platform.runLater(() -> {
+                    if (chatMessages != null) chatMessages.getChildren().remove(typing);
+                    ajouterMessageAssistant(rep);
+                });
+            } catch (Exception ex) {
+                javafx.application.Platform.runLater(() -> {
+                    if (chatMessages != null) chatMessages.getChildren().remove(typing);
+                    ajouterMessageAssistant("Désolé, je ne peux pas répondre pour le moment. Réessayez dans un instant.");
+                });
+            }
+        }, "groq-chat").start();
+    }
+
+    private void ajouterMessageClient(String texte) {
+        if (chatMessages == null) return;
+        HBox row = new HBox();
+        row.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        Label msg = new Label(texte);
+        msg.setWrapText(true);
+        msg.setMaxWidth(280);
+        msg.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white;" +
+                "-fx-background-radius: 14px 14px 4px 14px; -fx-padding: 8 12 8 12;" +
+                "-fx-font-size: 12px;");
+        row.getChildren().add(msg);
+        chatMessages.getChildren().add(row);
+        scrollerChat();
+    }
+
+    private void ajouterMessageAssistant(String texte) {
+        if (chatMessages == null) return;
+        HBox row = new HBox(8);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        // Avatar assistant
+        Label avatar = new Label("AI");
+        avatar.setStyle("-fx-background-color: linear-gradient(to right, #7c3aed, #2563eb);" +
+                "-fx-text-fill: white; -fx-background-radius: 999px;" +
+                "-fx-min-width: 28px; -fx-min-height: 28px; -fx-max-width: 28px; -fx-max-height: 28px;" +
+                "-fx-alignment: CENTER; -fx-font-size: 9px; -fx-font-weight: 800;");
+
+        Label msg = new Label(texte);
+        msg.setWrapText(true);
+        msg.setMaxWidth(280);
+        msg.setStyle("-fx-background-color: white; -fx-text-fill: #1e293b;" +
+                "-fx-background-radius: 14px 14px 14px 4px; -fx-padding: 8 12 8 12;" +
+                "-fx-font-size: 12px;" +
+                "-fx-border-color: rgba(6,106,201,0.15); -fx-border-radius: 14px 14px 14px 4px; -fx-border-width: 1;");
+
+        row.getChildren().addAll(avatar, msg);
+        chatMessages.getChildren().add(row);
+        scrollerChat();
+    }
+
+    private void scrollerChat() {
+        if (chatScrollPane != null)
+            javafx.application.Platform.runLater(() -> chatScrollPane.setVvalue(1.0));
+    }
+
+    // ── Panier ────────────────────────────────────────────────────────────────
 
     @FXML
     private void onAjouterPanier(ActionEvent event) {
