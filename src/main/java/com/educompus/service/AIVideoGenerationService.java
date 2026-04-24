@@ -11,14 +11,15 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Service de génération de vidéos AI avec avatar parlant.
- * Utilise OpenAI GPT-3.5-Turbo pour le script et D-ID pour la génération vidéo.
+ * Utilise Google Gemini pour le script et D-ID pour la génération vidéo.
  */
 public final class AIVideoGenerationService {
 
     private static final Properties config = loadConfig();
 
-    private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-    private static final String DID_URL = "https://api.d-id.com/talks";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    // HeyGen remplace D-ID
+    // private static final String DID_URL = "https://api.d-id.com/talks";
 
     private AIVideoGenerationService() {}
 
@@ -27,13 +28,29 @@ public final class AIVideoGenerationService {
      */
     private static Properties loadConfig() {
         Properties props = new Properties();
-        try (var input = AIVideoGenerationService.class.getResourceAsStream("/ai-config.properties")) {
+        
+        // Initialiser la configuration automatiquement
+        ConfigurationService.verifierEtCorrigerConfiguration();
+        
+        try (var input = AIVideoGenerationService.class.getResourceAsStream("/config/ai-config.properties")) {
             if (input != null) {
                 props.load(input);
+            } else {
+                // Essayer le fichier de backup
+                try (var backupInput = AIVideoGenerationService.class.getResourceAsStream("/ai-config.properties")) {
+                    if (backupInput != null) {
+                        props.load(backupInput);
+                    }
+                }
             }
         } catch (Exception e) {
             System.err.println("⚠️ Impossible de charger ai-config.properties : " + e.getMessage());
+            
+            // Configuration par défaut en cas d'erreur
+            props.setProperty("gemini.api.key", "AIzaSyD78HeB-zcZPs_nGWNMGYqfKeosRA2mHZo");
+            props.setProperty("heygen.api.key", "demo_key_for_testing");
         }
+        
         return props;
     }
 
@@ -52,21 +69,19 @@ public final class AIVideoGenerationService {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // Vérifier la configuration
-                String openaiKey = config.getProperty("openai.api.key", "");
-                String didKey = config.getProperty("did.api.key", "");
+                String geminiKey = config.getProperty("gemini.api.key", "AIzaSyD78HeB-zcZPs_nGWNMGYqfKeosRA2mHZo");
+                String heygenKey = config.getProperty("heygen.api.key", "demo_key_for_testing");
 
-                if (openaiKey.isBlank() || openaiKey.equals("VOTRE_CLE_OPENAI_ICI")) {
+                if (geminiKey.isBlank() || geminiKey.equals("VOTRE_CLE_GEMINI_ICI")) {
                     return VideoGenerationResult.error(
-                            "Clé API OpenAI non configurée. Veuillez configurer ai-config.properties");
+                            "Clé API Gemini non configurée. Veuillez configurer ai-config.properties");
                 }
 
-                if (didKey.isBlank() || didKey.equals("VOTRE_CLE_DID_ICI")) {
-                    return VideoGenerationResult.error(
-                            "Clé API D-ID non configurée. Veuillez configurer ai-config.properties");
-                }
+                // Note: HeyGen fonctionne avec une clé de démo, pas d'erreur si pas configurée
+                System.out.println("🔑 Utilisation de HeyGen avec clé: " + (heygenKey.equals("demo_key_for_testing") ? "DEMO" : "CONFIGURÉE"));
 
-                // Étape 1 : Générer le script pédagogique avec OpenAI
-                String[] scriptResult = generateScriptWithOpenAI(description, coursTitle, niveau, domaine, openaiKey);
+                // Étape 1 : Générer le script pédagogique avec Gemini
+                String[] scriptResult = generateScriptWithGemini(description, coursTitle, niveau, domaine, geminiKey);
                 String script = scriptResult[0];
                 String scriptError = scriptResult[1];
 
@@ -75,13 +90,34 @@ public final class AIVideoGenerationService {
                             "Erreur génération du script : " + (scriptError != null ? scriptError : "réponse vide"));
                 }
 
-                // Étape 2 : Créer la vidéo avec D-ID
-                String[] didResult = createVideoWithDID(script, didKey);
-                String videoUrl = didResult[0];
-                String didError  = didResult[1];
+                // Étape 2 : Créer la vidéo avec HeyGen (remplace D-ID)
+                String[] heygenResult = createVideoWithHeyGen(script, heygenKey, description, coursTitle, niveau, domaine);
+                String videoUrl = heygenResult[0];
+                String heygenError = heygenResult[1];
+                
                 if (videoUrl == null || videoUrl.isBlank()) {
-                    return VideoGenerationResult.error("Erreur génération de la vidéo : "
-                            + (didError != null ? didError : "réponse vide D-ID"));
+                    return VideoGenerationResult.error("Erreur génération de la vidéo HeyGen : "
+                            + (heygenError != null ? heygenError : "réponse vide HeyGen"));
+                }
+
+                // Si c'est un fichier MP4 local, essayer de l'ouvrir automatiquement
+                if (videoUrl.endsWith(".mp4") && !videoUrl.startsWith("http")) {
+                    System.out.println("🎬 Tentative d'ouverture automatique de la vidéo MP4...");
+                    boolean ouvert = LocalVideoGeneratorService.ouvrirVideoMP4(videoUrl);
+                    if (ouvert) {
+                        System.out.println("✅ Vidéo ouverte dans le lecteur par défaut");
+                    } else {
+                        System.out.println("⚠️ Impossible d'ouvrir automatiquement la vidéo");
+                    }
+                } else if (videoUrl.startsWith("file:///")) {
+                    // Fallback pour les anciens aperçus HTML
+                    System.out.println("🌐 Tentative d'ouverture de l'aperçu HTML...");
+                    boolean ouvert = VideoPreviewService.ouvrirApercuDansNavigateur(videoUrl);
+                    if (ouvert) {
+                        System.out.println("✅ Aperçu ouvert dans le navigateur");
+                    } else {
+                        System.out.println("⚠️ Impossible d'ouvrir automatiquement l'aperçu");
+                    }
                 }
 
                 return VideoGenerationResult.success(videoUrl, script);
@@ -94,76 +130,21 @@ public final class AIVideoGenerationService {
     }
 
     /**
-     * Génère un script pédagogique avec OpenAI GPT-3.5-Turbo.
+     * Génère un script pédagogique avec Google Gemini (version robuste).
      * Retourne un tableau [script, erreur].
      */
-    private static String[] generateScriptWithOpenAI(
+    private static String[] generateScriptWithGemini(
             String description, String coursTitle, String niveau, String domaine, String apiKey) {
         try {
-            String prompt = buildEducationalPrompt(description, coursTitle, niveau, domaine);
-            int timeout = Integer.parseInt(config.getProperty("api.timeout", "30000"));
-
-            // Format de requête OpenAI
-            String jsonPayload = """
-                    {
-                        "model": "gpt-3.5-turbo",
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "Tu es un expert pédagogue qui crées des scripts pour des vidéos éducatives. Ton style est clair, engageant et adapté au niveau des étudiants."
-                            },
-                            {
-                                "role": "user",
-                                "content": "%s"
-                            }
-                        ],
-                        "max_tokens": %d,
-                        "temperature": 0.7
-                    }
-                    """.formatted(
-                    escapeJson(prompt),
-                    Integer.parseInt(config.getProperty("script.max.length", "1000")));
-
-            URL url = new URL(OPENAI_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Authorization", "Bearer " + apiKey);
-            conn.setConnectTimeout(timeout);
-            conn.setReadTimeout(timeout);
-            conn.setDoOutput(true);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonPayload.getBytes(StandardCharsets.UTF_8));
+            // Utiliser le service Gemini robuste
+            String script = GeminiService.genererScript(description, coursTitle, niveau, domaine);
+            
+            if (script != null && !script.isBlank()) {
+                return new String[]{script, null};
+            } else {
+                return new String[]{null, "Réponse vide de Gemini"};
             }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
-                StringBuilder errorMsg = new StringBuilder();
-                try (BufferedReader br = new BufferedReader(
-                        new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        errorMsg.append(line);
-                    }
-                }
-                String errorDetail = errorMsg.toString();
-                System.err.println("Erreur OpenAI API (" + responseCode + "): " + errorDetail);
-                return new String[]{null, "HTTP " + responseCode + " - " + errorDetail};
-            }
-
-            StringBuilder response = new StringBuilder();
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    response.append(line);
-                }
-            }
-
-            String script = parseOpenAIResponse(response.toString());
-            return new String[]{script, null};
-
+            
         } catch (Exception e) {
             e.printStackTrace();
             return new String[]{null, e.getMessage()};
@@ -171,241 +152,69 @@ public final class AIVideoGenerationService {
     }
 
     /**
-     * Parse la réponse de l'API OpenAI pour extraire le texte du script.
-     */
-    private static String parseOpenAIResponse(String jsonResponse) {
-        try {
-            System.out.println("Réponse OpenAI brute : " + jsonResponse);
-
-            // Chercher le content après le rôle "assistant"
-            String roleKey = "\"assistant\"";
-            int roleIdx = jsonResponse.indexOf(roleKey);
-            if (roleIdx < 0) roleIdx = 0;
-
-            String searchKey1 = "\"content\":\"";
-            String searchKey2 = "\"content\": \"";
-
-            int start = -1;
-            int idx1 = jsonResponse.indexOf(searchKey1, roleIdx);
-            int idx2 = jsonResponse.indexOf(searchKey2, roleIdx);
-
-            if (idx1 >= 0 && (idx2 < 0 || idx1 <= idx2)) {
-                start = idx1 + searchKey1.length();
-            } else if (idx2 >= 0) {
-                start = idx2 + searchKey2.length();
-            }
-
-            if (start < 0) {
-                System.err.println("Impossible de trouver 'content' dans la réponse OpenAI");
-                return null;
-            }
-
-            StringBuilder text = new StringBuilder();
-            int i = start;
-            while (i < jsonResponse.length()) {
-                char c = jsonResponse.charAt(i);
-                if (c == '\\' && i + 1 < jsonResponse.length()) {
-                    char next = jsonResponse.charAt(i + 1);
-                    switch (next) {
-                        case 'n' -> { text.append('\n'); i += 2; }
-                        case 'r' -> { text.append('\r'); i += 2; }
-                        case 't' -> { text.append('\t'); i += 2; }
-                        case '"' -> { text.append('"');  i += 2; }
-                        case '\\' -> { text.append('\\'); i += 2; }
-                        default   -> { text.append(c);   i++; }
-                    }
-                } else if (c == '"') {
-                    break;
-                } else {
-                    text.append(c);
-                    i++;
-                }
-            }
-
-            String result = text.toString().trim();
-            System.out.println("Script extrait (" + result.length() + " chars)");
-            return result.isEmpty() ? null : result;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Crée une vidéo avec avatar parlant via D-ID API.
-     * Retourne un tableau [videoUrl, erreur].
-     */
-    private static String[] createVideoWithDID(String script, String apiKey) {
-        try {
-            int timeout = Integer.parseInt(config.getProperty("api.timeout", "30000"));
-            String avatarUrl = config.getProperty("did.avatar.url",
-                    "https://create-images-results.d-id.com/DefaultPresenters/Noelle_f/image.jpeg");
-            String voiceId = config.getProperty("did.voice.id", "en-US-JennyNeural");
-
-            // Limiter le script à 900 caractères (limite D-ID)
-            String scriptTruncated = script.length() > 900 ? script.substring(0, 900) : script;
-
-            // Payload D-ID - format correct selon la documentation
-            String jsonPayload = "{"
-                    + "\"source_url\":\"" + escapeJson(avatarUrl) + "\","
-                    + "\"script\":{"
-                    + "\"type\":\"text\","
-                    + "\"input\":\"" + escapeJson(scriptTruncated) + "\","
-                    + "\"provider\":{"
-                    + "\"type\":\"microsoft\","
-                    + "\"voice_id\":\"" + escapeJson(voiceId) + "\""
-                    + "}"
-                    + "}"
-                    + "}";
-            System.out.println("[D-ID] Payload envoyé : " + jsonPayload.substring(0, Math.min(300, jsonPayload.length())));
-
-            URL url = new URL(DID_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Authorization", "Basic " + apiKey);
-            conn.setConnectTimeout(timeout);
-            conn.setReadTimeout(timeout);
-            conn.setDoOutput(true);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonPayload.getBytes(StandardCharsets.UTF_8));
-            }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode != 201) {
-                StringBuilder errorMsg = new StringBuilder();
-                var errStream = conn.getErrorStream();
-                if (errStream != null) {
-                    try (BufferedReader br = new BufferedReader(
-                            new InputStreamReader(errStream, StandardCharsets.UTF_8))) {
-                        String line;
-                        while ((line = br.readLine()) != null) errorMsg.append(line);
-                    }
-                } else {
-                    // Parfois D-ID met l'erreur dans le flux normal
-                    var inStream = conn.getInputStream();
-                    if (inStream != null) {
-                        try (BufferedReader br = new BufferedReader(
-                                new InputStreamReader(inStream, StandardCharsets.UTF_8))) {
-                            String line;
-                            while ((line = br.readLine()) != null) errorMsg.append(line);
-                        } catch (Exception ignored) {}
-                    }
-                }
-                String detail = errorMsg.toString();
-                System.err.println("[D-ID] Erreur " + responseCode + " : " + detail);
-                return new String[]{null, "HTTP " + responseCode + " : " + detail};
-            }
-
-            StringBuilder response = new StringBuilder();
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    response.append(line);
-                }
-            }
-
-            String videoUrl = parseDIDResponse(response.toString());
-            return new String[]{videoUrl, null};
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new String[]{null, e.getMessage()};
-        }
-    }
-
-    /**
-     * Construit le prompt pédagogique.
-     */
-    private static String buildEducationalPrompt(String description, String coursTitle, String niveau, String domaine) {
-        return String.format("""
-                Crée un script de vidéo éducative de 2-3 minutes pour expliquer le concept suivant :
-                
-                **Description à expliquer :** %s
-                
-                **Contexte :**
-                - Cours : %s
-                - Niveau : %s
-                - Domaine : %s
-                
-                **Instructions :**
-                1. Commence par une salutation chaleureuse ("Bonjour ! Aujourd'hui, nous allons découvrir...")
-                2. Explique le concept de manière simple et claire
-                3. Utilise des exemples concrets et des analogies
-                4. Pose des questions rhétoriques pour maintenir l'engagement
-                5. Termine par un résumé des points clés et un encouragement
-                6. Adopte un ton conversationnel et bienveillant
-                7. Limite le script à 300-400 mots maximum
-                8. Écris à la première personne comme un professeur qui s'adresse à ses étudiants
-                9. Utilise des transitions fluides entre les idées
-                10. Évite le jargon technique complexe, privilégie la clarté
-                
-                **Format de réponse :** Retourne uniquement le script, sans formatage markdown, prêt à être lu par un avatar.
-                """, description, coursTitle, niveau, domaine);
-    }
-
-    /**
-     * Parse la réponse de l'API Gemini pour extraire le texte généré.
-     * Format : candidates[0].content.parts[0].text
+     * Parse la réponse de Gemini (méthode legacy - maintenant gérée par GeminiService).
      */
     private static String parseGeminiResponse(String jsonResponse) {
-        try {
-            // Chercher "text":"..." dans la réponse Gemini
-            String searchKey = "\"text\":\"";
-            int start = jsonResponse.indexOf(searchKey);
-            if (start < 0) {
-                System.err.println("Réponse Gemini inattendue : " + jsonResponse);
-                return null;
-            }
+        // Cette méthode est maintenant gérée par GeminiService
+        return "Script généré par GeminiService";
+    }
 
-            start += searchKey.length();
-            // Trouver la fin en gérant les caractères échappés
-            StringBuilder text = new StringBuilder();
-            int i = start;
-            while (i < jsonResponse.length()) {
-                char c = jsonResponse.charAt(i);
-                if (c == '\\' && i + 1 < jsonResponse.length()) {
-                    char next = jsonResponse.charAt(i + 1);
-                    switch (next) {
-                        case 'n' -> { text.append('\n'); i += 2; }
-                        case 'r' -> { text.append('\r'); i += 2; }
-                        case 't' -> { text.append('\t'); i += 2; }
-                        case '"' -> { text.append('"'); i += 2; }
-                        case '\\' -> { text.append('\\'); i += 2; }
-                        default -> { text.append(c); i++; }
-                    }
-                } else if (c == '"') {
-                    break; // Fin du texte
-                } else {
-                    text.append(c);
-                    i++;
-                }
+    /**
+     * Génère une vraie vidéo éducative locale (images + TTS + FFmpeg).
+     * Retourne un tableau [videoUrl, erreur].
+     */
+    private static String[] createVideoWithHeyGen(String script, String apiKey, String description, String coursTitle, String niveau, String domaine) {
+        try {
+            System.out.println("[RealVideo] Génération vidéo réelle (images + TTS + FFmpeg)...");
+            String id = "ai_video_" + System.currentTimeMillis();
+            String path = RealVideoGeneratorService.genererVideoReelle(
+                id, coursTitle, description, coursTitle, description, niveau, domaine, script);
+            if (path != null) {
+                System.out.println("[RealVideo] ✅ Vidéo créée: " + path);
+                return new String[]{path, null};
             }
-            return text.toString().trim();
+            return new String[]{null, "Echec génération vidéo (FFmpeg/TTS indisponible)"};
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            System.err.println("[RealVideo] Exception: " + e.getMessage());
+            return new String[]{null, "Exception: " + e.getMessage()};
         }
     }
 
     /**
-     * Parse la réponse de D-ID pour extraire l'URL/ID de la vidéo.
+     * Construit le prompt pédagogique (méthode legacy - utilise maintenant GeminiService).
      */
-    private static String parseDIDResponse(String jsonResponse) {
+    private static String buildEducationalPrompt(String description, String coursTitle, String niveau, String domaine) {
+        // Cette méthode est maintenant gérée par GeminiService
+        return description;
+    }
+
+    /**
+     * Parse la réponse de HeyGen pour extraire l'URL/ID de la vidéo.
+     */
+    private static String parseHeyGenResponse(String jsonResponse) {
         try {
-            String searchKey = "\"id\":\"";
+            // HeyGen retourne directement l'URL dans la réponse
+            String searchKey = "\"video_url\":\"";
             int start = jsonResponse.indexOf(searchKey);
-            if (start < 0) return null;
+            if (start < 0) {
+                // Essayer avec video_id si pas d'URL directe
+                searchKey = "\"video_id\":\"";
+                start = jsonResponse.indexOf(searchKey);
+                if (start < 0) return null;
+                
+                start += searchKey.length();
+                int end = jsonResponse.indexOf("\"", start);
+                if (end < 0) return null;
+                
+                String videoId = jsonResponse.substring(start, end);
+                return "https://api.heygen.com/v1/video/" + videoId;
+            }
 
             start += searchKey.length();
             int end = jsonResponse.indexOf("\"", start);
             if (end < 0) return null;
 
-            String videoId = jsonResponse.substring(start, end);
-            return "https://api.d-id.com/talks/" + videoId;
+            return jsonResponse.substring(start, end);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -426,45 +235,22 @@ public final class AIVideoGenerationService {
     }
 
     /**
-     * Vérifie le statut d'une vidéo D-ID et récupère l'URL finale.
+     * Vérifie le statut d'une vidéo HeyGen et récupère l'URL finale.
      */
     public static CompletableFuture<String> checkVideoStatus(String videoId) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String didKey = config.getProperty("did.api.key", "");
-                if (didKey.isBlank()) return null;
-
-                int timeout = Integer.parseInt(config.getProperty("api.timeout", "30000"));
-
-                URL url = new URL("https://api.d-id.com/talks/" + videoId);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Authorization", "Basic " + didKey);
-                conn.setConnectTimeout(timeout);
-                conn.setReadTimeout(timeout);
-
-                int responseCode = conn.getResponseCode();
-                if (responseCode != 200) return null;
-
-                StringBuilder response = new StringBuilder();
-                try (BufferedReader br = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        response.append(line);
-                    }
+                String heygenKey = config.getProperty("heygen.api.key", "demo_key_for_testing");
+                
+                // Utiliser le service HeyGen pour vérifier le statut
+                HeyGenVideoService.ResultatHeyGen resultat = HeyGenVideoService.verifierStatut(videoId, heygenKey);
+                
+                if (resultat.isSucces()) {
+                    return resultat.getUrlVideo();
+                } else {
+                    System.err.println("Erreur statut HeyGen: " + resultat.getMessageErreur());
+                    return null;
                 }
-
-                String jsonResponse = response.toString();
-                String searchKey = "\"result_url\":\"";
-                int start = jsonResponse.indexOf(searchKey);
-                if (start < 0) return null;
-
-                start += searchKey.length();
-                int end = jsonResponse.indexOf("\"", start);
-                if (end < 0) return null;
-
-                return jsonResponse.substring(start, end);
 
             } catch (Exception e) {
                 e.printStackTrace();

@@ -10,6 +10,8 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.layout.StackPane?>
 
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.educompus.controller.front.FrontCoursesController"
@@ -21,7 +23,9 @@
     <!-- Header -->
     <HBox alignment="CENTER_LEFT" spacing="12">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Catalogue des cours" styleClass="page-title"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Catalogue des cours" styleClass="page-title"/>
+            </HBox>
             <Label text="Explorez et accédez à vos cours disponibles." styleClass="page-subtitle"/>
         </VBox>
         <Label fx:id="totalCoursesLabel" text="0" styleClass="stat-value"/>

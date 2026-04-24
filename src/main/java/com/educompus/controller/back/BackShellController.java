@@ -80,6 +80,9 @@ public final class BackShellController {
     private Button navValidationBtn;
 
     @FXML
+    private Button navContentManagementBtn;
+
+    @FXML
     private Button navCategoriesBtn;
 
     @FXML
@@ -149,6 +152,7 @@ public final class BackShellController {
         navButtons.add(navUsersBtn);
         navButtons.add(navCoursesBtn);
         navButtons.add(navValidationBtn);
+        navButtons.add(navContentManagementBtn);
         navButtons.add(navCategoriesBtn);
         navButtons.add(navSessionsBtn);
         navButtons.add(navExamsBtn);
@@ -165,6 +169,12 @@ public final class BackShellController {
             boolean showValidation = AppState.isAdmin();
             navValidationBtn.setVisible(showValidation);
             navValidationBtn.setManaged(showValidation);
+        }
+
+        if (navContentManagementBtn != null) {
+            boolean showContentManagement = AppState.isAdmin() || AppState.isTeacher();
+            navContentManagementBtn.setVisible(showContentManagement);
+            navContentManagementBtn.setManaged(showContentManagement);
         }
 
         Theme.apply(shell);
@@ -194,6 +204,12 @@ public final class BackShellController {
     private void navValidation(ActionEvent event) {
         setContent(safeLoad("View/back/BackValidation.fxml"));
         setActive(navValidationBtn);
+    }
+
+    @FXML
+    private void navContentManagement(ActionEvent event) {
+        setContent(safeLoad("View/back/BackContentManagement.fxml"));
+        setActive(navContentManagementBtn);
     }
 
     @FXML

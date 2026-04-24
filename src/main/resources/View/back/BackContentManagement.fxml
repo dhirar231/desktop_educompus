@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackContentManagementController"
+      styleClass="content" spacing="0">
+
+    <!-- Header -->
+    <HBox styleClass="detail-topbar" spacing="10" alignment="CENTER_LEFT">
+        <padding><Insets top="12" right="22" bottom="12" left="22"/></padding>
+        <Label text="📚 Gestion de Contenu Pédagogique" styleClass="page-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="🔗 Intégration Google Drive" styleClass="page-subtitle"/>
+    </HBox>
+
+    <!-- Main Content -->
+    <TabPane fx:id="mainTabPane" VBox.vgrow="ALWAYS" styleClass="content-tabs">
+        <padding><Insets top="10" right="22" bottom="22" left="22"/></padding>
+
+        <!-- Onglet Cours -->
+        <Tab text="📖 Cours" closable="false">
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                <VBox spacing="20" styleClass="form-container">
+                    <padding><Insets all="20"/></padding>
+
+                    <Label text="Créer un nouveau cours" styleClass="section-title"/>
+
+                    <GridPane hgap="15" vgap="15" styleClass="form-grid">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" prefWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <!-- Titre -->
+                        <Label text="Titre *" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <TextField fx:id="coursTitle" promptText="Titre du cours" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                        <!-- Description -->
+                        <Label text="Description" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <TextArea fx:id="coursDescription" promptText="Description détaillée du cours" 
+                                 prefRowCount="3" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <!-- Niveau et Domaine -->
+                        <Label text="Niveau *" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <ComboBox fx:id="coursNiveau" promptText="Sélectionner un niveau" 
+                                 prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <Label text="Domaine *" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <ComboBox fx:id="coursDomaine" promptText="Sélectionner un domaine" 
+                                 prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                        <!-- Formateur -->
+                        <Label text="Formateur" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <TextField fx:id="coursFormateur" promptText="Nom du formateur" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                        <!-- Durée -->
+                        <Label text="Durée (heures)" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                        <Spinner fx:id="coursDuree" prefWidth="100" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+
+                        <!-- Important -->
+                        <Label text="Important" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                        <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="6">
+                            <CheckBox fx:id="coursImportant" text="Marquer comme important (upload vers Google Drive)"/>
+                            <Label text="⚠️ Les cours importants seront uploadés vers Google Drive" 
+                                   styleClass="help-text" wrapText="true"/>
+                        </VBox>
+
+                        <!-- Fichier -->
+                        <Label text="Fichier" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
+                        <VBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="7">
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button fx:id="coursSelectFileBtn" text="📁 Sélectionner un fichier" 
+                                       onAction="#onCoursSelectFile" styleClass="btn-secondary"/>
+                                <Label fx:id="coursFileLabel" text="Aucun fichier sélectionné" styleClass="file-label"/>
+                            </HBox>
+                            <Label text="💡 Fichier requis uniquement pour les cours importants" 
+                                   styleClass="help-text"/>
+                        </VBox>
+                    </GridPane>
+
+                    <!-- Actions -->
+                    <HBox spacing="15" alignment="CENTER_LEFT" styleClass="form-actions">
+                        <Button fx:id="coursCreateBtn" text="✅ Créer le cours" onAction="#onCoursCreate" 
+                               styleClass="btn-primary"/>
+                        <ProgressIndicator fx:id="coursProgressIndicator" prefWidth="20" prefHeight="20"/>
+                        <Label fx:id="coursStatusLabel" styleClass="status-label"/>
+                    </HBox>
+                </VBox>
+            </ScrollPane>
+        </Tab>
+
+        <!-- Onglet Chapitres -->
+        <Tab text="📑 Chapitres" closable="false">
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                <VBox spacing="20" styleClass="form-container">
+                    <padding><Insets all="20"/></padding>
+
+                    <Label text="Créer un nouveau chapitre" styleClass="section-title"/>
+
+                    <GridPane hgap="15" vgap="15" styleClass="form-grid">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" prefWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <!-- Cours -->
+                        <Label text="Cours *" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <ComboBox fx:id="chapitreCoursCombo" promptText="Sélectionner un cours" 
+                                 prefWidth="300" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                        <!-- Titre -->
+                        <Label text="Titre *" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <TextField fx:id="chapitreTitle" promptText="Titre du chapitre" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <!-- Ordre -->
+                        <Label text="Ordre *" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <Spinner fx:id="chapitreOrdre" prefWidth="100" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <!-- Description -->
+                        <Label text="Description" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <TextArea fx:id="chapitreDescription" promptText="Description du chapitre" 
+                                 prefRowCount="3" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                        <!-- Important -->
+                        <Label text="Important" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <CheckBox fx:id="chapitreImportant" text="Marquer comme important (upload vers Google Drive)" 
+                                 GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                        <!-- Fichier -->
+                        <Label text="Fichier" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                        <VBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button fx:id="chapitreSelectFileBtn" text="📁 Sélectionner un fichier" 
+                                       onAction="#onChapitreSelectFile" styleClass="btn-secondary"/>
+                                <Label fx:id="chapitreFileLabel" text="Aucun fichier sélectionné" styleClass="file-label"/>
+                            </HBox>
+                        </VBox>
+                    </GridPane>
+
+                    <!-- Actions -->
+                    <HBox spacing="15" alignment="CENTER_LEFT" styleClass="form-actions">
+                        <Button fx:id="chapitreCreateBtn" text="✅ Créer le chapitre" onAction="#onChapitreCreate" 
+                               styleClass="btn-primary"/>
+                        <ProgressIndicator fx:id="chapitreProgressIndicator" prefWidth="20" prefHeight="20"/>
+                        <Label fx:id="chapitreStatusLabel" styleClass="status-label"/>
+                    </HBox>
+                </VBox>
+            </ScrollPane>
+        </Tab>
+
+        <!-- Onglet TDs -->
+        <Tab text="📝 Travaux Dirigés" closable="false">
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                <VBox spacing="20" styleClass="form-container">
+                    <padding><Insets all="20"/></padding>
+
+                    <Label text="Créer un nouveau TD" styleClass="section-title"/>
+
+                    <GridPane hgap="15" vgap="15" styleClass="form-grid">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" prefWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <!-- Cours -->
+                        <Label text="Cours *" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <ComboBox fx:id="tdCoursCombo" promptText="Sélectionner un cours" 
+                                 prefWidth="300" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                        <!-- Chapitre -->
+                        <Label text="Chapitre" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <ComboBox fx:id="tdChapitreCombo" promptText="Sélectionner un chapitre (optionnel)" 
+                                 prefWidth="300" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <!-- Titre -->
+                        <Label text="Titre *" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <TextField fx:id="tdTitle" promptText="Titre du TD" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <!-- Description -->
+                        <Label text="Description" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <TextArea fx:id="tdDescription" promptText="Description du TD" 
+                                 prefRowCount="3" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                        <!-- Important -->
+                        <Label text="Important" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <CheckBox fx:id="tdImportant" text="Marquer comme important (upload vers Google Drive)" 
+                                 GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                        <!-- Fichier -->
+                        <Label text="Fichier" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                        <VBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button fx:id="tdSelectFileBtn" text="📁 Sélectionner un fichier" 
+                                       onAction="#onTdSelectFile" styleClass="btn-secondary"/>
+                                <Label fx:id="tdFileLabel" text="Aucun fichier sélectionné" styleClass="file-label"/>
+                            </HBox>
+                        </VBox>
+                    </GridPane>
+
+                    <!-- Actions -->
+                    <HBox spacing="15" alignment="CENTER_LEFT" styleClass="form-actions">
+                        <Button fx:id="tdCreateBtn" text="✅ Créer le TD" onAction="#onTdCreate" 
+                               styleClass="btn-primary"/>
+                        <ProgressIndicator fx:id="tdProgressIndicator" prefWidth="20" prefHeight="20"/>
+                        <Label fx:id="tdStatusLabel" styleClass="status-label"/>
+                    </HBox>
+                </VBox>
+            </ScrollPane>
+        </Tab>
+
+        <!-- Onglet Vidéos -->
+        <Tab text="🎬 Vidéos" closable="false">
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                <VBox spacing="20" styleClass="form-container">
+                    <padding><Insets all="20"/></padding>
+
+                    <Label text="Créer une nouvelle vidéo explicative" styleClass="section-title"/>
+
+                    <GridPane hgap="15" vgap="15" styleClass="form-grid">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" prefWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <!-- Cours -->
+                        <Label text="Cours *" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <ComboBox fx:id="videoCoursCombo" promptText="Sélectionner un cours" 
+                                 prefWidth="300" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                        <!-- Chapitre -->
+                        <Label text="Chapitre" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <ComboBox fx:id="videoChapitreCombo" promptText="Sélectionner un chapitre (optionnel)" 
+                                 prefWidth="300" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <!-- Titre -->
+                        <Label text="Titre *" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <TextField fx:id="videoTitle" promptText="Titre de la vidéo" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <!-- URL -->
+                        <Label text="URL Vidéo" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <TextField fx:id="videoUrl" promptText="https://... (optionnel si fichier fourni)" 
+                                  GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                        <!-- Description -->
+                        <Label text="Description" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <TextArea fx:id="videoDescription" promptText="Description de la vidéo" 
+                                 prefRowCount="3" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                        <!-- Important -->
+                        <Label text="Important" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                        <CheckBox fx:id="videoImportant" text="Marquer comme important (upload vers Google Drive)" 
+                                 GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+
+                        <!-- Fichier -->
+                        <Label text="Fichier Vidéo" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                        <VBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="6">
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Button fx:id="videoSelectFileBtn" text="📁 Sélectionner un fichier vidéo" 
+                                       onAction="#onVideoSelectFile" styleClass="btn-secondary"/>
+                                <Label fx:id="videoFileLabel" text="Aucun fichier sélectionné" styleClass="file-label"/>
+                            </HBox>
+                            <Label text="💡 Fournir soit une URL soit un fichier vidéo" styleClass="help-text"/>
+                        </VBox>
+                    </GridPane>
+
+                    <!-- Actions -->
+                    <HBox spacing="15" alignment="CENTER_LEFT" styleClass="form-actions">
+                        <Button fx:id="videoCreateBtn" text="✅ Créer la vidéo" onAction="#onVideoCreate" 
+                               styleClass="btn-primary"/>
+                        <ProgressIndicator fx:id="videoProgressIndicator" prefWidth="20" prefHeight="20"/>
+                        <Label fx:id="videoStatusLabel" styleClass="status-label"/>
+                    </HBox>
+                </VBox>
+            </ScrollPane>
+        </Tab>
+
+        <!-- Onglet Google Drive -->
+        <Tab text="☁️ Google Drive" closable="false">
+            <VBox spacing="20" styleClass="form-container">
+                <padding><Insets all="20"/></padding>
+
+                <Label text="Statistiques Google Drive" styleClass="section-title"/>
+
+                <!-- Statut de connexion -->
+                <VBox spacing="10" styleClass="info-card">
+                    <padding><Insets all="15"/></padding>
+                    <HBox spacing="15" alignment="CENTER_LEFT">
+                        <Label text="Statut de connexion:" styleClass="info-label"/>
+                        <Label fx:id="driveStatusLabel" text="Vérification..." styleClass="status-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="driveRefreshBtn" text="🔄 Actualiser" onAction="#onDriveRefresh" 
+                               styleClass="btn-secondary"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Utilisation du stockage -->
+                <VBox spacing="10" styleClass="info-card">
+                    <padding><Insets all="15"/></padding>
+                    <Label text="Utilisation du stockage" styleClass="info-label"/>
+                    <HBox spacing="15" alignment="CENTER_LEFT">
+                        <ProgressBar fx:id="driveUsageBar" prefWidth="300" prefHeight="20"/>
+                        <Label fx:id="driveUsageLabel" text="Chargement..." styleClass="usage-label"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Informations détaillées -->
+                <VBox spacing="10" styleClass="info-card" VBox.vgrow="ALWAYS">
+                    <padding><Insets all="15"/></padding>
+                    <Label text="Informations détaillées" styleClass="info-label"/>
+                    <TextArea fx:id="driveStatsArea" editable="false" wrapText="true" 
+                             styleClass="stats-area" VBox.vgrow="ALWAYS"/>
+                </VBox>
+            </VBox>
+        </Tab>
+    </TabPane>
+</VBox>

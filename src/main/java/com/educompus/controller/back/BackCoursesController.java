@@ -114,28 +114,67 @@ public final class BackCoursesController {
             coursListView.setCellFactory(lv -> new ListCell<>() {
                 private final Label titleLbl = new Label();
                 private final Label metaLbl = new Label();
+                private final Label driveLbl = new Label(); // Nouveau : indicateur Google Drive
                 private final Button editBtn = new Button("✏️");
                 private final Button delBtn = new Button("🗑️");
+                private final Button driveBtn = new Button("☁️"); // Nouveau : bouton Drive
                 private final HBox row;
                 {
                     titleLbl.getStyleClass().add("project-card-title");
                     metaLbl.getStyleClass().add("page-subtitle");
                     metaLbl.setStyle("-fx-font-size: 11px;");
+                    driveLbl.getStyleClass().add("chip");
+                    driveLbl.setStyle("-fx-font-size: 10px; -fx-font-weight: 700;");
                     editBtn.getStyleClass().add("btn-rgb-outline");
                     delBtn.getStyleClass().add("btn-danger");
+                    driveBtn.getStyleClass().add("btn-rgb-compact");
+                    driveBtn.setTooltip(new javafx.scene.control.Tooltip("Ouvrir dans Google Drive"));
+                    
                     VBox info = new VBox(2, titleLbl, metaLbl);
                     HBox.setHgrow(info, Priority.ALWAYS);
-                    row = new HBox(10, info, editBtn, delBtn);
+                    row = new HBox(10, info, driveLbl, driveBtn, editBtn, delBtn);
                     row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                     row.setPadding(new javafx.geometry.Insets(8, 12, 8, 12));
                     editBtn.setOnAction(e -> { if (getItem() != null) editCours(getItem()); });
                     delBtn.setOnAction(e -> { if (getItem() != null) deleteCours(getItem()); });
+                    driveBtn.setOnAction(e -> {
+                        Cours cours = getItem();
+                        if (cours != null && cours.getDriveLink() != null && !cours.getDriveLink().isBlank()) {
+                            try {
+                                java.awt.Desktop.getDesktop().browse(java.net.URI.create(cours.getDriveLink()));
+                            } catch (Exception ex) {
+                                error("Erreur ouverture Drive", ex);
+                            }
+                        }
+                    });
                 }
                 @Override protected void updateItem(Cours c, boolean empty) {
                     super.updateItem(c, empty);
                     if (empty || c == null) { setGraphic(null); return; }
                     titleLbl.setText(safe(c.getTitre()));
                     metaLbl.setText(safe(c.getDomaine()) + "  •  " + safe(c.getNiveau()) + "  •  " + safe(c.getNomFormateur()) + "  •  " + c.getDureeTotaleHeures() + "h  •  " + c.getChapitreCount() + " chap.");
+                    
+                    // Affichage du statut Google Drive
+                    if (c.getDriveLink() != null && !c.getDriveLink().isBlank()) {
+                        driveLbl.setText("☁️ Sur Drive");
+                        driveLbl.getStyleClass().removeAll("chip-warning", "chip-danger");
+                        driveLbl.getStyleClass().add("chip-success");
+                        driveBtn.setDisable(false);
+                        driveBtn.setText("🌐");
+                    } else if (c.getDriveFolderId() != null && c.getDriveFolderId().equals("EN_ATTENTE")) {
+                        driveLbl.setText("⏳ En attente");
+                        driveLbl.getStyleClass().removeAll("chip-success", "chip-danger");
+                        driveLbl.getStyleClass().add("chip-warning");
+                        driveBtn.setDisable(true);
+                        driveBtn.setText("⏳");
+                    } else {
+                        driveLbl.setText("📱 Local");
+                        driveLbl.getStyleClass().removeAll("chip-success", "chip-warning");
+                        driveLbl.getStyleClass().add("chip-info");
+                        driveBtn.setDisable(true);
+                        driveBtn.setText("☁️");
+                    }
+                    
                     setGraphic(row);
                 }
             });
@@ -383,6 +422,286 @@ public final class BackCoursesController {
     // ── CRUD ──────────────────────────────────────────────────────────────────
 
     @FXML
+    private void uploadCoursCompletToDrive() {
+        // Vérifier qu'un cours est sélectionné
+        Cours selectedCours = coursListView.getSelectionModel().getSelectedItem();
+        if (selectedCours == null) {
+            error("Aucun cours sélectionné", new Exception("Veuillez sélectionner un cours dans la liste pour l'uploader vers Google Drive."));
+            return;
+        }
+
+        // ── Vérifier que credentials.json existe avant de lancer l'upload ──
+        if (getClass().getResourceAsStream("/credentials.json") == null) {
+            error("Configuration Google Drive manquante",
+                new Exception(
+                    "Le fichier credentials.json est introuvable dans les ressources.\n\n" +
+                    "Pour activer l'upload Google Drive :\n" +
+                    "1. Allez sur console.cloud.google.com\n" +
+                    "2. Créez un projet et activez l'API Google Drive\n" +
+                    "3. Téléchargez credentials.json\n" +
+                    "4. Placez-le dans src/main/resources/credentials.json"
+                ));
+            return;
+        }
+        
+        // Confirmer l'action
+        if (!confirm("Upload vers Google Drive", 
+            "Voulez-vous uploader le cours complet « " + safe(selectedCours.getTitre()) + " » vers Google Drive ?\n\n" +
+            "Cela inclura :\n" +
+            "• Le cours principal (PDF)\n" +
+            "• Tous les chapitres\n" +
+            "• Tous les TDs\n" +
+            "• Tous les liens vidéos\n\n" +
+            "Un lien partageable sera généré pour les étudiants.")) {
+            return;
+        }
+        
+        // Lancer l'upload en arrière-plan avec indicateur de progression
+        Task<String> uploadTask = new Task<>() {
+            @Override
+            protected String call() throws Exception {
+                updateMessage("Initialisation de l'upload...");
+                
+                com.educompus.service.GoogleDriveService driveService = new com.educompus.service.GoogleDriveService();
+
+                
+                // Récupérer tous les contenus du cours
+                List<Chapitre> chapitres = repository.listChapitres("").stream()
+                    .filter(ch -> ch.getCoursId() == selectedCours.getId())
+                    .toList();
+                
+                List<Td> tds = repository.listTds("").stream()
+                    .filter(td -> td.getCoursId() == selectedCours.getId())
+                    .toList();
+                
+                List<VideoExplicative> videos = repository.listVideos("").stream()
+                    .filter(v -> v.getCoursId() == selectedCours.getId())
+                    .toList();
+                
+                updateMessage("Upload du cours principal...");
+                
+                // Upload du cours principal s'il a un fichier PDF
+                String courseFolderId = null;
+                if (selectedCours.getImage() != null && !selectedCours.getImage().startsWith("auto:")) {
+                    try {
+                        com.educompus.service.GoogleDriveService.DriveUploadResult coursResult = 
+                            driveService.uploadCoursFile(selectedCours.getImage(), 
+                                "Cours_" + selectedCours.getTitre() + ".pdf", 
+                                selectedCours.getTitre());
+                        courseFolderId = coursResult.getFileId();
+                    } catch (Exception e) {
+                        System.err.println("Erreur upload cours principal: " + e.getMessage());
+                    }
+                }
+                
+                int totalItems = chapitres.size() + tds.size() + videos.size();
+                int currentItem = 0;
+                
+                // Upload des chapitres
+                for (Chapitre chapitre : chapitres) {
+                    currentItem++;
+                    updateMessage("Upload chapitre " + currentItem + "/" + totalItems + ": " + chapitre.getTitre());
+                    
+                    if (chapitre.getFichierC() != null && !chapitre.getFichierC().isBlank()) {
+                        try {
+                            driveService.uploadChapitreFile(chapitre.getFichierC(), 
+                                "Chapitre_" + chapitre.getOrdre() + "_" + chapitre.getTitre() + ".pdf", 
+                                selectedCours.getTitre(), 
+                                chapitre.getTitre());
+                        } catch (Exception e) {
+                            System.err.println("Erreur upload chapitre " + chapitre.getTitre() + ": " + e.getMessage());
+                        }
+                    }
+                }
+                
+                // Upload des TDs
+                for (Td td : tds) {
+                    currentItem++;
+                    updateMessage("Upload TD " + currentItem + "/" + totalItems + ": " + td.getTitre());
+                    
+                    if (td.getFichier() != null && !td.getFichier().isBlank()) {
+                        try {
+                            driveService.uploadTdFile(td.getFichier(), 
+                                "TD_" + td.getTitre() + ".pdf", 
+                                selectedCours.getTitre(), 
+                                td.getTitre());
+                        } catch (Exception e) {
+                            System.err.println("Erreur upload TD " + td.getTitre() + ": " + e.getMessage());
+                        }
+                    }
+                }
+                
+                // Upload des vidéos (MP4 réel ou lien texte)
+                for (VideoExplicative video : videos) {
+                    currentItem++;
+                    updateMessage("Upload vidéo " + currentItem + "/" + totalItems + ": " + video.getTitre());
+
+                    if (video.getUrlVideo() == null || video.getUrlVideo().isBlank()) continue;
+                    try {
+                        java.io.File mp4 = new java.io.File(video.getUrlVideo());
+                        if (mp4.exists() && video.getUrlVideo().toLowerCase().endsWith(".mp4")) {
+                            // ✅ Uploader le vrai fichier MP4
+                            String safeName = video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_");
+                            com.educompus.service.GoogleDriveService.DriveUploadResult r =
+                                driveService.uploadVideoFile(
+                                    mp4.getAbsolutePath(),
+                                    safeName + ".mp4",
+                                    selectedCours.getTitre(),
+                                    video.getTitre());
+                            // Mettre à jour l'URL de la vidéo avec le lien Drive
+                            video.setUrlVideo(r.getShareableLink());
+                            repository.updateVideo(video);
+                            System.out.println("✅ MP4 uploadé sur Drive: " + r.getShareableLink());
+                        } else {
+                            // Fallback : créer un fichier texte avec le lien
+                            java.io.File tempFile = java.io.File.createTempFile("Video_", ".txt");
+                            java.nio.file.Files.writeString(tempFile.toPath(),
+                                "Titre: " + video.getTitre() + "\n" +
+                                "Lien vidéo: " + video.getUrlVideo() + "\n" +
+                                "Type: " + (video.isAIGenerated() ? "Générée par AI" : "Manuelle"));
+                            driveService.uploadVideoFile(tempFile.getAbsolutePath(),
+                                video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + "_lien.txt",
+                                selectedCours.getTitre(), video.getTitre());
+                            tempFile.delete();
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Erreur upload vidéo " + video.getTitre() + ": " + e.getMessage());
+                    }
+                }
+                
+                updateMessage("Génération du lien partageable...");
+                
+                // Générer le lien vers le dossier du cours
+                String shareableLink = driveService.generateCourseFolderLink(selectedCours.getTitre());
+                
+                updateMessage("Upload terminé !");
+                
+                return shareableLink;
+            }
+        };
+        
+        // Afficher le dialogue de progression
+        Alert progressAlert = new Alert(Alert.AlertType.INFORMATION);
+        progressAlert.setTitle("Upload vers Google Drive");
+        progressAlert.setHeaderText("Upload en cours...");
+        
+        ProgressIndicator progressIndicator = new ProgressIndicator();
+        progressIndicator.setProgress(-1); // Indéterminé
+        
+        Label progressLabel = new Label("Initialisation...");
+        progressLabel.textProperty().bind(uploadTask.messageProperty());
+        
+        VBox progressContent = new VBox(10, progressIndicator, progressLabel);
+        progressContent.setAlignment(javafx.geometry.Pos.CENTER);
+        progressContent.setPadding(new javafx.geometry.Insets(20));
+        
+        progressAlert.getDialogPane().setContent(progressContent);
+        progressAlert.getButtonTypes().clear();
+        progressAlert.getButtonTypes().add(ButtonType.CANCEL);
+        
+        Dialogs.style(progressAlert);
+        
+        // Gérer l'annulation
+        uploadTask.setOnCancelled(e -> {
+            progressAlert.close();
+            info("Upload annulé", "L'upload vers Google Drive a été annulé.");
+        });
+        
+        // Gérer le succès
+        uploadTask.setOnSucceeded(e -> {
+            progressAlert.close();
+            String shareableLink = uploadTask.getValue();
+            
+            // Mettre à jour le cours avec le lien Drive ET le folder ID
+            selectedCours.setDriveLink(shareableLink);
+            // Extraire le folder ID depuis le lien (format: .../folders/{ID}?...)
+            try {
+                String folderId = shareableLink
+                    .replaceAll(".*/folders/", "")
+                    .replaceAll("\\?.*", "").trim();
+                if (!folderId.isBlank()) selectedCours.setDriveFolderId(folderId);
+            } catch (Exception ignored) {}
+            try {
+                repository.updateCours(selectedCours);
+            } catch (Exception ex) {
+                System.err.println("Erreur mise à jour cours: " + ex.getMessage());
+            }
+            
+            // Afficher le dialogue de succès avec le lien
+            Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+            successAlert.setTitle("✅ Upload réussi");
+            successAlert.setHeaderText("Cours uploadé vers Google Drive");
+            
+            TextField linkField = new TextField(shareableLink);
+            linkField.setEditable(false);
+            linkField.getStyleClass().add("field");
+            
+            Button copyButton = new Button("📋 Copier le lien");
+            copyButton.getStyleClass().add("btn-rgb-outline");
+            copyButton.setOnAction(ev -> {
+                javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+                javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                content.putString(shareableLink);
+                clipboard.setContent(content);
+                copyButton.setText("✅ Copié !");
+                Platform.runLater(() -> {
+                    try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                    copyButton.setText("📋 Copier le lien");
+                });
+            });
+            
+            Button openButton = new Button("🌐 Ouvrir dans le navigateur");
+            openButton.getStyleClass().add("btn-rgb");
+            openButton.setOnAction(ev -> {
+                try {
+                    java.awt.Desktop.getDesktop().browse(java.net.URI.create(shareableLink));
+                } catch (Exception ex) {
+                    error("Erreur ouverture", ex);
+                }
+            });
+            
+            VBox successContent = new VBox(10);
+            successContent.getChildren().addAll(
+                new Label("Le cours « " + selectedCours.getTitre() + " » a été uploadé avec succès !"),
+                new Label("Lien partageable pour les étudiants :"),
+                linkField,
+                new HBox(10, copyButton, openButton)
+            );
+            successContent.setPadding(new javafx.geometry.Insets(20));
+            
+            successAlert.getDialogPane().setContent(successContent);
+            successAlert.getButtonTypes().clear();
+            successAlert.getButtonTypes().add(ButtonType.OK);
+            
+            Dialogs.style(successAlert);
+            successAlert.showAndWait();
+            
+            // Rafraîchir la liste
+            refreshAll();
+        });
+        
+        // Gérer les erreurs
+        uploadTask.setOnFailed(e -> {
+            progressAlert.close();
+            Throwable exception = uploadTask.getException();
+            error("Erreur upload", new Exception("Échec de l'upload vers Google Drive: " + 
+                (exception != null ? exception.getMessage() : "Erreur inconnue")));
+        });
+        
+        // Lancer la tâche
+        Thread uploadThread = new Thread(uploadTask);
+        uploadThread.setDaemon(true);
+        uploadThread.start();
+        
+        // Afficher le dialogue et gérer l'annulation
+        progressAlert.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.CANCEL) {
+                uploadTask.cancel();
+            }
+        });
+    }
+
+    @FXML
     private void createCours() {
         FormResult<Cours> result = showCoursForm(null);
         if (!result.saved()) return;
@@ -416,7 +735,8 @@ public final class BackCoursesController {
                 if (result.value().getFichierC() != null && !result.value().getFichierC().isBlank()) {
                     try {
                         com.educompus.service.GoogleDriveService driveService = new com.educompus.service.GoogleDriveService();
-                        driveService.uploadFileToFolder(new java.io.File(result.value().getFichierC()), cours.getDriveFolderId());
+                        String fileName = "Chapitre_" + result.value().getTitre() + ".pdf";
+                        driveService.uploadChapitreFile(result.value().getFichierC(), fileName, cours.getTitre(), result.value().getTitre());
                         info("✅ Drive", "Le fichier du chapitre a été ajouté au dossier Drive du cours !");
                     } catch (Exception ex) {
                         error("Erreur Google Drive", ex);
@@ -461,7 +781,8 @@ public final class BackCoursesController {
                 if (result.value().getFichier() != null && !result.value().getFichier().isBlank()) {
                     try {
                         com.educompus.service.GoogleDriveService driveService = new com.educompus.service.GoogleDriveService();
-                        driveService.uploadFileToFolder(new java.io.File(result.value().getFichier()), c.getDriveFolderId());
+                        String fileName = "TD_" + result.value().getTitre() + ".pdf";
+                        driveService.uploadTdFile(result.value().getFichier(), fileName, c.getTitre(), result.value().getTitre());
                         info("✅ Drive", "Le fichier TD a été ajouté au dossier Drive du cours !");
                     } catch (Exception ex) {
                         error("Erreur Google Drive", ex);
@@ -492,7 +813,8 @@ public final class BackCoursesController {
                             java.io.File txt = java.io.File.createTempFile("Video_" + result.value().getTitre(), ".txt");
                             java.nio.file.Files.writeString(txt.toPath(), "Lien de la video : " + result.value().getUrlVideo());
                             com.educompus.service.GoogleDriveService driveService = new com.educompus.service.GoogleDriveService();
-                            driveService.uploadFileToFolder(txt, c.getDriveFolderId());
+                            String fileName = "Video_" + result.value().getTitre() + "_link.txt";
+                            driveService.uploadVideoFile(txt.getAbsolutePath(), fileName, c.getTitre(), result.value().getTitre());
                             info("✅ Drive", "Le lien de la vidéo a été ajouté au dossier Drive du cours !");
                         } catch (Exception ex) {
                             error("Erreur Google Drive", ex);
@@ -614,15 +936,50 @@ public final class BackCoursesController {
                 javafx.application.Platform.runLater(() -> {
                     try {
                         if (result.isSuccess()) {
-                            // Mettre à jour la vidéo avec l'URL générée
-                            video.setUrlVideo(result.getVideoUrl());
+                            String localVideoPath = result.getVideoUrl();
+                            video.setUrlVideo(localVideoPath);
                             video.setAiScript(result.getScript());
                             video.setGenerationStatus("COMPLETED");
                             repository.updateVideo(video);
-                            
-                            info("✅ Vidéo AI générée", 
-                                "La vidéo AI « " + safe(video.getTitre()) + " » a été générée avec succès !\n" +
-                                "Les étudiants peuvent maintenant la visionner.");
+
+                            // ── Auto-upload MP4 sur Drive si le cours est lié à Drive ──
+                            Cours coursForDrive = repository.listCours("").stream()
+                                .filter(c -> c.getId() == video.getCoursId()).findFirst().orElse(null);
+                            if (coursForDrive != null
+                                    && coursForDrive.getDriveFolderId() != null
+                                    && !coursForDrive.getDriveFolderId().isBlank()
+                                    && !coursForDrive.getDriveFolderId().equals("EN_ATTENTE")) {
+                                try {
+                                    java.io.File mp4 = new java.io.File(localVideoPath);
+                                    if (mp4.exists()) {
+                                        com.educompus.service.GoogleDriveService driveService =
+                                            new com.educompus.service.GoogleDriveService();
+                                        String safeName = video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_");
+                                        com.educompus.service.GoogleDriveService.DriveUploadResult dr =
+                                            driveService.uploadVideoFile(
+                                                mp4.getAbsolutePath(),
+                                                safeName + ".mp4",
+                                                coursForDrive.getTitre(),
+                                                video.getTitre());
+                                        video.setUrlVideo(dr.getShareableLink());
+                                        repository.updateVideo(video);
+                                        info("✅ Vidéo AI générée & uploadée",
+                                            "La vidéo « " + safe(video.getTitre()) + " » est disponible sur Google Drive !\n" +
+                                            "Lien : " + dr.getShareableLink());
+                                    } else {
+                                        info("✅ Vidéo AI générée",
+                                            "La vidéo « " + safe(video.getTitre()) + " » a été générée avec succès !");
+                                    }
+                                } catch (Exception driveEx) {
+                                    System.err.println("[Drive] Upload MP4 échoué: " + driveEx.getMessage());
+                                    info("✅ Vidéo AI générée",
+                                        "La vidéo « " + safe(video.getTitre()) + " » a été générée (upload Drive échoué).");
+                                }
+                            } else {
+                                info("✅ Vidéo AI générée",
+                                    "La vidéo AI « " + safe(video.getTitre()) + " » a été générée avec succès !\n" +
+                                    "Les étudiants peuvent maintenant la visionner.");
+                            }
                             refreshAll();
                         } else {
                             // Marquer comme erreur
@@ -1260,13 +1617,30 @@ public final class BackCoursesController {
     }
 
     private void error(String title, Exception e) {
-        if (e != null) {
-            e.printStackTrace();
+        if (e != null) e.printStackTrace();
+        // Construire le message complet en remontant la chaîne des causes
+        String msg;
+        if (e == null) {
+            msg = "Erreur inconnue";
+        } else {
+            StringBuilder sb = new StringBuilder();
+            Throwable t = e;
+            while (t != null) {
+                String m = t.getMessage();
+                if (m != null && !m.isBlank()) {
+                    if (sb.length() > 0) sb.append("\nCause : ");
+                    sb.append(m);
+                }
+                t = t.getCause();
+            }
+            msg = sb.length() > 0 ? sb.toString() : e.getClass().getSimpleName();
         }
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title); alert.setHeaderText(title);
-        alert.setContentText(e == null ? "Erreur" : safe(e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : "")));
-        Dialogs.style(alert); alert.showAndWait();
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(msg);
+        Dialogs.style(alert);
+        alert.showAndWait();
     }
 
     private static int parseDuree(String s) { try { return Integer.parseInt(s.trim()); } catch (Exception e) { return 0; } }

@@ -26,6 +26,16 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
 
         <!-- Auth: verify Symfony hashed passwords + connect to MySQL -->
         <dependency>
@@ -78,6 +88,13 @@
             <version>3.24.2</version>
             <scope>test</scope>
         </dependency>
+        <!-- jqwik for property-based testing -->
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
+            <version>1.8.2</version>
+            <scope>test</scope>
+        </dependency>
         <!-- H2 in-memory DB for unit tests (removed) -->
         <!-- PDF generation for certificates -->
         <dependency>
@@ -107,6 +124,16 @@
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.9</version>
         </dependency>
+        
+        <!-- Jackson pour le parsing JSON des APIs IA -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.15.2</version>
+        </dependency>
+        
+        <!-- HTTP Client pour les APIs IA (déjà inclus dans Java 11+) -->
+        <!-- Pas besoin d'ajouter de dépendance supplémentaire -->
     </dependencies>
 
     <build>
@@ -125,6 +152,15 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.educompus.app.PreviewApp</mainClass>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.educompus.examples.GeminiVideoExample</mainClass>
                 </configuration>
             </plugin>
 

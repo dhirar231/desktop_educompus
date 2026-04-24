@@ -15,6 +15,10 @@ public final class Cours {
     private String commentaireAdmin;
     private int createdById;
     private String driveFolderId;
+    
+    // Nouveaux champs pour la gestion de contenu
+    private boolean important = false;
+    private String driveLink;
 
     public String getDriveFolderId() {
         return driveFolderId;
@@ -126,6 +130,22 @@ public final class Cours {
 
     public void setCreatedById(int createdById) {
         this.createdById = createdById;
+    }
+
+    public boolean isImportant() {
+        return important;
+    }
+
+    public void setImportant(boolean important) {
+        this.important = important;
+    }
+
+    public String getDriveLink() {
+        return driveLink;
+    }
+
+    public void setDriveLink(String driveLink) {
+        this.driveLink = driveLink;
     }
 
     @Override

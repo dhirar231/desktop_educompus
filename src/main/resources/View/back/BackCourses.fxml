@@ -99,6 +99,7 @@
                         <HBox spacing="10" alignment="CENTER_LEFT">
                             <TextField fx:id="coursSearchField" promptText="🔍  Rechercher un cours..." styleClass="field" HBox.hgrow="ALWAYS"/>
                             <ComboBox fx:id="coursSortCombo" styleClass="combo-rgb" prefWidth="160"/>
+                            <Button text="☁️  Upload vers Drive" onAction="#uploadCoursCompletToDrive" styleClass="btn-rgb-outline"/>
                             <Button text="➕  Créer un cours" onAction="#createCours" styleClass="btn-rgb"/>
                         </HBox>
                         <ListView fx:id="coursListView" VBox.vgrow="ALWAYS"/>

@@ -117,19 +117,22 @@ public final class FrontCoursesController {
         StackPane.setAlignment(niveauChip, Pos.TOP_LEFT);
         StackPane.setMargin(niveauChip, new Insets(10));
 
-        // Bouton cœur favori (bottom-right de la bannière)
+        // Bouton cœur favori → sous l'image, sans fond
         boolean isFav = favoriteIds.contains(cours.getId());
         StackPane favBtn = buildFavBtn(cours, isFav);
-        StackPane.setAlignment(favBtn, Pos.BOTTOM_RIGHT);
-        StackPane.setMargin(favBtn, new Insets(0, 10, 10, 0));
 
         banner.getChildren().add(iv);
         if (!domainChip.getText().isBlank()) banner.getChildren().add(domainChip);
         if (!niveauChip.getText().isBlank()) banner.getChildren().add(niveauChip);
-        banner.getChildren().add(favBtn);
+
+        // Barre sous l'image : cœur à droite, sans fond
+        HBox favBar = new HBox();
+        favBar.setAlignment(Pos.CENTER_RIGHT);
+        favBar.setPadding(new Insets(4, 10, 0, 10));
+        favBar.getChildren().add(favBtn);
 
         VBox body = new VBox(8);
-        body.setPadding(new Insets(14, 16, 14, 16));
+        body.setPadding(new Insets(6, 16, 14, 16));
 
         Label title = new Label(safe(cours.getTitre()));
         title.getStyleClass().add("project-card-title");
@@ -163,10 +166,9 @@ public final class FrontCoursesController {
         footer.getChildren().addAll(formateur, spacer, duree, chapitres);
         body.getChildren().addAll(title, desc, footer);
 
-        // Clic carte → détail ; le bouton cœur consomme lui-même l'événement (e.consume() dans buildFavBtn)
         card.setOnMouseClicked(e -> openDetail(cours));
 
-        card.getChildren().addAll(banner, body);
+        card.getChildren().addAll(banner, favBar, body);
         return card;
     }
 
@@ -177,7 +179,8 @@ public final class FrontCoursesController {
         updateHeartStyle(heart, isFav);
 
         StackPane btn = new StackPane(heart);
-        btn.getStyleClass().add("fav-btn");
+        // Utiliser les styles sans fond
+        btn.getStyleClass().add("fav-btn-transparent");
         btn.setMinSize(32, 32);
         btn.setPrefSize(32, 32);
         btn.setMaxSize(32, 32);
@@ -215,7 +218,13 @@ public final class FrontCoursesController {
 
     private static void updateHeartStyle(SVGPath heart, boolean filled) {
         heart.getStyleClass().removeAll("fav-btn-filled", "fav-btn-outline");
-        heart.setContent("M12 21.35L10.55 20.03C5.4 15.36 2 12.27 2 8.5C2 5.41 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.08C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.41 22 8.5C22 12.27 18.6 15.36 13.45 20.03L12 21.35Z");
+        if (filled) {
+            // Cœur plein — forme arrondie moderne
+            heart.setContent("M12 22C12 22 3 16.5 3 9.5C3 6.42 5.42 4 8.5 4C10.24 4 11.91 4.81 13 6.08C14.09 4.81 15.76 4 17.5 4C20.58 4 23 6.42 23 9.5C23 16.5 12 22 12 22Z");
+        } else {
+            // Cœur vide — contour élégant
+            heart.setContent("M12 21.35L10.55 20.03C5.4 15.36 2 12.27 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.77-3.4 6.86-8.55 11.54L12 21.35z");
+        }
         heart.getStyleClass().add(filled ? "fav-btn-filled" : "fav-btn-outline");
     }
 

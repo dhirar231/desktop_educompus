@@ -24,7 +24,11 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.util.Duration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -53,6 +57,17 @@ public final class FrontCourseDetailController {
     @FXML private ProgressIndicator translateSpinner;
     @FXML private Label translateStatusLabel;
 
+    // Labels statiques traduisibles
+    @FXML private Label lblAbout;
+    @FXML private Label lblChapitres;
+    @FXML private Label lblInfos;
+    @FXML private Label lblFormateur;
+    @FXML private Label lblDuree;
+    @FXML private Label lblChapitresInfo;
+    @FXML private Label lblNiveau;
+    @FXML private Label lblDate;
+    @FXML private Label lblProgression;
+
     // Widget mini traducteur
     @FXML private javafx.scene.layout.StackPane miniTranslatorWidget;
     @FXML private ComboBox<MyMemoryTranslationService.Language> miniSourceLang;
@@ -65,6 +80,21 @@ public final class FrontCourseDetailController {
     @FXML private Button btnCloseMiniWidget;
     @FXML private ProgressIndicator miniSpinner;
     @FXML private Label miniStatus;
+
+    // Composants pour le lecteur vidéo intégré
+    @FXML private StackPane videoModal;
+    @FXML private javafx.scene.media.MediaView mediaView;
+    @FXML private Label videoTitle;
+    @FXML private Button playPauseBtn;
+    @FXML private Button closeVideoBtn;
+    @FXML private Button fullscreenBtn;
+    @FXML private javafx.scene.control.Slider volumeSlider;
+    @FXML private javafx.scene.control.Slider progressSlider;
+    @FXML private Label timeLabel;
+
+    // Variables pour la gestion du lecteur vidéo
+    private MediaPlayer currentMediaPlayer;
+    private boolean isPlaying = false;
 
     private final CourseManagementRepository repo = new CourseManagementRepository();
     private final ChapitreProgressRepository progressRepo = new ChapitreProgressRepository();
@@ -90,6 +120,9 @@ public final class FrontCourseDetailController {
 
     @FXML
     private void initialize() {
+        // DIAGNOSTIC: Vérifier l'état des composants à l'initialisation
+        com.educompus.debug.VideoPlayerDiagnostic.afficherRapportDiagnostic(this, "INITIALIZE");
+        
         // Initialiser le ComboBox des langues
         if (langCombo != null) {
             langCombo.setItems(FXCollections.observableArrayList(MyMemoryTranslationService.Language.values()));
@@ -121,6 +154,22 @@ public final class FrontCourseDetailController {
             miniStatus.setVisible(false);
             miniStatus.setManaged(false);
         }
+
+        // Initialiser le modal vidéo
+        if (videoModal != null) {
+            videoModal.setVisible(false);
+            videoModal.setManaged(false);
+            
+            // Ajouter la gestion des événements clavier pour fermer avec Échap
+            videoModal.setOnKeyPressed(event -> {
+                if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                    onCloseVideo();
+                }
+            });
+            
+            // Permettre au modal de recevoir le focus pour les événements clavier
+            videoModal.setFocusTraversable(true);
+        }
     }
 
     @FXML
@@ -133,6 +182,7 @@ public final class FrontCourseDetailController {
         if (targetLang == MyMemoryTranslationService.Language.FR) {
             currentLang = MyMemoryTranslationService.Language.FR;
             populate();
+            restoreStaticLabels();
             return;
         }
 
@@ -146,6 +196,24 @@ public final class FrontCourseDetailController {
                 // Traduire titre et description du cours
                 String newTitre = MyMemoryTranslationService.translate(cours.getTitre(), SOURCE_LANG, toLang);
                 String newDesc  = MyMemoryTranslationService.translate(cours.getDescription(), SOURCE_LANG, toLang);
+
+                // Traduire les labels statiques de la page
+                String tAbout        = MyMemoryTranslationService.translate("À propos de ce cours", SOURCE_LANG, toLang);
+                String tChapitres    = MyMemoryTranslationService.translate("Chapitres", SOURCE_LANG, toLang);
+                String tInfos        = MyMemoryTranslationService.translate("Informations", SOURCE_LANG, toLang);
+                String tFormateur    = MyMemoryTranslationService.translate("Formateur", SOURCE_LANG, toLang);
+                String tDuree        = MyMemoryTranslationService.translate("Durée totale", SOURCE_LANG, toLang);
+                String tNiveau       = MyMemoryTranslationService.translate("Niveau", SOURCE_LANG, toLang);
+                String tDate         = MyMemoryTranslationService.translate("Date de création", SOURCE_LANG, toLang);
+                String tProgression  = MyMemoryTranslationService.translate("Ma progression", SOURCE_LANG, toLang);
+                String tMarquerLu    = MyMemoryTranslationService.translate("Marquer comme lu", SOURCE_LANG, toLang);
+                String tLu           = MyMemoryTranslationService.translate("Lu", SOURCE_LANG, toLang);
+                String tTDs          = MyMemoryTranslationService.translate("Travaux Dirigés", SOURCE_LANG, toLang);
+                String tVideos       = MyMemoryTranslationService.translate("Vidéos explicatives", SOURCE_LANG, toLang);
+                String tTelecharger  = MyMemoryTranslationService.translate("Télécharger", SOURCE_LANG, toLang);
+                String tRegarder     = MyMemoryTranslationService.translate("Regarder", SOURCE_LANG, toLang);
+                String tDescription  = MyMemoryTranslationService.translate("Description", SOURCE_LANG, toLang);
+                String tRetour       = MyMemoryTranslationService.translate("Retour aux cours", SOURCE_LANG, toLang);
 
                 // Charger et traduire les chapitres, TD et vidéos
                 List<Chapitre> chapitres = repo.listChapitresByCoursId(cours.getId());
@@ -168,8 +236,30 @@ public final class FrontCourseDetailController {
                     translatedVideos.add(cloneVideo(video, vidTitre, vidDesc));
                 }
 
+                // Stocker les traductions pour les labels dynamiques des cartes
+                java.util.Map<String, String> uiT = new java.util.HashMap<>();
+                uiT.put("marquerLu", tMarquerLu);
+                uiT.put("lu", tLu);
+                uiT.put("tds", tTDs);
+                uiT.put("videos", tVideos);
+                uiT.put("telecharger", tTelecharger);
+                uiT.put("regarder", tRegarder);
+                uiT.put("description", tDescription);
+
                 Platform.runLater(() -> {
                     currentLang = targetLang;
+
+                    // ── Labels statiques ──
+                    if (lblAbout != null)       lblAbout.setText(tAbout);
+                    if (lblChapitres != null)   lblChapitres.setText(tChapitres);
+                    if (lblInfos != null)       lblInfos.setText(tInfos);
+                    if (lblFormateur != null)   lblFormateur.setText(tFormateur);
+                    if (lblDuree != null)       lblDuree.setText(tDuree);
+                    if (lblChapitresInfo != null) lblChapitresInfo.setText(tChapitres);
+                    if (lblNiveau != null)      lblNiveau.setText(tNiveau);
+                    if (lblDate != null)        lblDate.setText(tDate);
+                    if (lblProgression != null) lblProgression.setText(tProgression);
+
                     // Mettre à jour titre et description du cours
                     coursTitle.setText(newTitre);
                     coursDescription.setText(newDesc);
@@ -178,7 +268,7 @@ public final class FrontCourseDetailController {
                     // Reconstruire les cartes chapitres avec traduction complète
                     chapitresBox.getChildren().clear();
                     if (chapitres.isEmpty()) {
-                        Label empty = new Label("Aucun chapitre disponible.");
+                        Label empty = new Label(MyMemoryTranslationService.translate("Aucun chapitre disponible.", SOURCE_LANG, toLang));
                         empty.getStyleClass().add("page-subtitle");
                         chapitresBox.getChildren().add(empty);
                     } else {
@@ -187,14 +277,14 @@ public final class FrontCourseDetailController {
                             String chTitre = MyMemoryTranslationService.translate(ch.getTitre(), SOURCE_LANG, toLang);
                             String chDesc  = MyMemoryTranslationService.translate(ch.getDescription(), SOURCE_LANG, toLang);
                             Chapitre translated = cloneChapitre(ch, chTitre, chDesc);
-                            
+
                             // Filtrer les TD et vidéos traduits pour ce chapitre
                             List<Td> chTds = translatedTds.stream()
                                     .filter(t -> t.getChapitreId() == ch.getId()).toList();
                             List<VideoExplicative> chVideos = translatedVideos.stream()
                                     .filter(v -> v.getChapitreId() == ch.getId()).toList();
-                            
-                            chapitresBox.getChildren().add(buildChapitreCard(translated, chTds, chVideos));
+
+                            chapitresBox.getChildren().add(buildChapitreCard(translated, chTds, chVideos, uiT));
                         }
                     }
                     setTranslating(false);
@@ -215,6 +305,19 @@ public final class FrontCourseDetailController {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /** Restaure les labels statiques en français. */
+    private void restoreStaticLabels() {
+        if (lblAbout != null)         lblAbout.setText("À propos de ce cours");
+        if (lblChapitres != null)     lblChapitres.setText("Chapitres");
+        if (lblInfos != null)         lblInfos.setText("Informations");
+        if (lblFormateur != null)     lblFormateur.setText("Formateur");
+        if (lblDuree != null)         lblDuree.setText("Durée totale");
+        if (lblChapitresInfo != null) lblChapitresInfo.setText("Chapitres");
+        if (lblNiveau != null)        lblNiveau.setText("Niveau");
+        if (lblDate != null)          lblDate.setText("Date de création");
+        if (lblProgression != null)   lblProgression.setText("Ma progression");
     }
 
     private void setTranslating(boolean loading) {
@@ -296,13 +399,24 @@ public final class FrontCourseDetailController {
             dateLabel.setText("Créé le " + cours.getDateCreation().toString().substring(0, 10));
         }
 
-        if (cours.getDriveFolderId() != null && !cours.getDriveFolderId().equals("EN_ATTENTE") && !cours.getDriveFolderId().isBlank()) {
+        // Résoudre l'URL Drive : priorité à driveLink, fallback sur driveFolderId
+        String driveUrl = null;
+        String driveLink = cours.getDriveLink();
+        String driveFolderId = cours.getDriveFolderId();
+        if (driveLink != null && !driveLink.isBlank()) {
+            driveUrl = driveLink;
+        } else if (driveFolderId != null && !driveFolderId.isBlank() && !driveFolderId.equals("EN_ATTENTE")) {
+            driveUrl = "https://drive.google.com/drive/folders/" + driveFolderId;
+        }
+
+        if (driveUrl != null) {
+            final String finalDriveUrl = driveUrl;
             if (driveCard != null) {
                 driveCard.setVisible(true);
                 driveCard.setManaged(true);
             }
             if (btnOpenDrive != null) {
-                btnOpenDrive.setOnAction(e -> openUrl("https://drive.google.com/drive/folders/" + cours.getDriveFolderId()));
+                btnOpenDrive.setOnAction(e -> openUrl(finalDriveUrl));
             }
         } else {
             if (driveCard != null) {
@@ -332,7 +446,7 @@ public final class FrontCourseDetailController {
         for (Chapitre ch : chapitres) {
             List<Td> chTds = tds.stream().filter(t -> t.getChapitreId() == ch.getId()).toList();
             List<VideoExplicative> chVideos = videos.stream().filter(v -> v.getChapitreId() == ch.getId()).toList();
-            chapitresBox.getChildren().add(buildChapitreCard(ch, chTds, chVideos));
+            chapitresBox.getChildren().add(buildChapitreCard(ch, chTds, chVideos, null));
         }
 
         updateProgressBar(chapitres.size());
@@ -345,7 +459,12 @@ public final class FrontCourseDetailController {
         chapitresCountLabel.setText(done + "/" + total + " chapitre" + (total > 1 ? "s" : "") + " terminé" + (done > 1 ? "s" : ""));
     }
 
-    private VBox buildChapitreCard(Chapitre ch, List<Td> tds, List<VideoExplicative> videos) {
+    private VBox buildChapitreCard(Chapitre ch, List<Td> tds, List<VideoExplicative> videos,
+                                    java.util.Map<String, String> uiT) {
+        // Helper to get translated or default string
+        java.util.function.BiFunction<String, String, String> t =
+            (key, def) -> (uiT != null && uiT.containsKey(key)) ? uiT.get(key) : def;
+
         boolean isCompleted = completedIds.contains(ch.getId());
 
         VBox card = new VBox(0);
@@ -380,7 +499,7 @@ public final class FrontCourseDetailController {
             badges.getChildren().add(vidBadge);
         }
         if (ch.getFichierC() != null && !ch.getFichierC().isBlank()) {
-            Button pdfBtn = new Button("⬇ Chapitre");
+            Button pdfBtn = new Button("⬇ " + t.apply("telecharger", "Chapitre"));
             pdfBtn.getStyleClass().add("btn-rgb-compact");
             pdfBtn.setOnAction(e -> downloadFile(ch.getFichierC(), "chapitre_" + ch.getOrdre() + ".pdf"));
             badges.getChildren().add(pdfBtn);
@@ -402,7 +521,7 @@ public final class FrontCourseDetailController {
         if (!descText.isBlank()) {
             VBox descBox = new VBox(6);
             descBox.setStyle("-fx-background-color: rgba(6,106,201,0.05); -fx-background-radius: 10px; -fx-border-color: rgba(6,106,201,0.15); -fx-border-radius: 10px; -fx-border-width: 1; -fx-padding: 12 14 12 14;");
-            Label descTitle = new Label("📋  Description");
+            Label descTitle = new Label("📋  " + t.apply("description", "Description"));
             descTitle.setStyle("-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: -edu-primary; -fx-padding: 0 0 2 0;");
             Label descLabel = new Label(descText);
             descLabel.setStyle("-fx-text-fill: -edu-text; -fx-font-size: 13px; -fx-line-spacing: 3px;");
@@ -415,19 +534,19 @@ public final class FrontCourseDetailController {
         }
 
         if (!tds.isEmpty()) {
-            Label tdSection = new Label("Travaux Dirigés");
+            Label tdSection = new Label(t.apply("tds", "Travaux Dirigés"));
             tdSection.getStyleClass().add("chapitre-section-label");
             body.getChildren().add(tdSection);
-            for (Td td : tds) body.getChildren().add(buildTdRow(td));
+            for (Td td : tds) body.getChildren().add(buildTdRow(td, t.apply("telecharger", "Télécharger")));
         }
         if (!videos.isEmpty()) {
-            Label vidSection = new Label("Vidéos explicatives");
+            Label vidSection = new Label(t.apply("videos", "Vidéos explicatives"));
             vidSection.getStyleClass().add("chapitre-section-label");
             body.getChildren().add(vidSection);
-            for (VideoExplicative v : videos) body.getChildren().add(buildVideoRow(v));
+            for (VideoExplicative v : videos) body.getChildren().add(buildVideoRow(v, t.apply("regarder", "Regarder")));
         }
         if (tds.isEmpty() && videos.isEmpty()) {
-            Label noContent = new Label("Aucun contenu pour ce chapitre.");
+            Label noContent = new Label(t.apply("vide", "Aucun contenu pour ce chapitre."));
             noContent.getStyleClass().add("page-subtitle");
             body.getChildren().add(noContent);
         }
@@ -437,12 +556,14 @@ public final class FrontCourseDetailController {
         footer.setPadding(new Insets(8, 18, 14, 18));
         footer.setAlignment(Pos.CENTER_RIGHT);
 
-        // Icône SVG check
         javafx.scene.shape.SVGPath checkIcon = new javafx.scene.shape.SVGPath();
         checkIcon.setContent("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z");
         checkIcon.setScaleX(0.7); checkIcon.setScaleY(0.7);
 
-        Button doneBtn = new Button(isCompleted ? "  Lu" : "  Marquer comme lu");
+        String luText = "  " + t.apply("lu", "Lu");
+        String marquerText = "  " + t.apply("marquerLu", "Marquer comme lu");
+
+        Button doneBtn = new Button(isCompleted ? luText : marquerText);
         doneBtn.setGraphic(checkIcon);
         if (isCompleted) {
             checkIcon.setStyle("-fx-fill: #0cbc87;");
@@ -457,22 +578,20 @@ public final class FrontCourseDetailController {
             progressRepo.setCompleted(AppState.getUserId(), ch.getId(), nowCompleted);
             if (nowCompleted) completedIds.add(ch.getId());
             else completedIds.remove(ch.getId());
-            // Rafraîchir la vue
             List<Chapitre> allChapitres = repo.listChapitresByCoursId(cours.getId());
             updateProgressBar(allChapitres.size());
-            // Mettre à jour visuellement cette carte
             if (nowCompleted) {
                 card.setStyle("-fx-border-color: #0cbc87; -fx-border-width: 2;");
                 num.setText("✓");
                 num.setStyle("-fx-background-color: #0cbc87; -fx-text-fill: white;");
-                doneBtn.setText("  Lu");
+                doneBtn.setText(luText);
                 checkIcon.setStyle("-fx-fill: #0cbc87;");
                 doneBtn.setStyle("-fx-background-color: rgba(12,188,135,0.12); -fx-text-fill: #0cbc87; -fx-font-weight: 800; -fx-border-color: #0cbc87; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
             } else {
                 card.setStyle("");
                 num.setText(String.valueOf(ch.getOrdre()));
                 num.setStyle("");
-                doneBtn.setText("  Marquer comme lu");
+                doneBtn.setText(marquerText);
                 checkIcon.setStyle("-fx-fill: -edu-primary;");
                 doneBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -edu-primary; -fx-font-weight: 700; -fx-border-color: -edu-primary; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
             }
@@ -495,6 +614,10 @@ public final class FrontCourseDetailController {
     }
 
     private HBox buildTdRow(Td td) {
+        return buildTdRow(td, "Télécharger");
+    }
+
+    private HBox buildTdRow(Td td, String telechargerLabel) {
         HBox row = new HBox(12);
         row.getStyleClass().add("resource-row");
         row.setAlignment(Pos.CENTER_LEFT);
@@ -510,7 +633,7 @@ public final class FrontCourseDetailController {
         desc.setWrapText(true);
         if (!desc.getText().isBlank()) info.getChildren().add(desc);
         info.getChildren().add(0, name);
-        Button openBtn = new Button("⬇ Télécharger");
+        Button openBtn = new Button("⬇ " + telechargerLabel);
         openBtn.getStyleClass().add("btn-rgb-compact");
         boolean hasFile = td.getFichier() != null && !td.getFichier().isBlank();
         openBtn.setDisable(!hasFile);
@@ -520,31 +643,206 @@ public final class FrontCourseDetailController {
     }
 
     private HBox buildVideoRow(VideoExplicative video) {
+        return buildVideoRow(video, "Regarder");
+    }
+
+    private HBox buildVideoRow(VideoExplicative video, String regarderLabel) {
         HBox row = new HBox(12);
         row.getStyleClass().add("resource-row");
         row.setAlignment(Pos.CENTER_LEFT);
         row.setPadding(new Insets(8, 12, 8, 12));
+
         Label icon = new Label("🎬");
         icon.setStyle("-fx-font-size: 16px;");
-        VBox info = new VBox(2);
+
+        VBox info = new VBox(4);
         HBox.setHgrow(info, Priority.ALWAYS);
+
         Label name = new Label(safe(video.getTitre()));
         name.getStyleClass().add("resource-name");
-        Label desc = new Label(safe(video.getDescription()));
-        desc.getStyleClass().add("page-subtitle");
-        desc.setWrapText(true);
-        if (!desc.getText().isBlank()) info.getChildren().add(desc);
-        info.getChildren().add(0, name);
-        String url = safe(video.getUrlVideo());
-        Button openBtn = new Button("▶ Regarder");
-        openBtn.getStyleClass().add("btn-rgb-compact");
-        openBtn.setDisable(url.isBlank());
-        if (!url.isBlank()) {
-            openBtn.setTooltip(new Tooltip(url));
-            openBtn.setOnAction(e -> openUrl(url));
+        info.getChildren().add(name);
+
+        String desc = safe(video.getDescription());
+        if (!desc.isBlank()) {
+            Label descLabel = new Label(desc);
+            descLabel.getStyleClass().add("page-subtitle");
+            descLabel.setWrapText(true);
+            info.getChildren().add(descLabel);
         }
-        row.getChildren().addAll(icon, info, openBtn);
+
+        String url = safe(video.getUrlVideo());
+        boolean isDriveLink = url.contains("drive.google.com");
+
+        // Badge Drive si lien Google Drive
+        if (isDriveLink) {
+            Label driveBadge = new Label("☁️ Google Drive");
+            driveBadge.getStyleClass().addAll("chip", "chip-success");
+            driveBadge.setStyle("-fx-font-size: 10px;");
+            info.getChildren().add(driveBadge);
+        }
+
+        HBox buttons = new HBox(8);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+
+        if (!url.isBlank()) {
+            if (isDriveLink) {
+                // Bouton principal : ouvrir sur Drive
+                Button driveBtn = new Button("☁️ Voir sur Drive");
+                driveBtn.getStyleClass().add("btn-rgb");
+                driveBtn.setStyle("-fx-font-size: 12px;");
+                driveBtn.setTooltip(new Tooltip(url));
+                driveBtn.setOnAction(e -> {
+                    try { com.educompus.util.UrlOpener.open(url); }
+                    catch (Exception ex) { ex.printStackTrace(); }
+                });
+
+                // Bouton copier le lien
+                Button copyBtn = new Button("📋");
+                copyBtn.getStyleClass().add("btn-rgb-outline");
+                copyBtn.setTooltip(new Tooltip("Copier le lien Drive"));
+                copyBtn.setOnAction(e -> {
+                    javafx.scene.input.Clipboard cb = javafx.scene.input.Clipboard.getSystemClipboard();
+                    javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();
+                    cc.putString(url);
+                    cb.setContent(cc);
+                    copyBtn.setText("✅");
+                    javafx.animation.PauseTransition p = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(2));
+                    p.setOnFinished(ev -> copyBtn.setText("📋"));
+                    p.play();
+                });
+
+                buttons.getChildren().addAll(driveBtn, copyBtn);
+            } else if (isVideoUrl(url)) {
+                Button playBtn = new Button("▶ Regarder");
+                playBtn.getStyleClass().add("btn-rgb-compact");
+                playBtn.setTooltip(new Tooltip(url));
+                playBtn.setOnAction(e -> openVideoInApp(url, safe(video.getTitre())));
+                buttons.getChildren().add(playBtn);
+            } else {
+                Button openBtn = new Button("▶ Regarder");
+                openBtn.getStyleClass().add("btn-rgb-compact");
+                openBtn.setTooltip(new Tooltip(url));
+                openBtn.setOnAction(e -> openUrl(url));
+                buttons.getChildren().add(openBtn);
+            }
+        } else {
+            // Pas d'URL : générer une vidéo IA contextuelle
+            Button genBtn = new Button("🤖 Générer vidéo");
+            genBtn.getStyleClass().add("btn-rgb-compact");
+            genBtn.setTooltip(new Tooltip("Générer et lire une vidéo IA contextuelle"));
+            genBtn.setOnAction(e -> genererEtOuvrirVideoContextuelle(video));
+            buttons.getChildren().add(genBtn);
+        }
+
+        row.getChildren().addAll(icon, info, buttons);
         return row;
+    }
+
+    /**
+     * Génère et ouvre une vidéo contextuelle avec audio basée sur les informations du chapitre.
+     * Résout le problème critique de l'audio manquant dans les vidéos générées.
+     */
+    private void genererEtOuvrirVideoContextuelle(VideoExplicative video) {
+        // Afficher un indicateur de chargement
+        javafx.scene.control.Alert loadingAlert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        loadingAlert.setTitle("Génération vidéo IA");
+        loadingAlert.setHeaderText("Génération en cours...");
+        loadingAlert.setContentText("Création d'une vidéo contextuelle avec synthèse vocale.\nVeuillez patienter...");
+        
+        // Rendre l'alerte non-modale et l'afficher
+        loadingAlert.initModality(javafx.stage.Modality.NONE);
+        loadingAlert.show();
+        
+        // Exécuter la génération dans un thread séparé pour ne pas bloquer l'UI
+        Task<String> generationTask = new Task<>() {
+            @Override
+            protected String call() throws Exception {
+                // Obtenir les informations contextuelles du chapitre
+                String titreChapitre = null;
+                String descriptionChapitre = null;
+                String niveau = cours != null ? cours.getNiveau() : null;
+                String domaine = cours != null ? cours.getDomaine() : null;
+                
+                // Trouver le chapitre parent de cette vidéo
+                if (cours != null && video.getChapitreId() > 0) {
+                    try {
+                        List<com.educompus.model.Chapitre> chapitres = repo.listChapitresByCoursId(cours.getId());
+                        for (com.educompus.model.Chapitre ch : chapitres) {
+                            if (ch.getId() == video.getChapitreId()) {
+                                titreChapitre = ch.getTitre();
+                                descriptionChapitre = ch.getDescription();
+                                break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Erreur lors de la récupération du chapitre: " + e.getMessage());
+                    }
+                }
+                
+                // Générer la vidéo contextuelle avec audio
+                String cheminVideo = com.educompus.service.LocalVideoGeneratorService.genererVideoContextuelle(
+                    String.valueOf(video.getId()),
+                    safe(video.getTitre()),
+                    safe(video.getDescription()),
+                    titreChapitre,
+                    descriptionChapitre,
+                    niveau,
+                    domaine,
+                    "Assistant IA EduCompus", // Avatar par défaut
+                    "Synthèse vocale française" // Voix par défaut
+                );
+                
+                return cheminVideo;
+            }
+            
+            @Override
+            protected void succeeded() {
+                Platform.runLater(() -> {
+                    loadingAlert.close();
+                    
+                    String cheminVideo = getValue();
+                    if (cheminVideo != null && !cheminVideo.isBlank()) {
+                        // Ouvrir la vidéo générée dans le lecteur intégré
+                        openVideoInApp("file:///" + cheminVideo.replace("\\", "/"), safe(video.getTitre()));
+                        
+                        // Afficher un message de succès
+                        javafx.scene.control.Alert successAlert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                        successAlert.setTitle("Vidéo générée");
+                        successAlert.setHeaderText("Succès !");
+                        successAlert.setContentText("Vidéo contextuelle avec audio générée et ouverte dans le lecteur intégré.\n\n" +
+                                                   "Fichier: " + cheminVideo);
+                        successAlert.showAndWait();
+                    } else {
+                        // Afficher un message d'erreur
+                        javafx.scene.control.Alert errorAlert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                        errorAlert.setTitle("Erreur de génération");
+                        errorAlert.setHeaderText("Impossible de générer la vidéo");
+                        errorAlert.setContentText("La génération de la vidéo contextuelle a échoué.\n\n" +
+                                                 "Vérifiez que FFmpeg est installé et accessible depuis le PATH système.");
+                        errorAlert.showAndWait();
+                    }
+                });
+            }
+            
+            @Override
+            protected void failed() {
+                Platform.runLater(() -> {
+                    loadingAlert.close();
+                    
+                    javafx.scene.control.Alert errorAlert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                    errorAlert.setTitle("Erreur de génération");
+                    errorAlert.setHeaderText("Échec de la génération vidéo");
+                    errorAlert.setContentText("Une erreur s'est produite lors de la génération de la vidéo contextuelle.\n\n" +
+                                             "Erreur: " + (getException() != null ? getException().getMessage() : "Inconnue"));
+                    errorAlert.showAndWait();
+                });
+            }
+        };
+        
+        // Lancer la tâche dans un thread séparé
+        Thread generationThread = new Thread(generationTask);
+        generationThread.setDaemon(true);
+        generationThread.start();
     }
 
     @FXML
@@ -609,11 +907,20 @@ public final class FrontCourseDetailController {
 
     private void openUrl(String url) {
         if (url == null || url.isBlank()) return;
+        
+        // CORRECTION DU BUG: Vérifier si c'est une URL vidéo et utiliser le lecteur intégré
+        if (isVideoUrl(url)) {
+            // Utiliser le lecteur vidéo intégré pour les vidéos
+            openVideoInApp(url, "Lecture vidéo");
+            return;
+        }
+        
+        // Pour les URLs non-vidéo, utiliser UrlOpener comme avant
         try {
             com.educompus.util.UrlOpener.open(url);
         } catch (Exception e) {
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-            alert.setTitle("Erreur ouverture vidéo");
+            alert.setTitle("Erreur ouverture URL");
             alert.setHeaderText("Impossible d'ouvrir l'URL");
             alert.setContentText("URL : " + url + "\n\nErreur : " + e.getMessage());
             alert.showAndWait();
@@ -721,5 +1028,259 @@ public final class FrontCourseDetailController {
             miniStatus.setManaged(false);
         });
         pause.play();
+    }
+
+    // ── Méthodes pour le Lecteur Vidéo Intégré ──────────────────────────────
+
+    /**
+     * Détermine si une URL correspond à un fichier vidéo ou un service de streaming vidéo.
+     * Détecte les extensions vidéo et les services comme Vimeo, YouTube, etc.
+     */
+    private boolean isVideoUrl(String url) {
+        if (url == null || url.isBlank()) return false;
+        String lowerUrl = url.toLowerCase();
+        
+        // Extensions de fichiers vidéo
+        if (lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".avi") || 
+            lowerUrl.endsWith(".mov") || lowerUrl.endsWith(".wmv") || 
+            lowerUrl.endsWith(".webm") || lowerUrl.endsWith(".mkv") ||
+            lowerUrl.endsWith(".flv") || lowerUrl.endsWith(".m4v") ||
+            lowerUrl.endsWith(".3gp") || lowerUrl.endsWith(".ogv")) {
+            return true;
+        }
+        
+        // Services de streaming vidéo
+        if (lowerUrl.contains("player.vimeo.com") ||
+            lowerUrl.contains("youtube.com/watch") ||
+            lowerUrl.contains("youtu.be/") ||
+            lowerUrl.contains("dailymotion.com") ||
+            lowerUrl.contains("twitch.tv") ||
+            lowerUrl.contains("storage.googleapis.com") && lowerUrl.contains("video")) {
+            return true;
+        }
+        
+        // URLs contenant "video" dans le chemin (heuristique)
+        if (lowerUrl.contains("/video/") || lowerUrl.contains("/videos/")) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Ouvre une vidéo dans le lecteur intégré MediaView.
+     */
+    private void openVideoInApp(String url, String title) {
+        if (url == null || url.isBlank()) return;
+        
+        // DIAGNOSTIC: Vérifier l'état avant ouverture vidéo
+        boolean composantsOK = com.educompus.debug.VideoPlayerDiagnostic.verifierComposantsInitialises(this);
+        com.educompus.debug.VideoPlayerDiagnostic.logDiagnosticRapide("OPEN_VIDEO_IN_APP", composantsOK);
+        
+        try {
+            // VÉRIFICATION CRITIQUE : S'assurer que les composants FXML sont initialisés
+            if (videoModal == null || mediaView == null) {
+                System.err.println("⚠️ COMPOSANTS FXML NON INITIALISÉS - Fallback vers navigateur externe");
+                System.err.println("   videoModal: " + (videoModal != null ? "OK" : "NULL"));
+                System.err.println("   mediaView: " + (mediaView != null ? "OK" : "NULL"));
+                System.err.println("   Cela peut indiquer un problème de chargement FXML");
+                System.err.println("   Contexte: Rôle=" + AppState.getRole() + ", User=" + AppState.getUserId());
+                
+                // Fallback vers UrlOpener pour éviter un écran noir
+                com.educompus.util.UrlOpener.open(url);
+                return;
+            }
+            
+            // Nettoyer le lecteur précédent s'il existe
+            if (currentMediaPlayer != null) {
+                currentMediaPlayer.stop();
+                currentMediaPlayer.dispose();
+                currentMediaPlayer = null;
+            }
+
+            // Créer le nouveau Media et MediaPlayer
+            Media media = new Media(url);
+            currentMediaPlayer = new MediaPlayer(media);
+            
+            // Configurer MediaView
+            if (mediaView != null) {
+                mediaView.setMediaPlayer(currentMediaPlayer);
+            }
+            
+            // Configurer le titre
+            if (videoTitle != null) {
+                videoTitle.setText(title != null && !title.isBlank() ? title : "Lecture vidéo");
+            }
+            
+            // Configurer les contrôles
+            setupVideoControls();
+            
+            // Afficher le modal
+            if (videoModal != null) {
+                videoModal.setVisible(true);
+                videoModal.setManaged(true);
+                videoModal.toFront();
+            }
+            
+            // Démarrer la lecture automatique
+            currentMediaPlayer.setAutoPlay(true);
+            isPlaying = true;
+            updatePlayPauseButton();
+            
+            System.out.println("✅ Vidéo ouverte dans le lecteur intégré: " + title);
+            
+        } catch (Exception e) {
+            // En cas d'erreur, fallback vers UrlOpener
+            System.err.println("❌ Erreur lors de l'ouverture de la vidéo: " + e.getMessage());
+            e.printStackTrace();
+            
+            try {
+                com.educompus.util.UrlOpener.open(url);
+                System.out.println("🔄 Fallback vers navigateur externe réussi");
+            } catch (Exception fallbackError) {
+                System.err.println("❌ Échec du fallback: " + fallbackError.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Configure les contrôles du lecteur vidéo.
+     */
+    private void setupVideoControls() {
+        if (currentMediaPlayer == null) return;
+        
+        // Configurer le slider de volume
+        if (volumeSlider != null) {
+            volumeSlider.setValue(currentMediaPlayer.getVolume());
+            volumeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (currentMediaPlayer != null) {
+                    currentMediaPlayer.setVolume(newVal.doubleValue());
+                }
+            });
+        }
+        
+        // Configurer le slider de progression
+        if (progressSlider != null && timeLabel != null) {
+            currentMediaPlayer.currentTimeProperty().addListener((obs, oldTime, newTime) -> {
+                if (!progressSlider.isValueChanging()) {
+                    Duration totalDuration = currentMediaPlayer.getTotalDuration();
+                    if (totalDuration != null && totalDuration.greaterThan(Duration.ZERO)) {
+                        double progress = newTime.toMillis() / totalDuration.toMillis() * 100.0;
+                        progressSlider.setValue(progress);
+                        
+                        // Mettre à jour le label de temps
+                        String currentTimeStr = formatDuration(newTime);
+                        String totalTimeStr = formatDuration(totalDuration);
+                        timeLabel.setText(currentTimeStr + " / " + totalTimeStr);
+                    }
+                }
+            });
+            
+            progressSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+                if (progressSlider.isValueChanging() && currentMediaPlayer != null) {
+                    Duration totalDuration = currentMediaPlayer.getTotalDuration();
+                    if (totalDuration != null) {
+                        Duration seekTime = totalDuration.multiply(newVal.doubleValue() / 100.0);
+                        currentMediaPlayer.seek(seekTime);
+                    }
+                }
+            });
+        }
+        
+        // Écouter les changements d'état du lecteur
+        currentMediaPlayer.statusProperty().addListener((obs, oldStatus, newStatus) -> {
+            Platform.runLater(() -> {
+                switch (newStatus) {
+                    case PLAYING:
+                        isPlaying = true;
+                        updatePlayPauseButton();
+                        break;
+                    case PAUSED:
+                    case STOPPED:
+                        isPlaying = false;
+                        updatePlayPauseButton();
+                        break;
+                    case READY:
+                        // Vidéo prête, on peut afficher la durée totale
+                        if (timeLabel != null) {
+                            Duration totalDuration = currentMediaPlayer.getTotalDuration();
+                            if (totalDuration != null) {
+                                timeLabel.setText("00:00 / " + formatDuration(totalDuration));
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            });
+        });
+    }
+
+    /**
+     * Formate une durée en format MM:SS.
+     */
+    private String formatDuration(Duration duration) {
+        if (duration == null) return "00:00";
+        int minutes = (int) duration.toMinutes();
+        int seconds = (int) (duration.toSeconds() % 60);
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    /**
+     * Met à jour le texte du bouton play/pause.
+     */
+    private void updatePlayPauseButton() {
+        if (playPauseBtn != null) {
+            playPauseBtn.setText(isPlaying ? "⏸" : "▶");
+        }
+    }
+
+    @FXML
+    private void onPlayPause() {
+        if (currentMediaPlayer == null) return;
+        
+        if (isPlaying) {
+            currentMediaPlayer.pause();
+        } else {
+            currentMediaPlayer.play();
+        }
+    }
+
+    @FXML
+    private void onCloseVideo() {
+        // Arrêter et nettoyer le lecteur
+        if (currentMediaPlayer != null) {
+            currentMediaPlayer.stop();
+            currentMediaPlayer.dispose();
+            currentMediaPlayer = null;
+        }
+        
+        // Masquer le modal
+        if (videoModal != null) {
+            videoModal.setVisible(false);
+            videoModal.setManaged(false);
+        }
+        
+        // Réinitialiser les contrôles
+        isPlaying = false;
+        if (playPauseBtn != null) playPauseBtn.setText("▶");
+        if (timeLabel != null) timeLabel.setText("00:00 / 00:00");
+        if (progressSlider != null) progressSlider.setValue(0);
+    }
+
+    @FXML
+    private void onToggleFullscreen() {
+        // Pour l'instant, on peut juste agrandir la fenêtre ou afficher un message
+        // L'implémentation complète du plein écran nécessiterait plus de travail
+        if (mediaView != null) {
+            // Basculer entre taille normale et agrandie
+            if (mediaView.getFitWidth() == 760) {
+                mediaView.setFitWidth(1200);
+                mediaView.setFitHeight(675);
+            } else {
+                mediaView.setFitWidth(760);
+                mediaView.setFitHeight(428);
+            }
+        }
     }
 }

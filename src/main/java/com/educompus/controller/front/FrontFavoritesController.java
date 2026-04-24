@@ -127,19 +127,22 @@ public final class FrontFavoritesController {
         StackPane.setAlignment(niveauChip, Pos.TOP_LEFT);
         StackPane.setMargin(niveauChip, new Insets(10));
 
-        // Bouton retirer des favoris (❤ plein)
+        // Bouton cœur favori → sous l'image, sans fond
         StackPane favBtn = buildFavBtn(cours, true, card);
-        StackPane.setAlignment(favBtn, Pos.BOTTOM_RIGHT);
-        StackPane.setMargin(favBtn, new Insets(0, 10, 10, 0));
 
         banner.getChildren().add(iv);
         if (!domainChip.getText().isBlank()) banner.getChildren().add(domainChip);
         if (!niveauChip.getText().isBlank()) banner.getChildren().add(niveauChip);
-        banner.getChildren().add(favBtn);
+
+        // Barre sous l'image : cœur à droite, sans fond
+        HBox favBar = new HBox();
+        favBar.setAlignment(Pos.CENTER_RIGHT);
+        favBar.setPadding(new Insets(4, 10, 0, 10));
+        favBar.getChildren().add(favBtn);
 
         // ── Corps ────────────────────────────────────────────────────────────
         VBox body = new VBox(8);
-        body.setPadding(new Insets(14, 16, 14, 16));
+        body.setPadding(new Insets(6, 16, 14, 16));
 
         Label title = new Label(safe(cours.getTitre()));
         title.getStyleClass().add("project-card-title");
@@ -176,7 +179,7 @@ public final class FrontFavoritesController {
         // Clic carte → détail ; le bouton cœur consomme lui-même l'événement (e.consume() dans buildFavBtn)
         card.setOnMouseClicked(e -> openDetail(cours));
 
-        card.getChildren().addAll(banner, body);
+        card.getChildren().addAll(banner, favBar, body);
         return card;
     }
 
@@ -189,7 +192,8 @@ public final class FrontFavoritesController {
         heart.getStyleClass().add(isFav ? "fav-btn-filled" : "fav-btn-outline");
 
         StackPane btn = new StackPane(heart);
-        btn.getStyleClass().add("fav-btn");
+        // Utiliser le style sans fond comme les cours
+        btn.getStyleClass().add("fav-btn-transparent");
         btn.setMinSize(32, 32);
         btn.setPrefSize(32, 32);
         btn.setMaxSize(32, 32);

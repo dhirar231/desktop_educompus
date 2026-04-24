@@ -18,6 +18,10 @@ public final class VideoExplicative {
     private String aiScript;
     private String generationStatus; // "PENDING", "PROCESSING", "COMPLETED", "ERROR"
     private String didVideoId; // ID de la vidéo D-ID pour le suivi
+    
+    // Nouveaux champs pour la gestion de contenu
+    private boolean important = false;
+    private String driveLink;
 
     public int getId() {
         return id;
@@ -138,5 +142,21 @@ public final class VideoExplicative {
 
     public void setDidVideoId(String didVideoId) {
         this.didVideoId = didVideoId;
+    }
+
+    public boolean isImportant() {
+        return important;
+    }
+
+    public void setImportant(boolean important) {
+        this.important = important;
+    }
+
+    public String getDriveLink() {
+        return driveLink;
+    }
+
+    public void setDriveLink(String driveLink) {
+        this.driveLink = driveLink;
     }
 }
