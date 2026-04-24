@@ -32,6 +32,15 @@
             <TextArea fx:id="fieldDescription" promptText="Description…"
                       styleClass="field" prefRowCount="3" wrapText="true" maxWidth="Infinity"/>
             <Label fx:id="errDescription" text="" styleClass="field-error" managed="false" visible="false"/>
+            <!-- Génération IA -->
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <TextField fx:id="fieldMotsCles" promptText="Mots-clés pour améliorer la description…"
+                           styleClass="field" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnGenererDesc" text="✨  Améliorer avec IA"
+                        styleClass="btn-ghost"
+                        style="-fx-text-fill: #7c3aed; -fx-font-weight: 700;"
+                        onAction="#onGenererDescription"/>
+            </HBox>
         </VBox>
 
         <!-- Prix + Stock -->

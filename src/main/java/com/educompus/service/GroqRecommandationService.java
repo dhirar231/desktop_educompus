@@ -59,7 +59,29 @@ public class GroqRecommandationService {
                 : recommandes;
     }
 
-    // ── Profil client ─────────────────────────────────────────────────────────
+    // ── Génération de description marketing ──────────────────────────────────
+
+    /**
+     * Génère une description marketing professionnelle pour un produit éducatif.
+     * @param nom       nom du produit
+     * @param type      type (Livre, Cours en ligne, etc.)
+     * @param categorie catégorie (Mathématiques, Informatique, etc.)
+     * @param motsCles  mots-clés supplémentaires saisis par l'admin (optionnel)
+     * @return description générée (2-3 phrases, max 200 caractères)
+     */
+    public String genererDescription(String nom, String type, String categorie, String motsCles) throws Exception {
+        String prompt = "Tu es un expert en marketing éducatif. " +
+                "Génère une description professionnelle et captivante pour un produit éducatif. " +
+                "La description doit faire 3 à 4 phrases maximum, être en français, " +
+                "mettre en valeur les bénéfices pour l'apprenant, et ne pas dépasser 200 caractères.\n\n" +
+                "Produit : " + nom + "\n" +
+                "Type : " + type + "\n" +
+                "Catégorie : " + categorie + "\n" +
+                (motsCles != null && !motsCles.isBlank() ? "Mots-clés : " + motsCles + "\n" : "") +
+                "\nRéponds UNIQUEMENT avec la description, sans guillemets ni introduction.";
+
+        return appellerGroq(prompt).trim();
+    }
 
     private static class ProfilClient {
         List<String> achats     = new ArrayList<>();
