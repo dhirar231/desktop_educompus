@@ -9,8 +9,7 @@ import com.educompus.repository.ChapitreProgressRepository;
 import com.educompus.repository.CourseManagementRepository;
 import com.educompus.service.CourseFavoriteService;
 import com.educompus.service.MyMemoryTranslationService;
-import com.educompus.nav.Navigator;
-import javafx.application.Platform;
+import com.educompus.nav.Navigator;import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -102,6 +101,10 @@ public final class FrontCourseDetailController {
     private Set<Integer> completedIds;
     private CourseFavoriteService favoriteService;
     private int favoriteStudentId;
+
+    // ── Module Session Live ──
+    private final FrontSessionLiveController sessionLiveCtrl = new FrontSessionLiveController();
+    @FXML private VBox sessionLiveContainer;
 
     // Langue source détectée (toujours "fr" pour ce projet)
     private static final String SOURCE_LANG = "fr";
@@ -450,6 +453,12 @@ public final class FrontCourseDetailController {
         }
 
         updateProgressBar(chapitres.size());
+
+        // ── Injecter le module Session Live ──
+        if (sessionLiveContainer != null) {
+            sessionLiveContainer.getChildren().setAll(sessionLiveCtrl.getRootNode());
+            sessionLiveCtrl.setCours(cours.getId(), safe(cours.getTitre()));
+        }
     }
 
     private void updateProgressBar(int total) {
@@ -469,7 +478,7 @@ public final class FrontCourseDetailController {
 
         VBox card = new VBox(0);
         card.getStyleClass().add("card");
-        if (isCompleted) card.setStyle("-fx-border-color: #0cbc87; -fx-border-width: 2;");
+        if (isCompleted) card.setStyle("-fx-border-color: #29b6d8; -fx-border-width: 2;");
 
         // ── Header ──
         HBox header = new HBox(12);
@@ -480,7 +489,7 @@ public final class FrontCourseDetailController {
         // Numéro avec check si terminé
         Label num = new Label(isCompleted ? "✓" : String.valueOf(ch.getOrdre()));
         num.getStyleClass().add("chapitre-num");
-        if (isCompleted) num.setStyle("-fx-background-color: #0cbc87; -fx-text-fill: white;");
+        if (isCompleted) num.setStyle("-fx-background-color: #29b6d8; -fx-text-fill: white;");
 
         Label titre = new Label(safe(ch.getTitre()));
         titre.getStyleClass().add("chapitre-title");
@@ -566,8 +575,8 @@ public final class FrontCourseDetailController {
         Button doneBtn = new Button(isCompleted ? luText : marquerText);
         doneBtn.setGraphic(checkIcon);
         if (isCompleted) {
-            checkIcon.setStyle("-fx-fill: #0cbc87;");
-            doneBtn.setStyle("-fx-background-color: rgba(12,188,135,0.12); -fx-text-fill: #0cbc87; -fx-font-weight: 800; -fx-border-color: #0cbc87; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
+            checkIcon.setStyle("-fx-fill: #29b6d8;");
+            doneBtn.setStyle("-fx-background-color: rgba(41,182,216,0.12); -fx-text-fill: #29b6d8; -fx-font-weight: 800; -fx-border-color: #29b6d8; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
         } else {
             checkIcon.setStyle("-fx-fill: -edu-primary;");
             doneBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -edu-primary; -fx-font-weight: 700; -fx-border-color: -edu-primary; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
@@ -581,12 +590,12 @@ public final class FrontCourseDetailController {
             List<Chapitre> allChapitres = repo.listChapitresByCoursId(cours.getId());
             updateProgressBar(allChapitres.size());
             if (nowCompleted) {
-                card.setStyle("-fx-border-color: #0cbc87; -fx-border-width: 2;");
+                card.setStyle("-fx-border-color: #29b6d8; -fx-border-width: 2;");
                 num.setText("✓");
-                num.setStyle("-fx-background-color: #0cbc87; -fx-text-fill: white;");
+                num.setStyle("-fx-background-color: #29b6d8; -fx-text-fill: white;");
                 doneBtn.setText(luText);
-                checkIcon.setStyle("-fx-fill: #0cbc87;");
-                doneBtn.setStyle("-fx-background-color: rgba(12,188,135,0.12); -fx-text-fill: #0cbc87; -fx-font-weight: 800; -fx-border-color: #0cbc87; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
+                checkIcon.setStyle("-fx-fill: #29b6d8;");
+                doneBtn.setStyle("-fx-background-color: rgba(41,182,216,0.12); -fx-text-fill: #29b6d8; -fx-font-weight: 800; -fx-border-color: #29b6d8; -fx-border-width: 1.5; -fx-border-radius: 999px; -fx-background-radius: 999px; -fx-padding: 8 18 8 14; -fx-cursor: hand;");
             } else {
                 card.setStyle("");
                 num.setText(String.valueOf(ch.getOrdre()));

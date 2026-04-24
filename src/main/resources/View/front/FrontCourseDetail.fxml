@@ -77,6 +77,10 @@
                             </HBox>
                             <VBox fx:id="chapitresBox" spacing="10"/>
                         </VBox>
+
+                        <!-- Sessions Live (injecté dynamiquement) -->
+                        <VBox fx:id="sessionLiveContainer" spacing="0"/>
+
                     </VBox>
 
                     <!-- Colonne droite : coordonnées -->
@@ -160,7 +164,7 @@
 
                         <!-- Google Drive -->
                         <VBox fx:id="driveCard" spacing="12" visible="false" managed="false"
-                              style="-fx-background-color: linear-gradient(to bottom right, #87CEEB, #B0E0FF); -fx-background-radius: 14px; -fx-padding: 18 16 18 16; -fx-effect: dropshadow(gaussian, rgba(135,206,235,0.50), 12, 0, 0, 4);">
+                              style="-fx-background-color: linear-gradient(to bottom right, #e8f4fd, #d0eaf8); -fx-background-radius: 14px; -fx-padding: 18 16 18 16; -fx-effect: dropshadow(gaussian, rgba(100,180,240,0.30), 12, 0, 0, 4);">
                             <HBox spacing="10" alignment="CENTER_LEFT">
                                 <Label text="☁️" style="-fx-font-size: 22px;"/>
                                 <VBox spacing="2">
@@ -173,7 +177,7 @@
                                    style="-fx-font-size: 11px; -fx-text-fill: #1a3a5c; -fx-line-spacing: 2px;"/>
                             <Button fx:id="btnOpenDrive"
                                     text="📂  Accéder au dossier Drive"
-                                    style="-fx-background-color: #1a3a5c; -fx-text-fill: white; -fx-font-weight: 800; -fx-font-size: 12px; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-padding: 9 14 9 14; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 6, 0, 0, 2);"/>
+                                    style="-fx-background-color: #4a90d9; -fx-text-fill: white; -fx-font-weight: 800; -fx-font-size: 12px; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-padding: 9 14 9 14; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(74,144,217,0.35), 6, 0, 0, 2);"/>
                         </VBox>
 
                     </VBox>

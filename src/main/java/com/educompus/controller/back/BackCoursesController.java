@@ -4,9 +4,14 @@ import com.educompus.model.Chapitre;
 import com.educompus.model.Cours;
 import com.educompus.model.Td;
 import com.educompus.model.VideoExplicative;
+import com.educompus.model.SessionLive;
+import com.educompus.model.SessionStatut;
 import com.educompus.repository.CourseManagementRepository;
+import com.educompus.repository.SessionLiveRepository;
 import com.educompus.service.CoursValidationService;
 import com.educompus.service.FormValidator;
+import com.educompus.service.SessionLiveMetierService;
+import com.educompus.service.SessionLiveValidationService;
 import com.educompus.service.ValidationResult;
 import com.educompus.util.Dialogs;
 import javafx.application.Platform;
@@ -41,6 +46,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import java.awt.Desktop;
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -83,6 +90,19 @@ public final class BackCoursesController {
     @FXML private ComboBox<String> videoSortCombo;
     @FXML private ListView<VideoExplicative> videoListView;
 
+    // ── Sessions Live ──
+    @FXML private TextField sessionSearchField;
+    @FXML private ComboBox<Cours> sessionCoursFilterCombo;
+    @FXML private ComboBox<String> sessionStatutFilterCombo;
+    @FXML private ListView<SessionLive> sessionListView;
+    @FXML private Label sessionStatPlanifieeLabel;
+    @FXML private Label sessionStatEnCoursLabel;
+    @FXML private Label sessionStatTermineeLabel;
+
+    private final SessionLiveRepository sessionRepo = new SessionLiveRepository();
+    private final SessionLiveMetierService sessionMetier = new SessionLiveMetierService();
+    private final ObservableList<SessionLive> sessionItems = FXCollections.observableArrayList();
+
 
 
     @FXML
@@ -106,6 +126,8 @@ public final class BackCoursesController {
             });
         }
         refreshAll();
+        setupSessionListView();
+        setupSessionFilters();
     }
 
     private void setupListViews() {
@@ -350,6 +372,7 @@ public final class BackCoursesController {
         reloadChapitres();
         reloadTds();
         reloadVideos();
+        reloadSessions();
     }
 
     private void reloadCours() {
@@ -1652,5 +1675,335 @@ public final class BackCoursesController {
         static <T> FormResult<T> saved(T v, boolean flag) { return new FormResult<>(v, true, flag); }
         static <T> FormResult<T> saved(T v) { return new FormResult<>(v, true, false); }
         static <T> FormResult<T> cancelled() { return new FormResult<>(null, false, false); }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // MODULE SESSIONS LIVE
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private void setupSessionListView() {
+        if (sessionListView == null) return;
+        sessionListView.setCellFactory(lv -> new ListCell<>() {
+            private final Label statutBadge = new Label();
+            private final Label nomCoursLbl  = new Label();
+            private final Label dateHeureLbl = new Label();
+            private final Label lienLbl      = new Label();
+            private final Button startBtn    = new Button("▶ Démarrer");
+            private final Button endBtn      = new Button("⏹ Terminer");
+            private final Button editBtn     = new Button("✏️");
+            private final Button delBtn      = new Button("🗑️");
+            private final Button joinBtn     = new Button("🔗 Rejoindre");
+            private final HBox row;
+            {
+                statutBadge.getStyleClass().add("chip");
+                statutBadge.setStyle("-fx-font-size: 11px; -fx-font-weight: 700;");
+                nomCoursLbl.getStyleClass().add("project-card-title");
+                dateHeureLbl.getStyleClass().add("page-subtitle");
+                dateHeureLbl.setStyle("-fx-font-size: 11px;");
+                lienLbl.getStyleClass().add("page-subtitle");
+                lienLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: #6c63ff;");
+                startBtn.getStyleClass().add("btn-rgb");
+                endBtn.getStyleClass().add("btn-rgb-outline");
+                editBtn.getStyleClass().add("btn-rgb-outline");
+                delBtn.getStyleClass().add("btn-danger");
+                joinBtn.getStyleClass().add("btn-rgb-compact");
+
+                VBox info = new VBox(2, nomCoursLbl, dateHeureLbl, lienLbl);
+                HBox.setHgrow(info, javafx.scene.layout.Priority.ALWAYS);
+                row = new HBox(10, statutBadge, info, joinBtn, startBtn, endBtn, editBtn, delBtn);
+                row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                row.setPadding(new javafx.geometry.Insets(8, 12, 8, 12));
+
+                startBtn.setOnAction(e -> { if (getItem() != null) demarrerSession(getItem()); });
+                endBtn.setOnAction(e -> { if (getItem() != null) terminerSession(getItem()); });
+                editBtn.setOnAction(e -> { if (getItem() != null) editSession(getItem()); });
+                delBtn.setOnAction(e -> { if (getItem() != null) deleteSession(getItem()); });
+                joinBtn.setOnAction(e -> { if (getItem() != null) rejoindreSession(getItem()); });
+            }
+
+            @Override protected void updateItem(SessionLive s, boolean empty) {
+                super.updateItem(s, empty);
+                if (empty || s == null) { setGraphic(null); return; }
+
+                nomCoursLbl.setText(safe(s.getNomCours()));
+                dateHeureLbl.setText("📅 " + s.getDateHeureFormatee());
+                lienLbl.setText("🔗 " + safe(s.getLien()));
+
+                // Badge statut
+                statutBadge.setText(s.getIconeStatut() + " " + s.getLibelleStatut());
+                statutBadge.getStyleClass().removeAll("chip-success", "chip-warning", "chip-danger", "chip-info");
+                switch (s.getStatut()) {
+                    case EN_COURS  -> statutBadge.getStyleClass().add("chip-success");
+                    case PLANIFIEE -> statutBadge.getStyleClass().add("chip-info");
+                    case TERMINEE  -> statutBadge.getStyleClass().add("chip-warning");
+                    case ANNULEE   -> statutBadge.getStyleClass().add("chip-danger");
+                }
+
+                // Boutons selon statut
+                startBtn.setDisable(s.getStatut() != SessionStatut.PLANIFIEE);
+                endBtn.setDisable(s.getStatut() != SessionStatut.EN_COURS);
+                joinBtn.setDisable(!s.peutEtreRejointe());
+                editBtn.setDisable(s.getStatut() == SessionStatut.TERMINEE || s.getStatut() == SessionStatut.ANNULEE);
+
+                setGraphic(row);
+            }
+        });
+    }
+
+    private void setupSessionFilters() {
+        // Filtre par cours
+        if (sessionCoursFilterCombo != null) {
+            sessionCoursFilterCombo.setItems(FXCollections.observableArrayList(repository.listCours("")));
+            sessionCoursFilterCombo.setPromptText("Tous les cours");
+            sessionCoursFilterCombo.valueProperty().addListener((obs, o, n) -> reloadSessions());
+        }
+        // Filtre par statut
+        if (sessionStatutFilterCombo != null) {
+            sessionStatutFilterCombo.getItems().setAll("Tous", "📅 Planifiée", "🔴 En cours", "✅ Terminée", "❌ Annulée");
+            sessionStatutFilterCombo.setValue("Tous");
+            sessionStatutFilterCombo.valueProperty().addListener((obs, o, n) -> reloadSessions());
+        }
+        // Recherche texte
+        if (sessionSearchField != null) {
+            sessionSearchField.textProperty().addListener((obs, o, n) -> reloadSessions());
+        }
+    }
+
+    private void reloadSessions() {
+        List<SessionLive> all = sessionRepo.getAllSessions();
+
+        // Filtre cours
+        if (sessionCoursFilterCombo != null && sessionCoursFilterCombo.getValue() != null) {
+            int coursId = sessionCoursFilterCombo.getValue().getId();
+            all = all.stream().filter(s -> {
+                List<SessionLive> byCours = sessionRepo.getSessionsByCoursId(coursId);
+                return byCours.stream().anyMatch(sc -> sc.getId() == s.getId());
+            }).toList();
+        }
+
+        // Filtre statut
+        if (sessionStatutFilterCombo != null) {
+            String filtre = safe(sessionStatutFilterCombo.getValue());
+            if (!filtre.isBlank() && !filtre.equals("Tous")) {
+                SessionStatut statut = null;
+                if (filtre.contains("Planifiée")) statut = SessionStatut.PLANIFIEE;
+                else if (filtre.contains("En cours")) statut = SessionStatut.EN_COURS;
+                else if (filtre.contains("Terminée")) statut = SessionStatut.TERMINEE;
+                else if (filtre.contains("Annulée")) statut = SessionStatut.ANNULEE;
+                if (statut != null) {
+                    final SessionStatut s = statut;
+                    all = all.stream().filter(sess -> sess.getStatut() == s).toList();
+                }
+            }
+        }
+
+        // Filtre recherche texte
+        if (sessionSearchField != null && !sessionSearchField.getText().isBlank()) {
+            String q = sessionSearchField.getText().trim().toLowerCase();
+            all = all.stream().filter(s -> safe(s.getNomCours()).toLowerCase().contains(q)).toList();
+        }
+
+        sessionItems.setAll(all);
+        if (sessionListView != null) { sessionListView.setItems(sessionItems); sessionListView.refresh(); }
+
+        // Mise à jour des compteurs
+        long planifiees = all.stream().filter(s -> s.getStatut() == SessionStatut.PLANIFIEE).count();
+        long enCours    = all.stream().filter(s -> s.getStatut() == SessionStatut.EN_COURS).count();
+        long terminees  = all.stream().filter(s -> s.getStatut() == SessionStatut.TERMINEE).count();
+        if (sessionStatPlanifieeLabel != null) sessionStatPlanifieeLabel.setText("📅 " + planifiees + " planifiée(s)");
+        if (sessionStatEnCoursLabel   != null) sessionStatEnCoursLabel.setText("🔴 " + enCours + " en cours");
+        if (sessionStatTermineeLabel  != null) sessionStatTermineeLabel.setText("✅ " + terminees + " terminée(s)");
+    }
+
+    @FXML
+    private void createSession() {
+        FormResult<SessionLive> result = showSessionForm(null);
+        if (!result.saved()) return;
+        try {
+            sessionRepo.ajouterSession(result.value());
+            info("✅ Session créée", "La session « " + safe(result.value().getNomCours()) + " » a été créée.");
+            reloadSessions();
+        } catch (Exception e) { error("Erreur création session", e); }
+    }
+
+    private void editSession(SessionLive session) {
+        FormResult<SessionLive> result = showSessionForm(session);
+        if (!result.saved()) return;
+        try {
+            sessionRepo.modifierSession(result.value());
+            info("✅ Session modifiée", "La session a été mise à jour.");
+            reloadSessions();
+        } catch (Exception e) { error("Erreur modification session", e); }
+    }
+
+    private void deleteSession(SessionLive session) {
+        if (!confirm("Supprimer la session",
+                "Supprimer la session « " + safe(session.getNomCours()) + " » ?\nCette action est irréversible.")) return;
+        try {
+            sessionRepo.supprimerSession(session.getId());
+            reloadSessions();
+        } catch (Exception e) { error("Erreur suppression session", e); }
+    }
+
+    private void demarrerSession(SessionLive session) {
+        if (!confirm("Démarrer la session",
+                "Démarrer la session « " + safe(session.getNomCours()) + " » ?\nLe statut passera à EN_COURS.")) return;
+        try {
+            sessionMetier.startSession(session.getId());
+            info("🔴 Session démarrée", "La session est maintenant EN COURS.\nLes étudiants peuvent rejoindre.");
+            reloadSessions();
+        } catch (Exception e) { error("Erreur démarrage session", e); }
+    }
+
+    private void terminerSession(SessionLive session) {
+        if (!confirm("Terminer la session",
+                "Terminer la session « " + safe(session.getNomCours()) + " » ?\nTous les participants seront déconnectés.")) return;
+        try {
+            sessionMetier.endSession(session.getId());
+            info("✅ Session terminée", "La session est maintenant TERMINÉE.");
+            reloadSessions();
+        } catch (Exception e) { error("Erreur fin de session", e); }
+    }
+
+    private void rejoindreSession(SessionLive session) {
+        if (!session.peutEtreRejointe()) {
+            info("Session non disponible", "Cette session n'est pas encore active.");
+            return;
+        }
+        try {
+            java.awt.Desktop.getDesktop().browse(java.net.URI.create(session.getLien()));
+        } catch (Exception e) {
+            // Fallback : copier le lien dans le presse-papier
+            javafx.scene.input.Clipboard cb = javafx.scene.input.Clipboard.getSystemClipboard();
+            javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();
+            cc.putString(session.getLien());
+            cb.setContent(cc);
+            info("Lien copié", "Impossible d'ouvrir le navigateur.\nLe lien a été copié dans le presse-papier :\n" + session.getLien());
+        }
+    }
+
+    private FormResult<SessionLive> showSessionForm(SessionLive source) {
+        // ── Sélection du cours (OBLIGATOIRE — le nom est auto-rempli) ──
+        ComboBox<Cours> coursCombo = comboCours();
+        coursCombo.setPromptText("Sélectionner un cours...");
+
+        // Label affichant le nom du cours sélectionné (lecture seule)
+        Label nomCoursDisplay = new Label("— Sélectionnez un cours ci-dessus —");
+        nomCoursDisplay.setStyle("-fx-font-size: 12px; -fx-text-fill: #888; -fx-font-style: italic;");
+
+        // Mise à jour automatique du nom affiché
+        coursCombo.valueProperty().addListener((obs, o, n) -> {
+            if (n != null) {
+                nomCoursDisplay.setText("✅  " + safe(n.getTitre()));
+                nomCoursDisplay.setStyle("-fx-font-size: 12px; -fx-text-fill: #29b6d8; -fx-font-weight: 700;");
+            } else {
+                nomCoursDisplay.setText("— Sélectionnez un cours ci-dessus —");
+                nomCoursDisplay.setStyle("-fx-font-size: 12px; -fx-text-fill: #888; -fx-font-style: italic;");
+            }
+        });
+
+        TextField lienField = field();
+        lienField.setPromptText("https://meet.google.com/xxx-yyyy-zzz");
+
+        javafx.scene.control.DatePicker datePicker = new javafx.scene.control.DatePicker();
+        datePicker.getStyleClass().add("field");
+        datePicker.setMaxWidth(Double.MAX_VALUE);
+        datePicker.setPromptText("Date de la session");
+
+        TextField heureField = field();
+        heureField.setPromptText("HH:mm  (ex: 14:30)");
+
+        ComboBox<String> statutCombo = comboStrings(
+            List.of("PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"));
+        statutCombo.setValue("PLANIFIEE");
+
+        // ── Pré-remplissage si modification ──
+        if (source != null) {
+            // Retrouver le cours par coursId ou par nom
+            for (Cours c : coursCombo.getItems()) {
+                if (source.getCoursId() > 0 && c.getId() == source.getCoursId()) {
+                    coursCombo.setValue(c); break;
+                } else if (safe(c.getTitre()).equals(safe(source.getNomCours()))) {
+                    coursCombo.setValue(c); break;
+                }
+            }
+            lienField.setText(safe(source.getLien()));
+            if (source.getDate() != null) datePicker.setValue(source.getDate());
+            if (source.getHeure() != null) heureField.setText(source.getHeure().toString());
+            statutCombo.setValue(source.getStatut().name());
+        } else {
+            datePicker.setValue(LocalDate.now());
+        }
+
+        // ── Grille du formulaire ──
+        GridPane grid = formGrid();
+        Label errCours  = addRow(grid, 0, "Cours *",        coursCombo);
+        // Ligne affichage nom (pas de label d'erreur)
+        Label lblNomCours = new Label("Nom du cours");
+        lblNomCours.getStyleClass().add("form-label");
+        grid.add(lblNomCours, 0, 2);
+        grid.add(nomCoursDisplay, 1, 2);
+        Label errLien   = addRow(grid, 2, "Lien session *", lienField);
+        Label errDate   = addRow(grid, 3, "Date *",         datePicker);
+        Label errHeure  = addRow(grid, 4, "Heure *",        heureField);
+        Label errStatut = addRow(grid, 5, "Statut",         statutCombo);
+
+        // Validation live du lien
+        liveValidate(lienField, errLien, () -> SessionLiveValidationService.validerLien(lienField.getText()));
+
+        // Aide plateformes
+        Label helpLbl = new Label("✅ Plateformes : Google Meet, Zoom, Teams, Webex, Whereby, Jitsi");
+        helpLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: #6c63ff;");
+        grid.add(helpLbl, 1, 12);
+
+        Dialog<ButtonType> dialog = buildFormDialog(
+            source == null ? "➕ Nouvelle session live" : "✏️ Modifier la session live", grid);
+
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            boolean err = false;
+            // Cours obligatoire
+            if (coursCombo.getValue() == null) {
+                FormValidator.markError(coursCombo, "Obligatoire");
+                errCours.setText("⚠ Veuillez sélectionner un cours."); err = true;
+            }
+            // Lien obligatoire et valide
+            ValidationResult lienResult = SessionLiveValidationService.validerLien(lienField.getText());
+            if (!lienResult.isValid()) {
+                FormValidator.markError(lienField, lienResult.firstError());
+                errLien.setText("⚠ " + lienResult.firstError()); err = true;
+            }
+            // Date obligatoire
+            if (datePicker.getValue() == null) {
+                errDate.setText("⚠ Date obligatoire."); err = true;
+            }
+            // Heure obligatoire et format valide
+            if (heureField.getText().isBlank()) {
+                FormValidator.markError(heureField, "Obligatoire");
+                errHeure.setText("⚠ Heure obligatoire (HH:mm)."); err = true;
+            } else {
+                try { LocalTime.parse(heureField.getText().trim()); }
+                catch (Exception ex) {
+                    FormValidator.markError(heureField, "Format invalide");
+                    errHeure.setText("⚠ Format invalide. Utilisez HH:mm (ex: 14:30)."); err = true;
+                }
+            }
+            if (err) ev.consume();
+        });
+
+        Optional<ButtonType> answer = dialog.showAndWait();
+        if (answer.isEmpty() || answer.get().getButtonData() != javafx.scene.control.ButtonBar.ButtonData.OK_DONE)
+            return FormResult.cancelled();
+
+        Cours coursSelectionne = coursCombo.getValue();
+        SessionLive session = source != null ? source : new SessionLive();
+        session.setCoursId(coursSelectionne.getId());
+        session.setNomCours(safe(coursSelectionne.getTitre())); // auto depuis le cours
+        session.setLien(lienField.getText().trim());
+        session.setDate(datePicker.getValue());
+        session.setHeure(LocalTime.parse(heureField.getText().trim()));
+        session.setStatut(SessionStatut.fromString(statutCombo.getValue()));
+
+        return FormResult.saved(session);
     }
 } 
