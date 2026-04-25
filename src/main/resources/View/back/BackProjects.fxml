@@ -36,6 +36,7 @@
                 <MenuItem fx:id="catalogueMenuItem" text="Catalogue (cartes)" onAction="#showCatalogueView"/>
             </items>
         </MenuButton>
+        <Button fx:id="sendMailButton" text="Envoyer mail" onAction="#openMailingDialog" styleClass="btn-rgb-outline"/>
     </HBox>
 
     <StackPane fx:id="viewStack" VBox.vgrow="ALWAYS">
