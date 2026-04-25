@@ -6,7 +6,10 @@ import com.educompus.model.KanbanTask;
 import com.educompus.model.Project;
 import com.educompus.model.ProjectSubmission;
 import com.educompus.model.ProjectSubmissionView;
+import com.educompus.service.JcefBrowserService;
+import com.educompus.service.ProjectMeetingService;
 import com.educompus.repository.KanbanTaskRepository;
+import com.educompus.repository.NotificationRepository;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.util.ProjectRules;
@@ -34,6 +37,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -94,6 +98,21 @@ public final class FrontProjectsController {
     private Label viewDescLabel;
 
     @FXML
+    private Label viewMeetingStatusLabel;
+
+    @FXML
+    private Label viewMeetingLinkLabel;
+
+    @FXML
+    private Button viewMeetingOpenButton;
+
+    @FXML
+    private Button viewMeetingMutedButton;
+
+    @FXML
+    private Button viewMeetingCopyButton;
+
+    @FXML
     private Label submitTitleLabel;
 
     @FXML
@@ -104,6 +123,18 @@ public final class FrontProjectsController {
 
     @FXML
     private Label selectedProjectLabel;
+
+    @FXML
+    private Label submitMeetingStatusLabel;
+
+    @FXML
+    private Button submitMeetingOpenButton;
+
+    @FXML
+    private Button submitMeetingMutedButton;
+
+    @FXML
+    private Button submitMeetingCopyButton;
 
     @FXML
     private TextArea responseArea;
@@ -165,7 +196,10 @@ public final class FrontProjectsController {
     // repositories used by this controller
     private final ProjectRepository projectRepo = new ProjectRepository();
     private final ProjectSubmissionRepository submissionRepo = new ProjectSubmissionRepository();
+    private final NotificationRepository notificationRepo = new NotificationRepository();
     private final KanbanTaskRepository kanbanRepo = new KanbanTaskRepository();
+    private final ProjectMeetingService projectMeetingService = new ProjectMeetingService();
+    private final JcefBrowserService browserService = JcefBrowserService.getInstance();
 
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
     private final ObservableList<Project> allProjects = FXCollections.observableArrayList();
@@ -719,15 +753,18 @@ public final class FrontProjectsController {
         if (project == null) {
             return;
         }
+        project = refreshProjectState(project);
         setView(viewPane);
         setTopControlsVisible(true);
         fillProjectLabels(project, viewTitleLabel, viewMetaLabel, viewDescLabel);
+        updateMeetingPanel(project);
     }
 
     private void showSubmit(Project project) {
         if (project == null) {
             return;
         }
+        project = refreshProjectState(project);
         setView(submitPane);
         setTopControlsVisible(true);
         fillProjectLabels(project, submitTitleLabel, submitMetaLabel, submitDescLabel);
@@ -735,6 +772,8 @@ public final class FrontProjectsController {
 	        if (selectedProjectLabel != null) {
 	            selectedProjectLabel.setText("Projet: " + safe(project.getTitle()));
 	        }
+
+            updateMeetingPanel(project);
 
 		        refreshSubmitInfo();
 		        updateSubmitButtonLabel();
@@ -937,6 +976,132 @@ public final class FrontProjectsController {
         }
     }
 
+    @FXML
+    private void refreshProjectMeetingStatus(ActionEvent event) {
+        if (selectedProject == null) {
+            info("Meeting", "Selectionnez un projet.");
+            return;
+        }
+        Project refreshed = refreshProjectState(selectedProject);
+        if (viewPane != null && viewPane.isVisible()) {
+            showView(refreshed);
+        } else if (submitPane != null && submitPane.isVisible()) {
+            showSubmit(refreshed);
+        } else {
+            updateMeetingPanel(refreshed);
+        }
+    }
+
+    @FXML
+    private void joinProjectMeeting(ActionEvent event) {
+        openProjectMeeting(false);
+    }
+
+    @FXML
+    private void joinProjectMeetingMuted(ActionEvent event) {
+        openProjectMeeting(true);
+    }
+
+    @FXML
+    private void copyProjectMeetingLink(ActionEvent event) {
+        Project project = refreshProjectState(selectedProject);
+        if (project == null || !project.isMeetingActive() || safe(project.getMeetingUrl()).isBlank()) {
+            info("Meeting", "Le professeur n'a pas encore ouvert de salle pour ce projet.");
+            return;
+        }
+        ClipboardContent content = new ClipboardContent();
+        content.putString(project.getMeetingUrl());
+        Clipboard.getSystemClipboard().setContent(content);
+        updateMeetingPanel(project);
+        info("Meeting", "Lien de meeting copie.");
+    }
+
+    private void openProjectMeeting(boolean muted) {
+        Project project = refreshProjectState(selectedProject);
+        if (project == null) {
+            info("Meeting", "Selectionnez un projet.");
+            return;
+        }
+        if (!project.isMeetingActive()) {
+            updateMeetingPanel(project);
+            info("Meeting", "Le professeur n'a pas encore ouvert de salle pour ce projet.");
+            return;
+        }
+        try {
+            String joinUrl = projectMeetingService.joinUrl(project, muted);
+            String room = safe(project.getMeetingRoom());
+            String title = "EduCompus | Meeting | " + (room.isBlank() ? ("Project " + project.getId()) : room);
+            browserService.openMeetingDialog(title, joinUrl);
+            updateMeetingPanel(project);
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private Project refreshProjectState(Project project) {
+        Project refreshed = projectMeetingService.refresh(project);
+        if (refreshed != null) {
+            selectedProject = refreshed;
+            replaceProjectInCollections(refreshed);
+            return refreshed;
+        }
+        return project;
+    }
+
+    private void replaceProjectInCollections(Project updated) {
+        replaceProjectInList(allProjects, updated);
+        replaceProjectInList(projects, updated);
+    }
+
+    private static void replaceProjectInList(ObservableList<Project> list, Project updated) {
+        if (list == null || updated == null) {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Project current = list.get(i);
+            if (current != null && current.getId() == updated.getId()) {
+                list.set(i, updated);
+                return;
+            }
+        }
+    }
+
+    private void updateMeetingPanel(Project project) {
+        String status = projectMeetingService.statusText(project);
+        String link = project == null || safe(project.getMeetingUrl()).isBlank()
+                ? "Invite link will appear here when the teacher opens the room."
+                : project.getMeetingUrl();
+        boolean active = project != null && project.isMeetingActive() && !safe(project.getMeetingUrl()).isBlank();
+
+        if (viewMeetingStatusLabel != null) {
+            viewMeetingStatusLabel.setText(status);
+        }
+        if (submitMeetingStatusLabel != null) {
+            submitMeetingStatusLabel.setText(status);
+        }
+        if (viewMeetingLinkLabel != null) {
+            viewMeetingLinkLabel.setText(link);
+        }
+        if (viewMeetingOpenButton != null) {
+            viewMeetingOpenButton.setDisable(!active);
+        }
+        if (viewMeetingMutedButton != null) {
+            viewMeetingMutedButton.setDisable(!active);
+        }
+        if (viewMeetingCopyButton != null) {
+            viewMeetingCopyButton.setDisable(!active);
+        }
+        if (submitMeetingOpenButton != null) {
+            submitMeetingOpenButton.setDisable(!active);
+        }
+        if (submitMeetingMutedButton != null) {
+            submitMeetingMutedButton.setDisable(!active);
+        }
+        if (submitMeetingCopyButton != null) {
+            submitMeetingCopyButton.setDisable(!active);
+        }
+    }
+
     private void setView(VBox active) {
         setPaneVisible(cataloguePane, active == cataloguePane);
         setPaneVisible(viewPane, active == viewPane);
@@ -1059,6 +1224,12 @@ public final class FrontProjectsController {
 
         try {
             submissionRepo.create(s);
+            notificationRepo.createProjectSubmissionNotifications(
+                    selectedProject.getId(),
+                    uid,
+                    AppState.getUserEmail(),
+                    selectedProject.getTitle()
+            );
             resetSubmitFormFields();
             info("Soumission", "Votre soumission a été enregistrée.");
             refreshSubmitInfo();

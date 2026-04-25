@@ -57,6 +57,19 @@
                 <Label fx:id="viewMetaLabel" text="" styleClass="page-subtitle" wrapText="true"/>
                 <Separator/>
                 <Label fx:id="viewDescLabel" text="" styleClass="page-subtitle" wrapText="true"/>
+                <VBox styleClass="card" spacing="10">
+                    <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+                    <Label text="Project meeting" styleClass="stat-title"/>
+                    <Label fx:id="viewMeetingStatusLabel" text="Meeting status: Waiting for teacher" styleClass="page-subtitle" wrapText="true"/>
+                    <Label fx:id="viewMeetingLinkLabel" text="Invite link will appear here when the teacher opens the room." styleClass="page-subtitle" wrapText="true"/>
+                    <Label text="Camera and microphone are requested in the meeting window when you join." styleClass="page-subtitle" wrapText="true"/>
+                    <HBox spacing="10">
+                        <Button fx:id="viewMeetingOpenButton" text="Join meeting" onAction="#joinProjectMeeting" styleClass="btn-rgb"/>
+                         <!--<Button fx:id="viewMeetingMutedButton" text="Join muted" onAction="#joinProjectMeetingMuted" styleClass="btn-rgb-outline"/>-->
+                         <!--<Button fx:id="viewMeetingCopyButton" text="Copy invite link" onAction="#copyProjectMeetingLink" styleClass="btn-rgb-outline"/>-->
+                         <!--<Button text="Refresh status" onAction="#refreshProjectMeetingStatus" styleClass="btn-ghost"/>-->
+                    </HBox>
+                </VBox>
             </VBox>
         </VBox>
 
@@ -79,6 +92,13 @@
                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                 <Label text="Soumettre" styleClass="stat-title"/>
                 <Label fx:id="selectedProjectLabel" text="" styleClass="page-subtitle" wrapText="true"/>
+                <Label fx:id="submitMeetingStatusLabel" text="Meeting status: Waiting for teacher" styleClass="page-subtitle" wrapText="true"/>
+                <HBox spacing="10">
+                    <Button fx:id="submitMeetingOpenButton" text="Join meeting" onAction="#joinProjectMeeting" styleClass="btn-rgb-outline"/>
+                    <!--<Button fx:id="viewMeetingMutedButton" text="Join muted" onAction="#joinProjectMeetingMuted" styleClass="btn-rgb-outline"/>-->
+                         <!--<Button fx:id="viewMeetingCopyButton" text="Copy invite link" onAction="#copyProjectMeetingLink" styleClass="btn-rgb-outline"/>-->
+                         <!--<Button text="Refresh status" onAction="#refreshProjectMeetingStatus" styleClass="btn-ghost"/>-->
+                </HBox>
                 <TextArea fx:id="responseArea" promptText="Votre réponse / description du travail..." styleClass="field area" prefRowCount="6" wrapText="true" VBox.vgrow="ALWAYS"/>
                 <HBox spacing="10">
                     <TextField fx:id="cahierPathField" promptText="Cahier des charges (fichier)" styleClass="field" HBox.hgrow="ALWAYS"/>

@@ -78,6 +78,18 @@ public final class BackCoursesController {
 
     @FXML private TextField coursSearchField;
     @FXML private ComboBox<String> coursSortCombo;
+<<<<<<< HEAD
+    @FXML private javafx.scene.control.ListView<Cours> coursListView;
+    @FXML private javafx.scene.control.ListView<Chapitre> chapitreListView;
+    @FXML private javafx.scene.control.ListView<Td> tdListView;
+    @FXML private javafx.scene.control.ListView<VideoExplicative> videoListView;
+    @FXML private TextField chapitreSearchField;
+    @FXML private ComboBox<String> chapitreSortCombo;
+    @FXML private TextField tdSearchField;
+    @FXML private ComboBox<String> tdSortCombo;
+    @FXML private TextField videoSearchField;
+    @FXML private ComboBox<String> videoSortCombo;
+=======
     @FXML private ListView<Cours> coursListView;
 
     @FXML private TextField chapitreSearchField;
@@ -91,6 +103,7 @@ public final class BackCoursesController {
     @FXML private TextField videoSearchField;
     @FXML private ComboBox<String> videoSortCombo;
     @FXML private ListView<VideoExplicative> videoListView;
+>>>>>>> 2e756f91d6f9e7a148a86c47917d30d9665be5f7
 
     // ── Sessions Live ──
     @FXML private TextField sessionSearchField;
@@ -115,6 +128,8 @@ public final class BackCoursesController {
     private void initialize() {
         setupListViews();
         setupSorts();
+<<<<<<< HEAD
+=======
         if (chapitreListView != null) {
             chapitreListView.setOnMouseClicked(e -> {
                 if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
@@ -131,6 +146,7 @@ public final class BackCoursesController {
                 }
             });
         }
+>>>>>>> 2e756f91d6f9e7a148a86c47917d30d9665be5f7
         refreshAll();
         setupSessionListView();
         setupSessionFilters();
@@ -427,6 +443,167 @@ public final class BackCoursesController {
         }
     }
 
+<<<<<<< HEAD
+    private void reloadCours() {
+        coursItems.setAll(repository.listCours(text(coursSearchField)));
+        applyCoursSort();
+        if (coursListView != null) { coursListView.setItems(coursItems); coursListView.refresh(); }
+        statsCoursLabel.setText(String.valueOf(coursItems.size()));
+    }
+
+    private void reloadChapitres() {
+        chapitreItems.setAll(repository.listChapitres(text(chapitreSearchField)));
+        applyChapitreSort();
+        if (chapitreListView != null) { chapitreListView.setItems(chapitreItems); chapitreListView.refresh(); }
+        statsChapitreLabel.setText(String.valueOf(chapitreItems.size()));
+    }
+
+    private void reloadTds() {
+        tdItems.setAll(repository.listTds(text(tdSearchField)));
+        applyTdSort();
+        if (tdListView != null) { tdListView.setItems(tdItems); tdListView.refresh(); }
+        statsTdLabel.setText(String.valueOf(tdItems.size()));
+    }
+
+    private void reloadVideos() {
+        videoItems.setAll(repository.listVideos(text(videoSearchField)));
+        applyVideoSort();
+        if (videoListView != null) { videoListView.setItems(videoItems); videoListView.refresh(); }
+        statsVideoLabel.setText(String.valueOf(videoItems.size()));
+    }
+
+    private void setupListViews() {
+        // Cours ListView
+        if (coursListView != null) {
+            coursListView.setCellFactory(lv -> new javafx.scene.control.ListCell<Cours>() {
+                @Override protected void updateItem(Cours c, boolean empty) {
+                    super.updateItem(c, empty);
+                    if (empty || c == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(c.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(c.getDomaine()) + "  •  " + safe(c.getNiveau()) + "  •  " + safe(c.getNomFormateur()) + "  •  " + c.getDureeTotaleHeures() + "h  •  " + c.getChapitreCount() + " chap.");
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editCours(c));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteCours(c));
+                    row.getChildren().addAll(info, editBtn, delBtn);
+                    setGraphic(row);
+                }
+            });
+            coursListView.setOnMouseClicked(e -> {
+                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                    Cours sel = coursListView.getSelectionModel().getSelectedItem();
+                    if (sel != null) createChapitreForCourse(sel);
+                }
+            });
+        }
+        // Chapitre ListView
+        if (chapitreListView != null) {
+            chapitreListView.setCellFactory(lv -> new javafx.scene.control.ListCell<Chapitre>() {
+                @Override protected void updateItem(Chapitre ch, boolean empty) {
+                    super.updateItem(ch, empty);
+                    if (empty || ch == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    Label num = new Label(String.valueOf(ch.getOrdre()));
+                    num.getStyleClass().add("chapitre-num");
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(ch.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(ch.getCoursTitre()) + "  •  " + safe(ch.getDomaine()) + "  •  " + ch.getTdCount() + " TD  •  " + ch.getVideoCount() + " vidéos");
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editChapitre(ch));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteChapitre(ch));
+                    row.getChildren().addAll(num, info, editBtn, delBtn);
+                    setGraphic(row);
+                }
+            });
+            chapitreListView.setOnMouseClicked(e -> {
+                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                    Chapitre sel = chapitreListView.getSelectionModel().getSelectedItem();
+                    if (sel != null) openTdVideoChoice(sel);
+                }
+            });
+        }
+        // TD ListView
+        if (tdListView != null) {
+            tdListView.setCellFactory(lv -> new javafx.scene.control.ListCell<Td>() {
+                @Override protected void updateItem(Td td, boolean empty) {
+                    super.updateItem(td, empty);
+                    if (empty || td == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(td.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(td.getCoursTitre()) + "  •  " + safe(td.getChapitreTitre()) + "  •  " + safe(td.getDomaine()));
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button openBtn = new Button("📄");
+                    openBtn.getStyleClass().add("btn-rgb-compact");
+                    openBtn.setDisable(td.getFichier() == null || td.getFichier().isBlank());
+                    openBtn.setOnAction(e -> { try { Desktop.getDesktop().open(new File(td.getFichier())); } catch (Exception ex) { error("Erreur", ex); } });
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editTd(td));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteTd(td));
+                    row.getChildren().addAll(info, openBtn, editBtn, delBtn);
+                    setGraphic(row);
+                }
+            });
+        }
+        // Video ListView
+        if (videoListView != null) {
+            videoListView.setCellFactory(lv -> new javafx.scene.control.ListCell<VideoExplicative>() {
+                @Override protected void updateItem(VideoExplicative v, boolean empty) {
+                    super.updateItem(v, empty);
+                    if (empty || v == null) { setGraphic(null); return; }
+                    HBox row = new HBox(12);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+                    VBox info = new VBox(4);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    Label titre = new Label(safe(v.getTitre()));
+                    titre.getStyleClass().add("project-card-title");
+                    Label meta = new Label(safe(v.getCoursTitre()) + "  •  " + safe(v.getChapitreTitre()) + "  •  " + safe(v.getDomaine()));
+                    meta.getStyleClass().add("page-subtitle");
+                    info.getChildren().addAll(titre, meta);
+                    Button playBtn = new Button("▶");
+                    playBtn.getStyleClass().add("btn-rgb-compact");
+                    playBtn.setDisable(v.getUrlVideo() == null || v.getUrlVideo().isBlank());
+                    playBtn.setOnAction(e -> { try { com.educompus.util.UrlOpener.open(v.getUrlVideo()); } catch (Exception ex) { error("Erreur URL", ex); } });
+                    Button editBtn = new Button("✏️");
+                    editBtn.getStyleClass().add("btn-rgb-outline");
+                    editBtn.setOnAction(e -> editVideo(v));
+                    Button delBtn = new Button("🗑️");
+                    delBtn.getStyleClass().add("btn-danger");
+                    delBtn.setOnAction(e -> deleteVideo(v));
+                    row.getChildren().addAll(info, playBtn, editBtn, delBtn);
+                    setGraphic(row);
+                }
+            });
+        }
+=======
     private void applyCoursSort() {
         String sort = coursSortCombo != null ? coursSortCombo.getValue() : null;
         if ("Formateur".equals(sort)) coursItems.sort(Comparator.comparing(c -> safe(c.getNomFormateur()), String.CASE_INSENSITIVE_ORDER));
@@ -1084,6 +1261,7 @@ public final class BackCoursesController {
             info("✅ Vidéo ajoutée", "La vidéo « " + safe(result.value().getTitre()) + " » a été ajoutée avec succès.");
             refreshAll();
         } catch (Exception e) { error("Erreur ajout vidéo", e); }
+>>>>>>> 2e756f91d6f9e7a148a86c47917d30d9665be5f7
     }
 
     private void editCours(Cours cours) {
