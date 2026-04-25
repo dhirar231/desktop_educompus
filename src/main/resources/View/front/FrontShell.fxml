@@ -124,7 +124,7 @@
                     </Button>
 
                     <Label text="OUTILS" styleClass="nav-section"/>
-                   <!-- <Button fx:id="navCalendarBtn" text="Calendrier" onAction="#navCalendar" maxWidth="1.7976931348623157E308">
+                     <!--<Button fx:id="navCalendarBtn" text="Meeting" onAction="#navCalendar" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>
                             <String fx:value="side-menu-btn"/>

@@ -10,10 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ProjectRepository {
+    public ProjectRepository() {
+        ensureMeetingColumns();
+    }
+
     public List<Project> listAll(String query) {
         String q = query == null ? "" : query.trim();
         String sql = """
-                SELECT id, title, description, deadline, deliverables, created_by_id, is_published, created_at
+                SELECT id, title, description, deadline, deliverables, created_by_id, is_published, created_at,
+                       meeting_room, meeting_url, meeting_active, meeting_started_by_id, meeting_started_at
                 FROM project
                 %s
                 ORDER BY created_at DESC, id DESC
@@ -41,7 +46,8 @@ public final class ProjectRepository {
     public List<Project> listPublished(String query) {
         String q = query == null ? "" : query.trim();
         String sql = """
-                SELECT id, title, description, deadline, deliverables, created_by_id, is_published, created_at
+                SELECT id, title, description, deadline, deliverables, created_by_id, is_published, created_at,
+                       meeting_room, meeting_url, meeting_active, meeting_started_by_id, meeting_started_at
                 FROM project
                 WHERE is_published = 1
                 %s
@@ -141,7 +147,12 @@ public final class ProjectRepository {
     }
 
     public Project getById(int id) {
-        String sql = "SELECT id, title, description, deadline, deliverables, created_by_id, is_published, created_at FROM project WHERE id = ?";
+        String sql = """
+                SELECT id, title, description, deadline, deliverables, created_by_id, is_published, created_at,
+                       meeting_room, meeting_url, meeting_active, meeting_started_by_id, meeting_started_at
+                FROM project
+                WHERE id = ?
+                """;
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -151,6 +162,87 @@ public final class ProjectRepository {
             return null;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to get project: " + safeMsg(e), e);
+        }
+    }
+
+    public Project activateMeeting(int projectId, String room, String url, int startedById) {
+        String sql = """
+                UPDATE project
+                SET meeting_room = ?,
+                    meeting_url = ?,
+                    meeting_active = 1,
+                    meeting_started_by_id = ?,
+                    meeting_started_at = NOW()
+                WHERE id = ?
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, room);
+            ps.setString(2, url);
+            ps.setInt(3, startedById);
+            ps.setInt(4, projectId);
+            ps.executeUpdate();
+            return getById(projectId);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to activate project meeting: " + safeMsg(e), e);
+        }
+    }
+
+    public Project deactivateMeeting(int projectId) {
+        String sql = """
+                UPDATE project
+                SET meeting_active = 0,
+                    meeting_started_at = NOW()
+                WHERE id = ?
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, projectId);
+            ps.executeUpdate();
+            return getById(projectId);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to close project meeting: " + safeMsg(e), e);
+        }
+    }
+
+    private void ensureMeetingColumns() {
+        try (Connection conn = EducompusDB.getConnection()) {
+            if (!columnExists(conn, "project", "meeting_room")) {
+                executeIgnore(conn, "ALTER TABLE project ADD COLUMN meeting_room VARCHAR(160) NULL");
+            }
+            if (!columnExists(conn, "project", "meeting_url")) {
+                executeIgnore(conn, "ALTER TABLE project ADD COLUMN meeting_url VARCHAR(255) NULL");
+            }
+            if (!columnExists(conn, "project", "meeting_active")) {
+                executeIgnore(conn, "ALTER TABLE project ADD COLUMN meeting_active TINYINT(1) NOT NULL DEFAULT 0");
+            }
+            if (!columnExists(conn, "project", "meeting_started_by_id")) {
+                executeIgnore(conn, "ALTER TABLE project ADD COLUMN meeting_started_by_id INT NULL");
+            }
+            if (!columnExists(conn, "project", "meeting_started_at")) {
+                executeIgnore(conn, "ALTER TABLE project ADD COLUMN meeting_started_at DATETIME NULL");
+            }
+        } catch (Exception ignored) {
+            // Keep app usable even when automatic schema alignment fails.
+        }
+    }
+
+    private static boolean columnExists(Connection conn, String tableName, String columnName) throws Exception {
+        String sql = "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() "
+                + "AND table_name = ? AND column_name = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tableName);
+            ps.setString(2, columnName);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private static void executeIgnore(Connection conn, String sql) {
+        try (Statement st = conn.createStatement()) {
+            st.execute(sql);
+        } catch (Exception ignored) {
         }
     }
 
@@ -164,6 +256,11 @@ public final class ProjectRepository {
         p.setCreatedById(rs.getInt("created_by_id"));
         p.setPublished(rs.getBoolean("is_published"));
         p.setCreatedAt(rs.getString("created_at"));
+        p.setMeetingRoom(rs.getString("meeting_room"));
+        p.setMeetingUrl(rs.getString("meeting_url"));
+        p.setMeetingActive(rs.getBoolean("meeting_active"));
+        p.setMeetingStartedById(rs.getInt("meeting_started_by_id"));
+        p.setMeetingStartedAt(rs.getString("meeting_started_at"));
         return p;
     }
 
