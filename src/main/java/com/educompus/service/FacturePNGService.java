@@ -16,296 +16,379 @@ import java.util.List;
 
 public class FacturePNGService {
 
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final DateTimeFormatter FMT      = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter FMT_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    // Couleurs thème EduCampus
-    private static final Color COULEUR_PRIMAIRE  = new Color(6, 106, 201);   // -edu-primary
-    private static final Color COULEUR_TEXTE     = new Color(36, 41, 45);    // -edu-text
-    private static final Color COULEUR_MUTED     = new Color(116, 117, 121); // -edu-text-muted
-    private static final Color COULEUR_BORDURE   = new Color(221, 224, 227); // -edu-border
-    private static final Color COULEUR_SURFACE   = new Color(245, 247, 249); // -edu-surface
+    // ── Palette moderne ───────────────────────────────────────────────────────
+    private static final Color C_BLEU_FONCE  = new Color(15,  23,  42);   // slate-900
+    private static final Color C_BLEU        = new Color(37,  99, 235);   // blue-600
+    private static final Color C_BLEU_CLAIR  = new Color(219, 234, 254);  // blue-100
+    private static final Color C_VIOLET      = new Color(124, 58, 237);   // violet-600
+    private static final Color C_VERT        = new Color(16, 185, 129);   // emerald-500
+    private static final Color C_ORANGE      = new Color(245, 158, 11);   // amber-500
+    private static final Color C_ROUGE       = new Color(239, 68,  68);   // red-500
+    private static final Color C_GRIS_CLAIR  = new Color(248, 250, 252);  // slate-50
+    private static final Color C_GRIS        = new Color(226, 232, 240);  // slate-200
+    private static final Color C_TEXTE       = new Color(15,  23,  42);   // slate-900
+    private static final Color C_MUTED       = new Color(100, 116, 139);  // slate-500
+    private static final Color C_BLANC       = Color.WHITE;
 
-    /**
-     * Génère la facture PDF et la sauvegarde dans le dossier téléchargements.
-     * @return le fichier PDF généré
-     */
-    public File generer(Commande cmd, List<LigneCommande> lignes, Livraison liv) throws Exception {
-        PDDocument doc = new PDDocument();
-        PDPage page = new PDPage(PDRectangle.A4);
-        doc.addPage(page);
+    // ── API publique ──────────────────────────────────────────────────────────
 
-        float largeur = page.getMediaBox().getWidth();
-        float hauteur = page.getMediaBox().getHeight();
-        float margeG  = 50f;
-        float margeD  = largeur - 50f;
-        float y       = hauteur - 50f;
-
-        PDPageContentStream cs = new PDPageContentStream(doc, page);
-        dessinerContenu(cs, largeur, hauteur, margeG, margeD, y, cmd, lignes, liv);
-        cs.close();
-
-        String nomFichier = "Facture_EduCampus_" + cmd.getId() + ".pdf";
-        File dest = new File(System.getProperty("user.home") + "/Downloads/" + nomFichier);
-        doc.save(dest);
-        doc.close();
-        return dest;
-    }
-
-    /**
-     * Génère la facture et la sauvegarde en PNG (300 DPI).
-     * @return le fichier PNG généré
-     */
     public File genererPng(Commande cmd, List<LigneCommande> lignes, Livraison liv) throws Exception {
-        // 1. Générer le PDF en mémoire
         PDDocument doc = new PDDocument();
         PDPage page = new PDPage(PDRectangle.A4);
         doc.addPage(page);
 
-        float largeur = page.getMediaBox().getWidth();
-        float hauteur = page.getMediaBox().getHeight();
-        float margeG  = 50f;
-        float margeD  = largeur - 50f;
-        float y       = hauteur - 50f;
+        float W = page.getMediaBox().getWidth();
+        float H = page.getMediaBox().getHeight();
 
         PDPageContentStream cs = new PDPageContentStream(doc, page);
-        // Fond blanc explicite
-        cs.setNonStrokingColor(Color.WHITE);
-        cs.addRect(0, 0, largeur, hauteur);
-        cs.fill();
+        cs.setNonStrokingColor(C_BLANC);
+        cs.addRect(0, 0, W, H); cs.fill();
 
-        y = dessinerContenu(cs, largeur, hauteur, margeG, margeD, y, cmd, lignes, liv);
+        dessiner(cs, W, H, cmd, lignes, liv);
         cs.close();
 
-        // 2. Rendre la page en BufferedImage (300 DPI)
-        org.apache.pdfbox.rendering.PDFRenderer renderer = new org.apache.pdfbox.rendering.PDFRenderer(doc);
-        java.awt.image.BufferedImage image = renderer.renderImageWithDPI(0, 300,
-                org.apache.pdfbox.rendering.ImageType.RGB);
+        org.apache.pdfbox.rendering.PDFRenderer renderer =
+                new org.apache.pdfbox.rendering.PDFRenderer(doc);
+        java.awt.image.BufferedImage image = renderer.renderImageWithDPI(
+                0, 300, org.apache.pdfbox.rendering.ImageType.RGB);
         doc.close();
 
-        // 3. Sauvegarder en PNG
-        String nomFichier = "Facture_EduCampus_" + cmd.getId() + ".png";
-        File dest = new File(System.getProperty("user.home") + "/Downloads/" + nomFichier);
+        String nom = "Facture_EduCampus_" + cmd.getId() + ".png";
+        File dest = new File(System.getProperty("user.home") + "/Downloads/" + nom);
         javax.imageio.ImageIO.write(image, "PNG", dest);
         return dest;
     }
 
-    // ── Méthode de dessin partagée ────────────────────────────────────────────
+    // ── Dessin principal ──────────────────────────────────────────────────────
 
-    private float dessinerContenu(PDPageContentStream cs,
-            float largeur, float hauteur, float margeG, float margeD, float y,
-            Commande cmd, List<LigneCommande> lignes, Livraison liv) throws Exception {
+    private void dessiner(PDPageContentStream cs, float W, float H,
+                          Commande cmd, List<LigneCommande> lignes, Livraison liv) throws Exception {
 
-        // Bandeau header
-        cs.setNonStrokingColor(COULEUR_PRIMAIRE);
-        cs.addRect(0, hauteur - 80, largeur, 80);
-        cs.fill();
+        float mG = 45f, mD = W - 45f;
+        float y  = H;
 
-        cs.setNonStrokingColor(Color.WHITE);
-        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 22);
-        cs.newLineAtOffset(margeG, hauteur - 45); cs.showText("EduCampus"); cs.endText();
+        // ── Bandeau header dégradé simulé (deux rectangles) ──
+        cs.setNonStrokingColor(C_BLEU_FONCE);
+        cs.addRect(0, H - 90, W, 90); cs.fill();
 
-        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 10);
-        cs.newLineAtOffset(margeG, hauteur - 62);
-        cs.showText("Marketplace des produits educatifs"); cs.endText();
+        // Accent violet à droite
+        cs.setNonStrokingColor(C_VIOLET);
+        cs.addRect(W - 120, H - 90, 120, 90); cs.fill();
 
-        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 18);
-        cs.newLineAtOffset(margeD - 120, hauteur - 45); cs.showText("FACTURE"); cs.endText();
+        // Ligne décorative bas du header
+        cs.setNonStrokingColor(C_BLEU);
+        cs.addRect(0, H - 92, W, 3); cs.fill();
 
-        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 10);
-        cs.newLineAtOffset(margeD - 120, hauteur - 62); cs.showText("#" + cmd.getId()); cs.endText();
+        // Logo texte
+        cs.setNonStrokingColor(C_BLANC);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 24);
+        cs.newLineAtOffset(mG, H - 42); cs.showText("EduCampus"); cs.endText();
 
-        y = hauteur - 100;
-        y = dessinerBloc2Colonnes(cs, margeG, margeD, y,
-                "Informations de commande",
-                new String[]{
-                    "Numero de commande : #" + cmd.getId(),
-                    "Date               : " + (cmd.getDateCommande() != null ? cmd.getDateCommande().format(FMT) : "—"),
-                    "Statut paiement    : Confirme",
-                    "Methode paiement   : Stripe"
-                },
-                "Informations de livraison",
-                new String[]{
-                    "Adresse  : " + (liv != null ? liv.getAdresse() : "—"),
-                    "Ville    : " + (liv != null ? liv.getVille() : "—"),
-                    "Tel      : " + (liv != null && liv.getPhoneNumber() != null ? liv.getPhoneNumber() : "—"),
-                    "Statut   : " + (liv != null ? liv.getStatusLivraison() : "—"),
-                    "Livraison: " + (liv != null && liv.getDateLivraison() != null
-                            ? liv.getDateLivraison().format(FMT_DATE) : "Non precisee")
-                });
+        cs.setNonStrokingColor(new Color(148, 163, 184));
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 9);
+        cs.newLineAtOffset(mG, H - 58); cs.showText("Marketplace des produits educatifs"); cs.endText();
 
+        // FACTURE + numéro
+        cs.setNonStrokingColor(C_BLANC);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 20);
+        cs.newLineAtOffset(mD - 130, H - 38); cs.showText("FACTURE"); cs.endText();
+
+        cs.setNonStrokingColor(new Color(196, 181, 253)); // violet-300
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 13);
+        cs.newLineAtOffset(mD - 130, H - 56); cs.showText("#" + String.format("%06d", cmd.getId())); cs.endText();
+
+        y = H - 110;
+
+        // ── Bloc statut paiement ──
+        y = dessinerStatutPaiement(cs, mG, mD, y, cmd);
+        y -= 14;
+
+        // ── Deux colonnes : commande + livraison ──
+        y = dessinerInfos2Col(cs, mG, mD, y, cmd, liv);
+        y -= 18;
+
+        // ── Tableau articles ──
+        y = dessinerTableau(cs, mG, mD, y, lignes);
+        y -= 16;
+
+        // ── Récapitulatif financier ──
+        y = dessinerRecap(cs, mG, mD, y, lignes, cmd.getTotal());
         y -= 20;
-        y = dessinerTableau(cs, margeG, margeD, y, lignes);
-        y -= 20;
-        y = dessinerTotal(cs, margeG, margeD, y, cmd.getTotal());
-        dessinerPied(cs, largeur, cmd);
-        return y;
+
+        // ── Message de remerciement ──
+        dessinerMerci(cs, mG, mD, y);
+
+        // ── Pied de page ──
+        dessinerPied(cs, W, cmd);
     }
 
-    // ── Helpers de dessin ─────────────────────────────────────────────────────
+    // ── Statut paiement ───────────────────────────────────────────────────────
 
-    private float dessinerBloc2Colonnes(PDPageContentStream cs,
-            float margeG, float margeD, float y,
-            String titre1, String[] lignes1,
-            String titre2, String[] lignes2) throws Exception {
+    private float dessinerStatutPaiement(PDPageContentStream cs,
+            float mG, float mD, float y, Commande cmd) throws Exception {
 
-        float colLargeur = (margeD - margeG - 20) / 2;
-        float col2X = margeG + colLargeur + 20;
-        float yDepart = y;
+        // Badge "PAYE" vert
+        cs.setNonStrokingColor(new Color(209, 250, 229)); // emerald-100
+        cs.addRect(mG, y - 28, 90, 28); cs.fill();
+        cs.setStrokingColor(C_VERT);
+        cs.setLineWidth(1.5f);
+        cs.addRect(mG, y - 28, 90, 28); cs.stroke();
 
-        // Fond gris léger
-        cs.setNonStrokingColor(COULEUR_SURFACE);
-        float hauteurBloc = Math.max(lignes1.length, lignes2.length) * 16 + 40;
-        cs.addRect(margeG, y - hauteurBloc, margeD - margeG, hauteurBloc);
-        cs.fill();
+        cs.setNonStrokingColor(C_VERT);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 11);
+        cs.newLineAtOffset(mG + 10, y - 18); cs.showText("PAYE"); cs.endText();
 
-        // Titre col 1
-        cs.setNonStrokingColor(COULEUR_PRIMAIRE);
-        cs.beginText();
-        cs.setFont(PDType1Font.HELVETICA_BOLD, 10);
-        cs.newLineAtOffset(margeG + 8, y - 18);
-        cs.showText(titre1);
-        cs.endText();
+        // Date émission
+        cs.setNonStrokingColor(C_MUTED);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 8);
+        cs.newLineAtOffset(mG + 100, y - 10);
+        cs.showText("Emis le : " + (cmd.getDateCommande() != null
+                ? cmd.getDateCommande().format(FMT) : "—")); cs.endText();
 
-        // Titre col 2
-        cs.beginText();
-        cs.setFont(PDType1Font.HELVETICA_BOLD, 10);
-        cs.newLineAtOffset(col2X + 8, y - 18);
-        cs.showText(titre2);
-        cs.endText();
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 8);
+        cs.newLineAtOffset(mG + 100, y - 22);
+        cs.showText("Methode : Stripe  |  Devise : TND"); cs.endText();
 
-        // Lignes col 1
-        cs.setNonStrokingColor(COULEUR_TEXTE);
-        float yLigne = y - 34;
-        for (String l : lignes1) {
-            cs.beginText();
-            cs.setFont(PDType1Font.HELVETICA, 9);
-            cs.newLineAtOffset(margeG + 8, yLigne);
-            cs.showText(safe(l));
-            cs.endText();
-            yLigne -= 15;
-        }
-
-        // Lignes col 2
-        yLigne = y - 34;
-        for (String l : lignes2) {
-            cs.beginText();
-            cs.setFont(PDType1Font.HELVETICA, 9);
-            cs.newLineAtOffset(col2X + 8, yLigne);
-            cs.showText(safe(l));
-            cs.endText();
-            yLigne -= 15;
-        }
-
-        return y - hauteurBloc - 10;
+        return y - 28;
     }
+
+    // ── Infos 2 colonnes ──────────────────────────────────────────────────────
+
+    private float dessinerInfos2Col(PDPageContentStream cs,
+            float mG, float mD, float y,
+            Commande cmd, Livraison liv) throws Exception {
+
+        float colW = (mD - mG - 16) / 2f;
+        float col2 = mG + colW + 16;
+        float hauteur = 110f;
+
+        // Fond col 1
+        cs.setNonStrokingColor(C_GRIS_CLAIR);
+        cs.addRect(mG, y - hauteur, colW, hauteur); cs.fill();
+        cs.setStrokingColor(C_GRIS);
+        cs.setLineWidth(0.5f);
+        cs.addRect(mG, y - hauteur, colW, hauteur); cs.stroke();
+
+        // Fond col 2
+        cs.setNonStrokingColor(C_GRIS_CLAIR);
+        cs.addRect(col2, y - hauteur, colW, hauteur); cs.fill();
+        cs.setStrokingColor(C_GRIS);
+        cs.addRect(col2, y - hauteur, colW, hauteur); cs.stroke();
+
+        // Titres
+        cs.setNonStrokingColor(C_BLEU);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 9);
+        cs.newLineAtOffset(mG + 8, y - 14); cs.showText("DETAILS COMMANDE"); cs.endText();
+
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 9);
+        cs.newLineAtOffset(col2 + 8, y - 14); cs.showText("LIVRAISON"); cs.endText();
+
+        // Séparateur titre
+        cs.setStrokingColor(C_BLEU);
+        cs.setLineWidth(1f);
+        cs.moveTo(mG + 8, y - 18); cs.lineTo(mG + colW - 8, y - 18); cs.stroke();
+        cs.moveTo(col2 + 8, y - 18); cs.lineTo(col2 + colW - 8, y - 18); cs.stroke();
+
+        // Données col 1
+        String[][] d1 = {
+            {"Commande", "#" + cmd.getId()},
+            {"Date", cmd.getDateCommande() != null ? cmd.getDateCommande().format(FMT) : "—"},
+            {"Paiement", "Stripe"},
+            {"Statut", "Confirme"}
+        };
+        float yl = y - 32;
+        for (String[] row : d1) {
+            cs.setNonStrokingColor(C_MUTED);
+            cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 8);
+            cs.newLineAtOffset(mG + 8, yl); cs.showText(row[0]); cs.endText();
+            cs.setNonStrokingColor(C_TEXTE);
+            cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 8);
+            cs.newLineAtOffset(mG + 70, yl); cs.showText(safe(row[1])); cs.endText();
+            yl -= 16;
+        }
+
+        // Données col 2
+        String[][] d2 = {
+            {"Adresse", liv != null ? liv.getAdresse() : "—"},
+            {"Ville",   liv != null ? liv.getVille()   : "—"},
+            {"Tel",     liv != null && liv.getPhoneNumber() != null ? liv.getPhoneNumber() : "—"},
+            {"Statut",  liv != null ? liv.getStatusLivraison().replace("_", " ") : "—"},
+            {"Date",    liv != null && liv.getDateLivraison() != null
+                        ? liv.getDateLivraison().format(FMT_DATE) : "Non precisee"}
+        };
+        yl = y - 32;
+        for (String[] row : d2) {
+            cs.setNonStrokingColor(C_MUTED);
+            cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 8);
+            cs.newLineAtOffset(col2 + 8, yl); cs.showText(row[0]); cs.endText();
+            cs.setNonStrokingColor(C_TEXTE);
+            cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 8);
+            cs.newLineAtOffset(col2 + 55, yl); cs.showText(safe(row[1])); cs.endText();
+            yl -= 16;
+        }
+
+        return y - hauteur;
+    }
+
+    // ── Tableau articles ──────────────────────────────────────────────────────
 
     private float dessinerTableau(PDPageContentStream cs,
-            float margeG, float margeD, float y,
-            List<LigneCommande> lignes) throws Exception {
+            float mG, float mD, float y, List<LigneCommande> lignes) throws Exception {
 
-        float largeurTotale = margeD - margeG;
-        float[] colW = { largeurTotale * 0.45f, largeurTotale * 0.20f,
-                         largeurTotale * 0.17f, largeurTotale * 0.18f };
-        String[] entetes = { "Produit", "Prix unitaire", "Quantite", "Sous-total" };
+        float lT = mD - mG;
+        float[] colW = { lT * 0.44f, lT * 0.19f, lT * 0.15f, lT * 0.22f };
+        String[] ent = { "PRODUIT", "PRIX UNIT.", "QTE", "SOUS-TOTAL" };
 
-        // En-tête tableau
-        cs.setNonStrokingColor(COULEUR_PRIMAIRE);
-        cs.addRect(margeG, y - 22, largeurTotale, 22);
-        cs.fill();
+        // En-tête
+        cs.setNonStrokingColor(C_BLEU_FONCE);
+        cs.addRect(mG, y - 24, lT, 24); cs.fill();
 
-        cs.setNonStrokingColor(Color.WHITE);
-        float xCol = margeG + 6;
-        for (int i = 0; i < entetes.length; i++) {
-            cs.beginText();
-            cs.setFont(PDType1Font.HELVETICA_BOLD, 9);
-            cs.newLineAtOffset(xCol, y - 15);
-            cs.showText(entetes[i]);
-            cs.endText();
-            xCol += colW[i];
+        cs.setNonStrokingColor(C_BLANC);
+        float xC = mG + 8;
+        for (int i = 0; i < ent.length; i++) {
+            cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 8);
+            cs.newLineAtOffset(xC, y - 16); cs.showText(ent[i]); cs.endText();
+            xC += colW[i];
         }
-        y -= 22;
+        y -= 24;
 
-        // Lignes du tableau
+        // Lignes
         boolean pair = false;
         for (LigneCommande lc : lignes) {
-            if (pair) {
-                cs.setNonStrokingColor(COULEUR_SURFACE);
-                cs.addRect(margeG, y - 20, largeurTotale, 20);
-                cs.fill();
-            }
-            pair = !pair;
+            Color bg = pair ? C_GRIS_CLAIR : C_BLANC;
+            cs.setNonStrokingColor(bg);
+            cs.addRect(mG, y - 22, lT, 22); cs.fill();
 
-            cs.setNonStrokingColor(COULEUR_TEXTE);
-            xCol = margeG + 6;
+            // Ligne séparatrice fine
+            cs.setStrokingColor(C_GRIS);
+            cs.setLineWidth(0.3f);
+            cs.moveTo(mG, y - 22); cs.lineTo(mD, y - 22); cs.stroke();
+
+            cs.setNonStrokingColor(C_TEXTE);
+            xC = mG + 8;
             String[] vals = {
-                tronquer(lc.getNomProduit(), 35),
+                tronquer(lc.getNomProduit(), 32),
                 String.format("%.2f TND", lc.getPrixUnitaire()),
-                String.valueOf(lc.getQuantite()),
+                "x" + lc.getQuantite(),
                 String.format("%.2f TND", lc.getPrixUnitaire() * lc.getQuantite())
             };
             for (int i = 0; i < vals.length; i++) {
+                boolean isTotal = (i == 3);
+                cs.setNonStrokingColor(isTotal ? C_BLEU : C_TEXTE);
                 cs.beginText();
-                cs.setFont(PDType1Font.HELVETICA, 9);
-                cs.newLineAtOffset(xCol, y - 14);
-                cs.showText(safe(vals[i]));
-                cs.endText();
-                xCol += colW[i];
+                cs.setFont(isTotal ? PDType1Font.HELVETICA_BOLD : PDType1Font.HELVETICA, 9);
+                cs.newLineAtOffset(xC, y - 15); cs.showText(safe(vals[i])); cs.endText();
+                xC += colW[i];
             }
-
-            // Ligne séparatrice
-            cs.setStrokingColor(COULEUR_BORDURE);
-            cs.setLineWidth(0.3f);
-            cs.moveTo(margeG, y - 20);
-            cs.lineTo(margeD, y - 20);
-            cs.stroke();
-
-            y -= 20;
+            y -= 22;
+            pair = !pair;
         }
+
+        // Bordure bas tableau
+        cs.setStrokingColor(C_BLEU_FONCE);
+        cs.setLineWidth(1.5f);
+        cs.moveTo(mG, y); cs.lineTo(mD, y); cs.stroke();
+
         return y;
     }
 
-    private float dessinerTotal(PDPageContentStream cs,
-            float margeG, float margeD, float y, double total) throws Exception {
+    // ── Récapitulatif financier ───────────────────────────────────────────────
 
-        float largeur = 200f;
-        float xDebut  = margeD - largeur;
+    private float dessinerRecap(PDPageContentStream cs,
+            float mG, float mD, float y,
+            List<LigneCommande> lignes, double total) throws Exception {
 
-        // Fond bleu
-        cs.setNonStrokingColor(COULEUR_PRIMAIRE);
-        cs.addRect(xDebut, y - 30, largeur, 30);
-        cs.fill();
+        double sousTotal = lignes.stream()
+                .mapToDouble(l -> l.getPrixUnitaire() * l.getQuantite()).sum();
 
-        cs.setNonStrokingColor(Color.WHITE);
-        cs.beginText();
-        cs.setFont(PDType1Font.HELVETICA_BOLD, 12);
-        cs.newLineAtOffset(xDebut + 10, y - 20);
-        cs.showText("TOTAL : " + String.format("%.2f TND", total));
-        cs.endText();
+        float xD = mD - 200f;
 
-        return y - 40;
+        // Sous-total
+        cs.setNonStrokingColor(C_MUTED);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 9);
+        cs.newLineAtOffset(xD, y - 14); cs.showText("Sous-total"); cs.endText();
+        cs.setNonStrokingColor(C_TEXTE);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 9);
+        cs.newLineAtOffset(mD - 80, y - 14);
+        cs.showText(String.format("%.2f TND", sousTotal)); cs.endText();
+
+        // Livraison
+        cs.setNonStrokingColor(C_MUTED);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 9);
+        cs.newLineAtOffset(xD, y - 28); cs.showText("Livraison"); cs.endText();
+        cs.setNonStrokingColor(C_VERT);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 9);
+        cs.newLineAtOffset(mD - 80, y - 28); cs.showText("GRATUITE"); cs.endText();
+
+        // Séparateur
+        cs.setStrokingColor(C_GRIS);
+        cs.setLineWidth(0.5f);
+        cs.moveTo(xD, y - 34); cs.lineTo(mD, y - 34); cs.stroke();
+
+        // Total — bandeau bleu
+        cs.setNonStrokingColor(C_BLEU);
+        cs.addRect(xD - 10, y - 58, mD - xD + 10, 22); cs.fill();
+
+        cs.setNonStrokingColor(C_BLANC);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 11);
+        cs.newLineAtOffset(xD, y - 50); cs.showText("TOTAL TTC"); cs.endText();
+
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 13);
+        cs.newLineAtOffset(mD - 100, y - 50);
+        cs.showText(String.format("%.2f TND", total)); cs.endText();
+
+        return y - 60;
     }
 
-    private void dessinerPied(PDPageContentStream cs, float largeur, Commande cmd) throws Exception {
-        float y = 40f;
-        cs.setNonStrokingColor(COULEUR_PRIMAIRE);
-        cs.setLineWidth(1f);
-        cs.moveTo(50, y + 15);
-        cs.lineTo(largeur - 50, y + 15);
-        cs.stroke();
+    // ── Message de remerciement ───────────────────────────────────────────────
 
-        cs.setNonStrokingColor(COULEUR_MUTED);
-        cs.beginText();
-        cs.setFont(PDType1Font.HELVETICA, 8);
-        cs.newLineAtOffset(50, y);
-        cs.showText("EduCampus - Marketplace des produits educatifs  |  Facture #"
-                + cmd.getId() + "  |  Document genere automatiquement");
-        cs.endText();
+    private void dessinerMerci(PDPageContentStream cs,
+            float mG, float mD, float y) throws Exception {
+        float larg = mD - mG;
+
+        cs.setNonStrokingColor(new Color(239, 246, 255)); // blue-50
+        cs.addRect(mG, y - 36, larg, 36); cs.fill();
+        cs.setStrokingColor(C_BLEU_CLAIR);
+        cs.setLineWidth(0.5f);
+        cs.addRect(mG, y - 36, larg, 36); cs.stroke();
+
+        cs.setNonStrokingColor(C_BLEU);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 10);
+        cs.newLineAtOffset(mG + larg / 2 - 80, y - 16);
+        cs.showText("Merci pour votre confiance !"); cs.endText();
+
+        cs.setNonStrokingColor(C_MUTED);
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 8);
+        cs.newLineAtOffset(mG + larg / 2 - 100, y - 28);
+        cs.showText("EduCampus - Votre partenaire pour reussir vos etudes"); cs.endText();
     }
+
+    // ── Pied de page ─────────────────────────────────────────────────────────
+
+    private void dessinerPied(PDPageContentStream cs, float W, Commande cmd) throws Exception {
+        // Bande sombre en bas
+        cs.setNonStrokingColor(C_BLEU_FONCE);
+        cs.addRect(0, 0, W, 32); cs.fill();
+
+        cs.setNonStrokingColor(new Color(148, 163, 184));
+        cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 7.5f);
+        cs.newLineAtOffset(45, 12);
+        cs.showText("EduCampus  |  Facture #" + String.format("%06d", cmd.getId())
+                + "  |  Document genere automatiquement  |  Non contractuel");
+        cs.endText();
+
+        // Accent coloré
+        cs.setNonStrokingColor(C_BLEU);
+        cs.addRect(0, 30, W, 2); cs.fill();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String safe(String s) {
         if (s == null) return "—";
-        // PDFBox Type1 ne supporte pas les caractères non-latin1
         return s.replace("é","e").replace("è","e").replace("ê","e").replace("ë","e")
                 .replace("à","a").replace("â","a").replace("ä","a")
                 .replace("ù","u").replace("û","u").replace("ü","u")
@@ -317,6 +400,6 @@ public class FacturePNGService {
 
     private String tronquer(String s, int max) {
         if (s == null) return "";
-        return s.length() > max ? s.substring(0, max - 1) + "…" : s;
+        return s.length() > max ? s.substring(0, max - 1) + "..." : s;
     }
 }
