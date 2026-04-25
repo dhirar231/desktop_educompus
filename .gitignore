@@ -15,4 +15,12 @@ Thumbs.db
 # Logs
 *.log
 
-target/classes/com/educompus/service/ServiceExam.class
+# Maven cache
+.m2/
+
+# Binaries
+*.jar
+
+# JCEF cache
+var/
+.env
