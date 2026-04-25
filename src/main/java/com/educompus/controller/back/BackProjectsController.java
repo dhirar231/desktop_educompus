@@ -6,6 +6,8 @@ import com.educompus.model.ProjectSubmissionView;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.service.FormValidator;
+import com.educompus.service.JcefBrowserService;
+import com.educompus.service.ProjectMeetingService;
 import com.educompus.service.ProjectValidationService;
 import com.educompus.service.ValidationResult;
 import com.educompus.util.Theme;
@@ -28,12 +30,15 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -63,12 +68,17 @@ import java.util.Optional;
 public final class BackProjectsController {
     private final ProjectRepository projectRepo = new ProjectRepository();
     private final ProjectSubmissionRepository submissionRepo = new ProjectSubmissionRepository();
+    private final ProjectMeetingService projectMeetingService = new ProjectMeetingService();
+    private final JcefBrowserService browserService = JcefBrowserService.getInstance();
 
     @FXML
     private MenuButton projectsMenuButton;
 
     @FXML
-    private javafx.scene.control.MenuItem catalogueMenuItem;
+    private MenuItem catalogueMenuItem;
+
+    @FXML
+    private Button sendMailButton;
 
     @FXML
     private StackPane viewStack;
@@ -149,6 +159,11 @@ public final class BackProjectsController {
             catalogueMenuItem.setVisible(adminOnlyCatalogue);
             catalogueMenuItem.setDisable(!adminOnlyCatalogue);
         }
+        if (sendMailButton != null) {
+            boolean canMail = AppState.isAdmin() || AppState.isTeacher();
+            sendMailButton.setVisible(canMail);
+            sendMailButton.setManaged(canMail);
+        }
         if (cataloguePane != null && !adminOnlyCatalogue) {
             cataloguePane.setVisible(false);
             cataloguePane.setManaged(false);
@@ -219,6 +234,30 @@ public final class BackProjectsController {
         openKanbanWindow(selectedSubmission);
     }
 
+    @FXML
+    private void openMailingDialog(ActionEvent event) {
+        if (!(AppState.isAdmin() || AppState.isTeacher())) {
+            info("Mailing", "Acces reserve a l'administration et aux enseignants.");
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/View/back/BackProjectMailing.fxml"));
+            Parent root = loader.load();
+            Scene scene = new Scene(root, 760, 760);
+            if (sendMailButton != null && sendMailButton.getScene() != null) {
+                scene.getStylesheets().addAll(sendMailButton.getScene().getStylesheets());
+            }
+            Theme.apply(root);
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Envoyer mail");
+            stage.setScene(scene);
+            stage.showAndWait();
+        } catch (Exception e) {
+            error("Erreur ouverture mailing", e);
+        }
+    }
+
     private void setView(VBox pane) {
         setPaneVisible(projectsPane, pane == projectsPane);
         setPaneVisible(submissionsPane, pane == submissionsPane);
@@ -269,6 +308,7 @@ public final class BackProjectsController {
     }
 
     private VBox buildAdminProjectCard(Project project) {
+        final Project currentProject = refreshProjectState(project);
         VBox card = new VBox(10);
         card.getStyleClass().add("project-card");
         card.setPadding(new javafx.geometry.Insets(14));
@@ -276,12 +316,12 @@ public final class BackProjectsController {
         card.setMinWidth(240);
 
         HBox top = new HBox(10);
-        Label title = new Label(safe(project.getTitle()));
+        Label title = new Label(safe(currentProject.getTitle()));
         title.getStyleClass().add("project-card-title");
         title.setWrapText(true);
         HBox.setHgrow(title, Priority.ALWAYS);
 
-        Label chip = new Label(safe(project.getDeadline()));
+        Label chip = new Label(safe(currentProject.getDeadline()));
         chip.getStyleClass().addAll("chip", "chip-info");
         // keep the deadline chip compact so it doesn't stretch across the card
         chip.setWrapText(false);
@@ -293,20 +333,26 @@ public final class BackProjectsController {
         top.getChildren().addAll(title, chip);
 
         // published badge: show emoji in top-right (✅ / ❌)
-        boolean published = project.isPublished();
+        boolean published = currentProject.isPublished();
         Label pubBadge = new Label(published ? "✅" : "❌");
         pubBadge.getStyleClass().addAll("pub-emoji");
         pubBadge.setStyle("-fx-font-size:18px; -fx-background-color: transparent; -fx-padding: 4 6 4 6;");
         javafx.scene.control.Tooltip.install(pubBadge, new javafx.scene.control.Tooltip(published ? "Publié" : "Non publié"));
 
         // build card content and subtitle (description)
-        String desc = safe(project.getDescription());
+        String desc = safe(currentProject.getDescription());
         Label subtitle = new Label(desc.isBlank() ? "Aucune description" : summarize(desc, 110));
         subtitle.getStyleClass().add("project-card-subtitle");
         subtitle.setWrapText(true);
 
+        Label meetingStatus = new Label(currentProject.isMeetingActive()
+                ? ("Meeting actif: " + safe(currentProject.getMeetingRoom()))
+                : "Meeting inactif");
+        meetingStatus.getStyleClass().add("page-subtitle");
+        meetingStatus.setWrapText(true);
+
         VBox content = new VBox(8);
-        content.getChildren().addAll(top, subtitle);
+        content.getChildren().addAll(top, subtitle, meetingStatus);
 
         // container stack so we can place the badge in the top-right corner
         StackPane container = new StackPane();
@@ -324,7 +370,7 @@ public final class BackProjectsController {
         btnViewSubs.setOnAction(e -> {
             try {
                 if (submissionsSearchField != null) {
-                    submissionsSearchField.setText(safe(project.getTitle()));
+                    submissionsSearchField.setText(safe(currentProject.getTitle()));
                 }
                 // ensure submissions pane is visible and refreshed
                 setView(submissionsPane);
@@ -335,24 +381,44 @@ public final class BackProjectsController {
             }
         });
 
+        MenuButton meetingMenu = null;
+        if (AppState.isTeacher()) {
+            meetingMenu = new MenuButton("Meeting");
+            meetingMenu.getStyleClass().addAll("meeting-menu-btn",
+                    currentProject.isMeetingActive() ? "meeting-menu-btn-active" : "meeting-menu-btn-idle");
+
+            MenuItem openMeetingItem = new MenuItem(currentProject.isMeetingActive() ? "Open meeting" : "Create meeting");
+            openMeetingItem.setOnAction(e -> openProjectMeeting(currentProject));
+
+            MenuItem copyMeetingItem = new MenuItem("Copy link");
+            copyMeetingItem.setDisable(!currentProject.isMeetingActive() || safe(currentProject.getMeetingUrl()).isBlank());
+            copyMeetingItem.setOnAction(e -> copyProjectMeetingLink(currentProject));
+
+            MenuItem closeMeetingItem = new MenuItem("Close meeting");
+            closeMeetingItem.setDisable(!currentProject.isMeetingActive());
+            closeMeetingItem.setOnAction(e -> closeProjectMeeting(currentProject));
+
+            meetingMenu.getItems().setAll(openMeetingItem, copyMeetingItem, closeMeetingItem);
+        }
+
         // publish/unpublish button (avoid aggressive red style; use RGB outline when published)
         Button btnPublish = new Button(published ? "Dépublier" : "Publier");
         btnPublish.getStyleClass().add(published ? "btn-rgb-outline" : "btn-rgb");
         btnPublish.setOnAction(e -> {
             // confirmation before toggling
-            String action = project.isPublished() ? "dépublier" : "publier";
+            String action = currentProject.isPublished() ? "dépublier" : "publier";
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
             confirm.setTitle("Confirmation");
-            confirm.setHeaderText((project.isPublished() ? "Dépublier" : "Publier") + " le projet ?");
-            confirm.setContentText("Projet: " + safe(project.getTitle()) + "\nVoulez-vous vraiment " + action + " ce projet ?");
+            confirm.setHeaderText((currentProject.isPublished() ? "Dépublier" : "Publier") + " le projet ?");
+            confirm.setContentText("Projet: " + safe(currentProject.getTitle()) + "\nVoulez-vous vraiment " + action + " ce projet ?");
             var res = confirm.showAndWait();
             if (res.isEmpty() || res.get() != ButtonType.OK) {
                 return;
             }
             try {
-                project.setPublished(!project.isPublished());
-                projectRepo.update(project);
-                info("Publication", project.isPublished() ? "Projet publié." : "Projet dépublié.");
+                currentProject.setPublished(!currentProject.isPublished());
+                projectRepo.update(currentProject);
+                info("Publication", currentProject.isPublished() ? "Projet publié." : "Projet dépublié.");
                 // refresh UI
                 if (projectsList != null) projectsList.refresh();
                 renderAdminCards();
@@ -363,6 +429,9 @@ public final class BackProjectsController {
 
         HBox actions = new HBox(10);
         actions.getChildren().addAll(grow, btnViewSubs);
+        if (meetingMenu != null) {
+            actions.getChildren().add(meetingMenu);
+        }
         if (AppState.isAdmin()) {
             actions.getChildren().add(btnPublish);
         }
@@ -396,6 +465,72 @@ public final class BackProjectsController {
             editingProject = newV;
         });
         if (projectSearchField != null) projectSearchField.setOnAction(e -> reloadProjects(null));
+    }
+
+    private Project refreshProjectState(Project project) {
+        Project refreshed = projectMeetingService.refresh(project);
+        if (refreshed == null) {
+            return project;
+        }
+        replaceProjectInList(allProjects, refreshed);
+        replaceProjectInList(projects, refreshed);
+        return refreshed;
+    }
+
+    private static void replaceProjectInList(List<Project> list, Project updated) {
+        if (list == null || updated == null) {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Project current = list.get(i);
+            if (current != null && current.getId() == updated.getId()) {
+                list.set(i, updated);
+                return;
+            }
+        }
+    }
+
+    private void openProjectMeeting(Project project) {
+        try {
+            Project updated = project.isMeetingActive() ? refreshProjectState(project) : projectMeetingService.openMeetingForProject(project);
+            String room = safe(updated.getMeetingRoom());
+            browserService.openMeetingDialog("EduCompus | Meeting | " + room, projectMeetingService.joinUrl(updated, false));
+            replaceProjectInList(allProjects, updated);
+            replaceProjectInList(projects, updated);
+            renderAdminCards();
+            if (projectsList != null) {
+                projectsList.refresh();
+            }
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private void copyProjectMeetingLink(Project project) {
+        Project updated = refreshProjectState(project);
+        if (updated == null || safe(updated.getMeetingUrl()).isBlank()) {
+            info("Meeting", "Aucun lien actif pour ce projet.");
+            return;
+        }
+        ClipboardContent content = new ClipboardContent();
+        content.putString(updated.getMeetingUrl());
+        Clipboard.getSystemClipboard().setContent(content);
+        info("Meeting", "Lien de meeting copie.");
+    }
+
+    private void closeProjectMeeting(Project project) {
+        try {
+            Project updated = projectMeetingService.closeMeetingForProject(project);
+            replaceProjectInList(allProjects, updated);
+            replaceProjectInList(projects, updated);
+            renderAdminCards();
+            if (projectsList != null) {
+                projectsList.refresh();
+            }
+            info("Meeting", "Le meeting du projet a ete ferme.");
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
     }
 
     @FXML

@@ -105,6 +105,11 @@ public final class FrontShellController {
             adminDashboardBtn.setVisible(hasAdminAccess);
             adminDashboardBtn.setManaged(hasAdminAccess);
         }
+        if (navCalendarBtn != null) {
+            boolean hasMeetingAccess = !AppState.isAdmin();
+            navCalendarBtn.setVisible(hasMeetingAccess);
+            navCalendarBtn.setManaged(hasMeetingAccess);
+        }
 
         navButtons.add(navDashboardBtn);
         navButtons.add(navMyCoursesBtn);
@@ -113,7 +118,9 @@ public final class FrontShellController {
         navButtons.add(navClubsBtn);
         navButtons.add(navEventsBtn);
         navButtons.add(navMarketplaceBtn);
-        navButtons.add(navCalendarBtn);
+        if (navCalendarBtn != null && navCalendarBtn.isManaged()) {
+            navButtons.add(navCalendarBtn);
+        }
         navButtons.add(navProfileBtn);
 
         String mail = AppState.getUserEmail();
