@@ -17,8 +17,19 @@
             <Label text="Marketplace" styleClass="page-title"/>
             <Label text="Découvrez notre catalogue de produits éducatifs." styleClass="page-subtitle"/>
         </VBox>
-        <Button text="Mes commandes" styleClass="btn-ghost" onAction="#onVoirMesCommandes"/>
-        <Button fx:id="btnPanier" text="Mon panier" styleClass="btn-rgb-outline" onAction="#onOuvrirPanier"/>
+        <Button text="Mes commandes" styleClass="btn-rgb-outline" onAction="#onVoirMesCommandes"/>
+        <Button fx:id="btnPanier" text="Mon panier" styleClass="btn-rgb" onAction="#onOuvrirPanier"/>
+    </HBox>
+
+    <!-- Barre de recherche + filtres -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="searchField"
+                   promptText="Rechercher un produit par nom..."
+                   styleClass="field"
+                   HBox.hgrow="ALWAYS"
+                   onKeyReleased="#onSearch"/>
+        <Button text="Réinitialiser" styleClass="btn-rgb-outline" onAction="#onReset"/>
+        <Label fx:id="lblCount" text="" styleClass="page-subtitle"/>
     </HBox>
 
     <!-- Section recommandations IA — bandeau compact horizontal -->
@@ -45,20 +56,9 @@
                    style="-fx-font-size: 10px; -fx-font-style: italic;"/>
         </HBox>
 
-        <!-- Flèches + cartes horizontales -->
+        <!-- Cartes + navigation (gérés en Java) -->
         <HBox fx:id="recoPane" spacing="8" alignment="CENTER_LEFT"/>
     </VBox>
-
-    <!-- Barre de recherche -->
-    <HBox spacing="10" alignment="CENTER_LEFT">
-        <TextField fx:id="searchField"
-                   promptText="Rechercher un produit par nom..."
-                   styleClass="field"
-                   HBox.hgrow="ALWAYS"
-                   onKeyReleased="#onSearch"/>
-        <Button text="Reinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
-        <Label fx:id="lblCount" text="" styleClass="page-subtitle"/>
-    </HBox>
 
     <!-- Grille de cartes -->
     <ScrollPane fx:id="scrollPane" fitToWidth="true" VBox.vgrow="ALWAYS"

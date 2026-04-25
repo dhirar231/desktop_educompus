@@ -80,8 +80,9 @@ public class FrontMarketplaceController {
     // ── Recommandations Groq ──────────────────────────────────────────────────
 
     private List<Produit> produitsRecommandes = new java.util.ArrayList<>();
+    private List<GroqRecommandationService.RecommandationItem> itemsRecommandes = new java.util.ArrayList<>();
     private int recoPage = 0;
-    private static final int RECO_PAGE_SIZE = 3;
+    private static final int RECO_PAGE_SIZE = 4;
 
     private void chargerRecommandations() {
         if (sectionReco == null) return;
@@ -93,10 +94,13 @@ public class FrontMarketplaceController {
             try {
                 if (groqService == null) groqService = new GroqRecommandationService();
                 System.out.println("[Groq] Appel API pour userId=" + AppState.getUserId());
-                List<Produit> recommandes = groqService.recommander(AppState.getUserId(), allProduits);
-                System.out.println("[Groq] " + recommandes.size() + " produits recommandes");
+                List<GroqRecommandationService.RecommandationItem> items =
+                        groqService.recommanderAvecJustification(AppState.getUserId(), allProduits);
+                System.out.println("[Groq] " + items.size() + " produits recommandes");
                 javafx.application.Platform.runLater(() -> {
-                    produitsRecommandes = recommandes;
+                    itemsRecommandes = items;
+                    produitsRecommandes = items.stream()
+                            .map(i -> i.produit).collect(java.util.stream.Collectors.toList());
                     recoPage = 0;
                     afficherRecommandations();
                 });
@@ -137,7 +141,10 @@ public class FrontMarketplaceController {
         cardsRow.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(cardsRow, Priority.ALWAYS);
         for (int i = debut; i < fin; i++) {
-            cardsRow.getChildren().add(buildMiniCard(produitsRecommandes.get(i)));
+            GroqRecommandationService.RecommandationItem item = itemsRecommandes.size() > i
+                    ? itemsRecommandes.get(i)
+                    : new GroqRecommandationService.RecommandationItem(produitsRecommandes.get(i), "");
+            cardsRow.getChildren().add(buildMiniCard(item.produit, item.justification));
         }
 
         // Flèche droite
@@ -153,8 +160,8 @@ public class FrontMarketplaceController {
         recoPane.getChildren().addAll(btnPrev, cardsRow, btnNext);
     }
 
-    /** Mini-card verticale compacte : image + titre + prix + bouton */
-    private VBox buildMiniCard(Produit p) {
+    /** Mini-card verticale compacte : image + titre + justification + prix + bouton */
+    private VBox buildMiniCard(Produit p, String justification) {
         VBox card = new VBox(8);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPrefWidth(160); card.setMaxWidth(160); card.setMinWidth(160);
@@ -197,6 +204,17 @@ public class FrontMarketplaceController {
         nom.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
         nom.setMaxWidth(140);
 
+        // Justification IA
+        String justifText = (justification != null && !justification.isBlank())
+                ? justification : "";
+        Label justif = new Label(justifText);
+        justif.setWrapText(true);
+        justif.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        justif.setMaxWidth(140);
+        justif.setStyle("-fx-font-size: 9px; -fx-text-fill: #7c3aed; -fx-font-style: italic;");
+        justif.setVisible(!justifText.isBlank());
+        justif.setManaged(!justifText.isBlank());
+
         // Prix
         Label prix = new Label(String.format("%.2f TND", p.getPrix()));
         prix.setStyle("-fx-font-size: 12px; -fx-font-weight: 900; -fx-text-fill: #2563eb;");
@@ -211,7 +229,7 @@ public class FrontMarketplaceController {
         btnAdd.setOnMouseClicked(e -> e.consume());
         btnAdd.setOnAction(e -> onAjouterPanier(p));
 
-        card.getChildren().addAll(avatar, nom, prix, btnAdd);
+        card.getChildren().addAll(avatar, nom, justif, prix, btnAdd);
         return card;
     }
 
@@ -317,7 +335,7 @@ public class FrontMarketplaceController {
             pagination.setMaxWidth(Double.MAX_VALUE);
 
             Button btnPrev = new Button("Precedent");
-            btnPrev.getStyleClass().add("btn-ghost");
+            btnPrev.getStyleClass().add("btn-rgb-outline");
             btnPrev.setDisable(pageCourante == 0);
             btnPrev.setOnAction(e -> { pageCourante--; afficherCartes(produits); scrollPane.setVvalue(0); });
 
@@ -325,16 +343,16 @@ public class FrontMarketplaceController {
                 final int idx = i;
                 Button btnPage = new Button(String.valueOf(i + 1));
                 if (i == pageCourante) {
-                    btnPage.getStyleClass().add("btn-primary");
+                    btnPage.getStyleClass().add("btn-rgb");
                 } else {
-                    btnPage.getStyleClass().add("btn-ghost");
+                    btnPage.getStyleClass().add("btn-rgb-outline");
                     btnPage.setOnAction(e -> { pageCourante = idx; afficherCartes(produits); scrollPane.setVvalue(0); });
                 }
                 pagination.getChildren().add(btnPage);
             }
 
             Button btnNext = new Button("Suivant");
-            btnNext.getStyleClass().add("btn-ghost");
+            btnNext.getStyleClass().add("btn-rgb-outline");
             btnNext.setDisable(pageCourante >= nbPages - 1);
             btnNext.setOnAction(e -> { pageCourante++; afficherCartes(produits); scrollPane.setVvalue(0); });
 
@@ -418,12 +436,12 @@ public class FrontMarketplaceController {
         prixRow.getChildren().addAll(prix, spacer, stockLbl);
 
         Button btnStart = new Button("🔊");
-        btnStart.getStyleClass().add("btn-ghost");
+        btnStart.getStyleClass().add("btn-rgb-outline");
         btnStart.setStyle("-fx-font-size: 14px; -fx-min-width: 34px;");
         btnStart.setTooltip(new Tooltip("Ecouter les statistiques"));
 
         Button btnStop = new Button("⏹");
-        btnStop.getStyleClass().add("btn-ghost");
+        btnStop.getStyleClass().add("btn-rgb-outline");
         btnStop.setStyle("-fx-font-size: 14px; -fx-min-width: 34px; -fx-text-fill: #e74c3c;");
         btnStop.setTooltip(new Tooltip("Arreter la lecture"));
         btnStop.setDisable(true);
@@ -434,7 +452,7 @@ public class FrontMarketplaceController {
         btnStop.setOnAction(e -> stopperVoix(btnStart, btnStop));
 
         Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "Ajouter");
-        btnAdd.getStyleClass().add(p.getStock() == 0 ? "btn-ghost" : "btn-primary");
+        btnAdd.getStyleClass().add(p.getStock() == 0 ? "btn-rgb-outline" : "btn-rgb");
         HBox.setHgrow(btnAdd, Priority.ALWAYS);
         btnAdd.setMaxWidth(Double.MAX_VALUE);
         btnAdd.setDisable(p.getStock() == 0);

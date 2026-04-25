@@ -32,6 +32,7 @@ com\educompus\model\KanbanTask.class
 com\educompus\util\BadWordsFilter.class
 com\educompus\service\ServiceProjectSubmission.class
 com\educompus\service\ServiceStatistiques$ProduitVendu.class
+com\educompus\service\GroqRecommandationService$RecommandationItem.class
 com\educompus\util\ProduitValidator$Regle.class
 com\educompus\controller\back\BackUsersController.class
 com\educompus\controller\front\FrontProfileController.class

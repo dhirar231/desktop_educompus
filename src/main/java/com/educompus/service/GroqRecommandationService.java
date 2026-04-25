@@ -61,6 +61,74 @@ public class GroqRecommandationService {
                 : recommandes;
     }
 
+    // ── Résultat enrichi avec justification ───────────────────────────────────
+
+    public static class RecommandationItem {
+        public final Produit produit;
+        public final String  justification;
+        public RecommandationItem(Produit produit, String justification) {
+            this.produit       = produit;
+            this.justification = justification;
+        }
+    }
+
+    public List<RecommandationItem> recommanderAvecJustification(int userId, List<Produit> tousProduits) throws Exception {
+        ProfilClient profil = construireProfil(userId);
+
+        if (profil.achats.isEmpty() && profil.avis.isEmpty()) {
+            return tousProduits.stream()
+                    .filter(p -> p.getStock() > 0)
+                    .limit(6)
+                    .map(p -> new RecommandationItem(p, "Produit populaire dans notre catalogue."))
+                    .collect(Collectors.toList());
+        }
+
+        String prompt  = construirePromptJustifie(profil, tousProduits);
+        String reponse = appellerGroq(prompt);
+        return parserRecommandations(reponse, tousProduits);
+    }
+
+    private String construirePromptJustifie(ProfilClient profil, List<Produit> catalogue) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Tu es un systeme de recommandation. Retourne 6 produits au format :\n");
+        sb.append("ID|Justification courte (max 55 caracteres)\n\n");
+        sb.append("PROFIL:\n- Achats: ").append(String.join(", ", profil.achats)).append("\n");
+        sb.append("- Categories: ").append(String.join(", ", profil.categories)).append("\n");
+        sb.append("\nCATALOGUE (id|nom|categorie|prix|stock):\n");
+        for (Produit p : catalogue) {
+            if (p.getStock() > 0 && !profil.achats.contains(p.getNom()))
+                sb.append(p.getId()).append("|").append(p.getNom()).append("|")
+                  .append(p.getCategorie()).append("|")
+                  .append(String.format("%.2f", p.getPrix())).append("|")
+                  .append(p.getStock()).append("\n");
+        }
+        sb.append("\nReponds avec 6 lignes : ID|Justification (ex: 3|Correspond a vos interets en maths)");
+        return sb.toString();
+    }
+
+    private List<RecommandationItem> parserRecommandations(String texte, List<Produit> catalogue) {
+        Map<Integer, Produit> index = catalogue.stream()
+                .collect(Collectors.toMap(Produit::getId, p -> p));
+        List<RecommandationItem> result = new java.util.ArrayList<>();
+        for (String ligne : texte.split("\n")) {
+            ligne = ligne.trim();
+            if (ligne.isBlank()) continue;
+            String[] parts = ligne.split("\\|", 2);
+            try {
+                int id = Integer.parseInt(parts[0].trim().replaceAll("[^0-9]", ""));
+                String justif = parts.length > 1 ? parts[1].trim() : "Recommande pour vous.";
+                Produit p = index.get(id);
+                if (p != null && p.getStock() > 0)
+                    result.add(new RecommandationItem(p, justif));
+            } catch (NumberFormatException ignored) {}
+        }
+        if (result.size() < 3)
+            return catalogue.stream().filter(p -> p.getStock() > 0).limit(6)
+                    .map(p -> new RecommandationItem(p, "Produit populaire dans notre catalogue."))
+                    .collect(Collectors.toList());
+        return result.stream().limit(6).collect(Collectors.toList());
+    }
+
     // ── Chatbot assistant de vente ────────────────────────────────────────────
 
     /**
