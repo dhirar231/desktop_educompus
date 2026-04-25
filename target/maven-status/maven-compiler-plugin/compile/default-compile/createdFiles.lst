@@ -59,6 +59,7 @@ com\educompus\model\Td.class
 com\educompus\controller\front\FrontProjectsController$2.class
 com\educompus\service\CoursValidationService.class
 com\educompus\controller\back\BackExamQuestionsController.class
+com\educompus\controller\back\BackCalendrierCommandesController$1.class
 com\educompus\controller\front\FrontShellController.class
 com\educompus\service\GroqRecommandationService.class
 com\educompus\repository\AuthUserRepository.class
@@ -123,6 +124,7 @@ com\educompus\controller\front\FrontPanierController.class
 com\educompus\util\ProjectRules.class
 com\educompus\controller\back\BackUserImportController$1.class
 com\educompus\service\CoursService.class
+com\educompus\controller\back\BackCalendrierCommandesController.class
 com\educompus\model\Livraison.class
 com\educompus\controller\front\FrontMarketplaceController.class
 com\educompus\model\Commande.class

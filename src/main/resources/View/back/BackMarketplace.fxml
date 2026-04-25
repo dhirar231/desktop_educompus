@@ -19,6 +19,7 @@
                    styleClass="page-subtitle"/>
         </VBox>
         <Button text="📊  Statistiques"      styleClass="btn-ghost"   onAction="#onVoirStatistiques"/>
+        <Button text="📅  Calendrier"         styleClass="btn-ghost"   onAction="#onVoirCalendrier"/>
         <Button text="📋  Voir les commandes" styleClass="btn-ghost"   onAction="#onVoirCommandes"/>
         <Button fx:id="btnAjouter" text="＋  Ajouter un produit" styleClass="btn-primary" onAction="#onAjouter"/>
     </HBox>

@@ -173,6 +173,7 @@ public class BackMarketplaceController {
     // ── Navigation ────────────────────────────────────────────────────────────
 
     @FXML private void onVoirStatistiques(ActionEvent e) { naviguerVers("View/back/BackStatistiques.fxml"); }
+    @FXML private void onVoirCalendrier(ActionEvent e)   { naviguerVers("View/back/BackCalendrierCommandes.fxml"); }
     @FXML private void onVoirCommandes(ActionEvent e)    { naviguerVers("View/back/BackCommandes.fxml"); }
 
     private void naviguerVers(String fxmlPath) {
