@@ -70,6 +70,52 @@ public class ServiceStatistiques {
         return new ProduitStatDetail(note, nbAvis, nbCmd, ca);
     }
 
+    // ── Top 5 produits les plus vendus ───────────────────────────────────────
+
+    public static class ProduitVendu {
+        public final String nom;
+        public final String categorie;
+        public final int    nbVentes;
+        public final double caTotal;
+
+        public ProduitVendu(String nom, String categorie, int nbVentes, double caTotal) {
+            this.nom       = nom;
+            this.categorie = categorie;
+            this.nbVentes  = nbVentes;
+            this.caTotal   = caTotal;
+        }
+    }
+
+    public java.util.List<ProduitVendu> top5ProduitsVendus() throws SQLException {
+        String sql = """
+                SELECT p.nom, p.categorie,
+                       SUM(lc.quantite) AS nb_ventes,
+                       SUM(lc.prix_unitaire * lc.quantite) AS ca
+                FROM ligne_commande lc
+                JOIN produit p ON p.id = lc.produit_id
+                GROUP BY p.id, p.nom, p.categorie
+                ORDER BY nb_ventes DESC
+                LIMIT 5
+                """;
+        java.util.List<ProduitVendu> liste = new java.util.ArrayList<>();
+        Connection conn = EducompusDB.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql);
+        try {
+            ResultSet rs = ps.executeQuery();
+            try {
+                while (rs.next()) {
+                    liste.add(new ProduitVendu(
+                            rs.getString("nom"),
+                            rs.getString("categorie"),
+                            rs.getInt("nb_ventes"),
+                            rs.getDouble("ca")
+                    ));
+                }
+            } finally { rs.close(); }
+        } finally { ps.close(); conn.close(); }
+        return liste;
+    }
+
     // ── Répartition par catégorie ─────────────────────────────────────────────
 
     /** Retourne { catégorie → nombre de produits } */
