@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 /**
  * Recommandation de produits via Groq API (llama-3.3-70b-versatile).
- * Groq est gratuit avec 14 400 requêtes/jour sur le free tier.
+ .
  */
 public class GroqRecommandationService {
 
