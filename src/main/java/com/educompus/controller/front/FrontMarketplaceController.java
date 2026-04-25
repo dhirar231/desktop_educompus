@@ -520,11 +520,20 @@ public class FrontMarketplaceController {
         ttsThread = new Thread(() -> {
             try {
                 ServiceStatistiques.ProduitStatDetail stats = serviceStats.statsProduit(p.getId());
+                int rang = serviceStats.rangTopVentes(p.getId());
+
+                String mentionTop = "";
+                if (rang == 1) mentionTop = "C est le produit numero 1 des ventes. ";
+                else if (rang == 2) mentionTop = "C est le 2eme produit le plus vendu. ";
+                else if (rang == 3) mentionTop = "C est le 3eme produit le plus vendu. ";
+                else if (rang == 4) mentionTop = "C est le 4eme produit le plus vendu. ";
+                else if (rang == 5) mentionTop = "C est dans le top 5 des ventes. ";
+
                 String texte = String.format(
-                    "%s. Prix : %.0f dinars. Stock : %d unites. " +
+                    "%s. %sPrix : %.0f dinars. Stock : %d unites. " +
                     "Note moyenne : %.1f sur 5. %d avis clients. " +
                     "Commande %d fois. Chiffre d affaires : %.0f dinars.",
-                    p.getNom(), p.getPrix(), p.getStock(),
+                    p.getNom(), mentionTop, p.getPrix(), p.getStock(),
                     stats.noteMoyenne, stats.nbAvis, stats.nbCommandes, stats.caTotal);
                 TextToSpeechService.lire(texte);
             } catch (Exception ex) {
