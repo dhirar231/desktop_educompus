@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
  * Recommandation de produits via Groq API (llama-3.3-70b-versatile).
  .
  */
+import com.educompus.util.MarketplaceConfig;
+
 public class GroqRecommandationService {
 
     private static final String GROQ_URL =
@@ -24,7 +26,7 @@ public class GroqRecommandationService {
     private final String apiKey;
 
     public GroqRecommandationService() {
-        this.apiKey = chargerCle();
+        this.apiKey = MarketplaceConfig.get("GROQ_API_KEY");
     }
 
     // ── API publique ──────────────────────────────────────────────────────────

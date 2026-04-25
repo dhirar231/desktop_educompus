@@ -12,6 +12,8 @@ import java.util.Properties;
  * Upload d'images vers Cloudinary via l'API REST (sans SDK).
  * Utilise une signature HMAC-SHA1 pour l'authentification.
  */
+import com.educompus.util.MarketplaceConfig;
+
 public class CloudinaryService {
 
     private final String cloudName;
@@ -19,10 +21,9 @@ public class CloudinaryService {
     private final String apiSecret;
 
     public CloudinaryService() {
-        Properties props = chargerProperties();
-        this.cloudName = lire(props, "CLOUDINARY_CLOUD_NAME");
-        this.apiKey    = lire(props, "CLOUDINARY_API_KEY");
-        this.apiSecret = lire(props, "CLOUDINARY_API_SECRET");
+        this.cloudName = MarketplaceConfig.get("CLOUDINARY_CLOUD_NAME");
+        this.apiKey    = MarketplaceConfig.get("CLOUDINARY_API_KEY");
+        this.apiSecret = MarketplaceConfig.get("CLOUDINARY_API_SECRET");
     }
 
     /**

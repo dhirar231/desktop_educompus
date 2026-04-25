@@ -34,3 +34,6 @@ src/main/resources/gemini/gemini.properties
 
 # Clé Groq — ne jamais commiter
 src/main/resources/groq/groq.properties
+
+# Configuration Marketplace (toutes les clés API)
+src/main/resources/configMarketplace.properties

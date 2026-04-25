@@ -7,17 +7,17 @@ import com.twilio.type.PhoneNumber;
 import java.io.InputStream;
 import java.util.Properties;
 
+import com.educompus.util.MarketplaceConfig;
+
 public class TwilioSmsService {
 
     private final String fromNumber;
     private static boolean initialized = false;
 
     public TwilioSmsService() {
-        Properties props = chargerProperties();
-        String sid   = lire(props, "TWILIO_ACCOUNT_SID");
-        String token = lire(props, "TWILIO_AUTH_TOKEN");
-        this.fromNumber = lire(props, "TWILIO_FROM_NUMBER");
-
+        String sid   = MarketplaceConfig.get("TWILIO_ACCOUNT_SID");
+        String token = MarketplaceConfig.get("TWILIO_AUTH_TOKEN");
+        this.fromNumber = MarketplaceConfig.get("TWILIO_FROM_NUMBER");
         if (!initialized) {
             Twilio.init(sid, token);
             initialized = true;
