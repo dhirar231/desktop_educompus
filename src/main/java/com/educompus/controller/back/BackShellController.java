@@ -1,9 +1,14 @@
 package com.educompus.controller.back;
 
 import com.educompus.app.AppState;
+import com.educompus.model.AppNotification;
 import com.educompus.nav.Navigator;
+import com.educompus.repository.NotificationRepository;
 import com.educompus.util.Theme;
+import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -52,6 +57,12 @@ public final class BackShellController {
     private Button userMenuBtn;
 
     @FXML
+    private Button notificationsBtn;
+
+    @FXML
+    private Label notificationsBadgeLabel;
+
+    @FXML
     private StackPane userAvatar;
 
     @FXML
@@ -64,8 +75,11 @@ public final class BackShellController {
     private Label topbarBrandLabel;
 
     private ContextMenu userMenuPopup;
+    private ContextMenu notificationsPopup;
     private Label headerEmailLabel;
     private final PseudoClass pcOn = PseudoClass.getPseudoClass("on");
+    private final NotificationRepository notificationRepository = new NotificationRepository();
+    private Timeline notificationsPollingTimeline;
 
     @FXML
     private Button navDashboardBtn;
@@ -138,15 +152,23 @@ public final class BackShellController {
         if (topbarBrandLabel != null && AppState.isTeacher()) {
             topbarBrandLabel.setText("Teachers EduCampus");
         }
+        if (navSessionsBtn != null) {
+            boolean teacherOnlyMeeting = AppState.isTeacher();
+            navSessionsBtn.setVisible(teacherOnlyMeeting);
+            navSessionsBtn.setManaged(teacherOnlyMeeting);
+        }
         applyAvatarIcon();
 
         buildUserMenuPopup(display, mail);
+        buildNotificationsPopup();
 
         navButtons.add(navDashboardBtn);
         navButtons.add(navUsersBtn);
         navButtons.add(navCoursesBtn);
         navButtons.add(navCategoriesBtn);
-        navButtons.add(navSessionsBtn);
+        if (navSessionsBtn != null && navSessionsBtn.isManaged()) {
+            navButtons.add(navSessionsBtn);
+        }
         navButtons.add(navExamsBtn);
         navButtons.add(navProjectsBtn);
         navButtons.add(navClubsBtn);
@@ -160,6 +182,8 @@ public final class BackShellController {
         Theme.apply(shell);
         setContent(safeLoad("View/back/BackDashboard.fxml"));
         setActive(navDashboardBtn);
+        refreshNotifications();
+        startNotificationsPolling();
     }
 
     @FXML
@@ -268,6 +292,10 @@ public final class BackShellController {
         if (userMenuPopup != null) {
             userMenuPopup.hide();
         }
+        if (notificationsPopup != null) {
+            notificationsPopup.hide();
+        }
+        stopNotificationsPolling();
         AppState.setRole(AppState.Role.USER);
         AppState.setUserEmail("");
         AppState.setUserDisplayName("");
@@ -291,6 +319,26 @@ public final class BackShellController {
             return;
         }
         userMenuPopup.show(userMenuBtn, b.getMinX(), b.getMaxY() + 6);
+    }
+
+    @FXML
+    private void toggleNotificationsMenu(ActionEvent event) {
+        if (notificationsBtn == null || notificationsPopup == null) {
+            return;
+        }
+        if (notificationsPopup.isShowing()) {
+            notificationsPopup.hide();
+            return;
+        }
+
+        refreshNotificationsPopupContent();
+        Bounds b = notificationsBtn.localToScreen(notificationsBtn.getBoundsInLocal());
+        if (b == null) {
+            notificationsPopup.show(notificationsBtn, Side.BOTTOM, 0, 6);
+        } else {
+            notificationsPopup.show(notificationsBtn, b.getMinX() - 260, b.getMaxY() + 6);
+        }
+        markNotificationsAsRead();
     }
 
     private void setActive(Button active) {
@@ -433,6 +481,77 @@ public final class BackShellController {
         userMenuPopup.getItems().setAll(root);
     }
 
+    private void buildNotificationsPopup() {
+        notificationsPopup = new ContextMenu();
+        notificationsPopup.getStyleClass().add("user-menu-popup");
+        notificationsPopup.setAutoHide(true);
+        refreshNotificationsPopupContent();
+    }
+
+    private void refreshNotificationsPopupContent() {
+        if (notificationsPopup == null) {
+            return;
+        }
+        List<AppNotification> notifications = safeNotifications();
+
+        Label title = new Label("Notifications");
+        title.getStyleClass().add("user-menu-title");
+
+        Label subtitle = new Label(notifications.isEmpty()
+                ? "Aucune notification recente."
+                : "Soumissions projet recentes.");
+        subtitle.getStyleClass().add("user-menu-subtitle");
+
+        VBox list = new VBox(8);
+        if (notifications.isEmpty()) {
+            Label empty = new Label("Aucune nouvelle soumission pour le moment.");
+            empty.getStyleClass().add("page-subtitle");
+            empty.setWrapText(true);
+            list.getChildren().add(empty);
+        } else {
+            for (AppNotification notification : notifications) {
+                VBox item = new VBox(3);
+                item.getStyleClass().add(notification.isRead() ? "notification-item" : "notification-item-unread");
+
+                Label itemTitle = new Label(safe(notification.getTitle()));
+                itemTitle.getStyleClass().add("notification-title");
+
+                Label itemMessage = new Label(safe(notification.getMessage()));
+                itemMessage.getStyleClass().add("notification-message");
+                itemMessage.setWrapText(true);
+
+                Label itemDate = new Label(safe(notification.getCreatedAt()));
+                itemDate.getStyleClass().add("notification-date");
+
+                item.getChildren().addAll(itemTitle, itemMessage, itemDate);
+                list.getChildren().add(item);
+            }
+        }
+
+        Button markReadBtn = new Button("Tout marquer comme lu");
+        markReadBtn.getStyleClass().add("btn-rgb-outline");
+        markReadBtn.setDisable(notifications.isEmpty());
+        markReadBtn.setOnAction(e -> {
+            markNotificationsAsRead();
+            refreshNotificationsPopupContent();
+        });
+
+        VBox content = new VBox(10, title, subtitle, new Separator(), list, new Separator(), markReadBtn);
+        content.setPadding(new Insets(12));
+        content.setPrefWidth(320);
+
+        ScrollPane sp = new ScrollPane(content);
+        sp.setFitToWidth(true);
+        sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sp.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        sp.setPrefViewportHeight(300);
+        sp.getStyleClass().add("user-menu-scroll");
+
+        CustomMenuItem root = new CustomMenuItem(sp, false);
+        root.setHideOnClick(false);
+        notificationsPopup.getItems().setAll(root);
+    }
+
     private void applySwitchState(StackPane sw, Region thumb, boolean on) {
         if (sw != null) {
             sw.pseudoClassStateChanged(pcOn, on);
@@ -440,6 +559,53 @@ public final class BackShellController {
         if (sw != null && thumb != null) {
             StackPane.setAlignment(thumb, on ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
             thumb.setTranslateX(on ? -2 : 2);
+        }
+    }
+
+    private void refreshNotifications() {
+        int unread;
+        try {
+            unread = notificationRepository.countUnreadForUser(AppState.getUserId());
+        } catch (Exception e) {
+            unread = 0;
+        }
+        if (notificationsBadgeLabel != null) {
+            notificationsBadgeLabel.setText(unread > 99 ? "99+" : String.valueOf(unread));
+            notificationsBadgeLabel.setVisible(unread > 0);
+            notificationsBadgeLabel.setManaged(unread > 0);
+        }
+        if (notificationsPopup != null && notificationsPopup.isShowing()) {
+            refreshNotificationsPopupContent();
+        }
+    }
+
+    private void markNotificationsAsRead() {
+        try {
+            notificationRepository.markAllAsRead(AppState.getUserId());
+        } catch (Exception ignored) {
+        }
+        refreshNotifications();
+    }
+
+    private List<AppNotification> safeNotifications() {
+        try {
+            return notificationRepository.listRecentForUser(AppState.getUserId(), 8);
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private void startNotificationsPolling() {
+        stopNotificationsPolling();
+        notificationsPollingTimeline = new Timeline(new KeyFrame(Duration.seconds(3), e -> refreshNotifications()));
+        notificationsPollingTimeline.setCycleCount(Animation.INDEFINITE);
+        notificationsPollingTimeline.play();
+    }
+
+    private void stopNotificationsPolling() {
+        if (notificationsPollingTimeline != null) {
+            notificationsPollingTimeline.stop();
+            notificationsPollingTimeline = null;
         }
     }
 
@@ -461,5 +627,9 @@ public final class BackShellController {
             box.setPadding(new Insets(22));
             return box;
         }
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 }
