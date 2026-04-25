@@ -1,6 +1,7 @@
 package com.educompus.app;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -10,12 +11,22 @@ import javafx.stage.StageStyle;
 
 import com.educompus.controller.front.SplashController;
 import com.educompus.nav.Navigator;
+import com.educompus.service.SessionNotificationService;
+import com.educompus.service.NotificationSchedulerService;
+import com.educompus.service.NotificationService;
+import com.educompus.repository.NotificationRepository;
+import com.educompus.repository.SessionLiveRepository;
 import com.educompus.util.DatabaseSetup;
 import com.educompus.util.Theme;
+import com.educompus.util.NotificationTester;
+import com.educompus.debug.TestNotificationInApp;
 
 import java.io.File;
 
 public final class PreviewApp extends Application {
+    
+    private NotificationSchedulerService notificationScheduler;
+    
     @Override
     public void start(Stage stage) throws Exception {
         // Configurer la base de données au démarrage
@@ -40,6 +51,10 @@ public final class PreviewApp extends Application {
             stage.setMinWidth(1040);
             stage.setMinHeight(680);
             stage.show();
+            
+            // Démarrer le nouveau système de notifications automatiques
+            startNotificationScheduler();
+            
             return;
         }
 
@@ -76,6 +91,12 @@ public final class PreviewApp extends Application {
                     mainStage.setMinWidth(1040);
                     mainStage.setMinHeight(680);
                     mainStage.show();
+
+                    // Démarrer le service de notifications session live (ancien système)
+                    SessionNotificationService.getInstance().demarrer(mainStage);
+                    
+                    // Démarrer le nouveau système de notifications automatiques
+                    startNotificationScheduler();
                 } finally {
                     stage.close();
                 }
@@ -86,5 +107,73 @@ public final class PreviewApp extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+    
+    /**
+     * Démarre le nouveau système de notifications automatiques.
+     */
+    private void startNotificationScheduler() {
+        try {
+            // Initialiser les services
+            NotificationService notificationService = new NotificationService();
+            SessionLiveRepository sessionRepository = new SessionLiveRepository();
+            NotificationRepository notificationRepository = new NotificationRepository();
+            
+            // Créer et démarrer le planificateur
+            notificationScheduler = new NotificationSchedulerService(
+                notificationService, 
+                sessionRepository, 
+                notificationRepository
+            );
+            
+            notificationScheduler.start();
+            System.out.println("[NotificationScheduler] Nouveau système de notifications démarré");
+            
+            // Test automatique des notifications (optionnel)
+            if (Boolean.parseBoolean(System.getProperty("test.notifications", "false"))) {
+                System.out.println("🧪 Mode test activé - Envoi de notifications de test...");
+                Platform.runLater(() -> {
+                    try {
+                        Thread.sleep(3000); // Attendre 3 secondes
+                        NotificationTester.testBothNotifications();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
+            }
+            
+            // TEST AUTOMATIQUE DE LA NOTIFICATION URGENTE (TEMPORAIRE)
+            System.out.println("🚨 DÉCLENCHEMENT AUTOMATIQUE DU TEST DE NOTIFICATION URGENTE DANS 5 SECONDES...");
+            Platform.runLater(() -> {
+                try {
+                    Thread.sleep(5000); // Attendre 5 secondes
+                    System.out.println("🚨 LANCEMENT DU TEST NOTIFICATION URGENTE...");
+                    TestNotificationInApp.testUrgentNotificationNow();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            
+        } catch (Exception e) {
+            System.err.println("[NotificationScheduler] Erreur lors du démarrage: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Arrête proprement le système de notifications.
+     */
+    @Override
+    public void stop() throws Exception {
+        try {
+            if (notificationScheduler != null) {
+                notificationScheduler.stop();
+                System.out.println("[NotificationScheduler] Système de notifications arrêté");
+            }
+        } catch (Exception e) {
+            System.err.println("[NotificationScheduler] Erreur lors de l'arrêt: " + e.getMessage());
+        }
+        
+        super.stop();
     }
 }

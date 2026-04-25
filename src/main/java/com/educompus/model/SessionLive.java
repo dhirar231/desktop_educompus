@@ -17,6 +17,18 @@ public final class SessionLive {
     private LocalTime heure;
     private SessionStatut statut = SessionStatut.PLANIFIEE;
     private int coursId; // ID du cours associé
+    private String googleEventId; // ID de l'événement Google Calendar (null si non synchronisé)
+    
+    // Champs pour compatibilité avec le système de notifications
+    private java.time.LocalDateTime dateDebut;
+    private java.time.LocalDateTime dateFin;
+    private String titre;
+    private String description;
+    private String lienSession;
+    private String coursTitre;
+    private String enseignantNom;
+    private int enseignantId;
+    private com.educompus.model.SessionStatutNotification statutNotification;
 
     // Constructeurs
     
@@ -113,6 +125,42 @@ public final class SessionLive {
 
     public int getCoursId() { return coursId; }
     public void setCoursId(int coursId) { this.coursId = coursId; }
+
+    public String getGoogleEventId() { return googleEventId; }
+    public void setGoogleEventId(String googleEventId) { this.googleEventId = googleEventId; }
+
+    // Getters et setters pour le système de notifications
+    public java.time.LocalDateTime getDateDebut() { return dateDebut; }
+    public void setDateDebut(java.time.LocalDateTime dateDebut) { this.dateDebut = dateDebut; }
+
+    public java.time.LocalDateTime getDateFin() { return dateFin; }
+    public void setDateFin(java.time.LocalDateTime dateFin) { this.dateFin = dateFin; }
+
+    public String getTitre() { return titre != null ? titre : nomCours; }
+    public void setTitre(String titre) { this.titre = titre; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getLienSession() { return lienSession != null ? lienSession : lien; }
+    public void setLienSession(String lienSession) { this.lienSession = lienSession; }
+
+    public String getCoursTitre() { return coursTitre != null ? coursTitre : nomCours; }
+    public void setCoursTitre(String coursTitre) { this.coursTitre = coursTitre; }
+
+    public String getEnseignantNom() { return enseignantNom; }
+    public void setEnseignantNom(String enseignantNom) { this.enseignantNom = enseignantNom; }
+
+    public int getEnseignantId() { return enseignantId; }
+    public void setEnseignantId(int enseignantId) { this.enseignantId = enseignantId; }
+
+    public com.educompus.model.SessionStatutNotification getStatutNotification() { return statutNotification; }
+    public void setStatutNotification(com.educompus.model.SessionStatutNotification statutNotification) { this.statutNotification = statutNotification; }
+
+    /** Vérifie si la session est synchronisée avec Google Calendar. */
+    public boolean estSynchroniseeCalendar() {
+        return googleEventId != null && !googleEventId.isBlank();
+    }
 
     // Méthodes utilitaires
 

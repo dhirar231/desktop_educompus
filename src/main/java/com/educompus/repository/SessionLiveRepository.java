@@ -31,8 +31,8 @@ public final class SessionLiveRepository {
      */
     public int ajouterSession(SessionLive session) {
         String sql = """
-                INSERT INTO session_live (nom_cours, lien, date, heure, statut, cours_id, date_creation)
-                VALUES (?, ?, ?, ?, ?, ?, NOW())
+                INSERT INTO session_live (nom_cours, lien, date, heure, statut, cours_id, google_event_id, date_creation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
                 """;
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -43,6 +43,7 @@ public final class SessionLiveRepository {
             ps.setTime(4, session.getHeure() != null ? Time.valueOf(session.getHeure()) : null);
             ps.setString(5, session.getStatut().name());
             ps.setObject(6, session.getCoursId() > 0 ? session.getCoursId() : null);
+            ps.setString(7, session.getGoogleEventId());
             
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -65,7 +66,8 @@ public final class SessionLiveRepository {
     public void modifierSession(SessionLive session) {
         String sql = """
                 UPDATE session_live 
-                SET nom_cours = ?, lien = ?, date = ?, heure = ?, statut = ?, cours_id = ?, date_modification = NOW()
+                SET nom_cours = ?, lien = ?, date = ?, heure = ?, statut = ?, cours_id = ?,
+                    google_event_id = ?, date_modification = NOW()
                 WHERE id = ?
                 """;
         try (Connection conn = EducompusDB.getConnection();
@@ -77,7 +79,8 @@ public final class SessionLiveRepository {
             ps.setTime(4, session.getHeure() != null ? Time.valueOf(session.getHeure()) : null);
             ps.setString(5, session.getStatut().name());
             ps.setObject(6, session.getCoursId() > 0 ? session.getCoursId() : null); // cours_id optionnel
-            ps.setInt(7, session.getId());
+            ps.setString(7, session.getGoogleEventId());
+            ps.setInt(8, session.getId());
             
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
@@ -304,6 +307,101 @@ public final class SessionLiveRepository {
         }
     }
 
+    /**
+     * Met à jour uniquement l'identifiant Google Calendar d'une session.
+     */
+    public void updateGoogleEventId(int sessionId, String googleEventId) {
+        String sql = "UPDATE session_live SET google_event_id = ? WHERE id = ?";
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, googleEventId);
+            ps.setInt(2, sessionId);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("[SessionLive] updateGoogleEventId: " + safeMsg(e));
+        }
+    }
+
+    /**
+     * Trouve les sessions à venir dans une plage de temps donnée.
+     * Utilisé par le système de notifications automatiques.
+     * 
+     * @param from Début de la plage temporelle
+     * @param to Fin de la plage temporelle
+     * @return Liste des sessions dans la plage spécifiée
+     */
+    public List<SessionLive> findUpcomingSessions(java.time.LocalDateTime from, java.time.LocalDateTime to) {
+        String sql = """
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                       sl.date_creation, sl.date_modification, c.titre AS cours_titre
+                FROM session_live sl
+                LEFT JOIN cours c ON c.id = sl.cours_id
+                WHERE TIMESTAMP(sl.date, sl.heure) BETWEEN ? AND ?
+                  AND sl.statut = 'PLANIFIEE'
+                ORDER BY sl.date ASC, sl.heure ASC
+                """;
+        
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setTimestamp(1, java.sql.Timestamp.valueOf(from));
+            ps.setTimestamp(2, java.sql.Timestamp.valueOf(to));
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                List<SessionLive> sessions = new ArrayList<>();
+                while (rs.next()) {
+                    SessionLive session = mapSessionLive(rs);
+                    // Convertir les champs date/heure séparés en LocalDateTime pour compatibilité
+                    if (session.getDate() != null && session.getHeure() != null) {
+                        java.time.LocalDateTime dateDebut = java.time.LocalDateTime.of(
+                            session.getDate(), session.getHeure()
+                        );
+                        // Stocker dans un champ temporaire pour le système de notifications
+                        session.setDateDebut(dateDebut);
+                        session.setDateFin(dateDebut.plusHours(1)); // Durée par défaut d'1 heure
+                    }
+                    sessions.add(session);
+                }
+                return sessions;
+            }
+        } catch (Exception e) {
+            System.err.println("[SessionLive] findUpcomingSessions: " + safeMsg(e));
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Trouve une session par ID avec mapping complet pour le système de notifications.
+     * 
+     * @param id ID de la session
+     * @return Session avec tous les champs mappés, ou null si non trouvée
+     */
+    public SessionLive findById(int id) {
+        SessionLive session = getSessionById(id);
+        if (session != null) {
+            // Mapper les champs pour compatibilité avec le système de notifications
+            if (session.getDate() != null && session.getHeure() != null) {
+                java.time.LocalDateTime dateDebut = java.time.LocalDateTime.of(
+                    session.getDate(), session.getHeure()
+                );
+                session.setDateDebut(dateDebut);
+                session.setDateFin(dateDebut.plusHours(1)); // Durée par défaut
+                session.setTitre(session.getNomCours());
+                session.setLienSession(session.getLien());
+                // Mapper le statut vers le nouveau système
+                session.setStatutNotification(mapToNotificationStatus(session.getStatut()));
+            }
+        }
+        return session;
+    }
+
+    /**
+     * Mappe le statut de l'ancien système vers le nouveau système de notifications.
+     */
+    private com.educompus.model.SessionStatutNotification mapToNotificationStatus(SessionStatut oldStatus) {
+        return com.educompus.model.SessionStatutNotification.fromOldStatus(oldStatus);
+    }
+
     // Méthodes privées utilitaires
 
     private void ensureSessionLiveSchema() {
@@ -328,6 +426,8 @@ public final class SessionLiveRepository {
             executeIgnore(conn, "ALTER TABLE session_live ADD INDEX idx_sl_date (date)");
             executeIgnore(conn, "ALTER TABLE session_live ADD INDEX idx_sl_statut (statut)");
             executeIgnore(conn, "ALTER TABLE session_live ADD INDEX idx_sl_cours_id (cours_id)");
+            // Colonne google_event_id (ajout si absente)
+            executeIgnore(conn, "ALTER TABLE session_live ADD COLUMN google_event_id VARCHAR(255) NULL");
 
             // Étape 3 : ajouter la FK vers cours si la table cours existe
             executeIgnore(conn, """
@@ -388,6 +488,11 @@ public final class SessionLiveRepository {
         if (!rs.wasNull()) {
             session.setCoursId(coursId);
         }
+
+        // Google Calendar event ID
+        try {
+            session.setGoogleEventId(rs.getString("google_event_id"));
+        } catch (Exception ignored) {}
 
         return session;
     }

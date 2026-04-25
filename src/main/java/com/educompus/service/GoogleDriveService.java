@@ -35,7 +35,8 @@ public final class GoogleDriveService {
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
     
     // Dossiers organisationnels sur Google Drive
-    private static final String COURS_FOLDER_NAME = "EduCompus - Cours";
+    private static final String ROOT_FOLDER_NAME = "Gestion Cours";
+    private static final String COURS_FOLDER_NAME = "Cours";
     private static final String CHAPITRES_FOLDER_NAME = "Chapitres";
     private static final String TDS_FOLDER_NAME = "Travaux Dirigés";
     private static final String VIDEOS_FOLDER_NAME = "Vidéos Explicatives";
@@ -75,7 +76,7 @@ public final class GoogleDriveService {
                 .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
+        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(0).build();
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
     
@@ -84,7 +85,7 @@ public final class GoogleDriveService {
      */
     private String getOrCreateRootFolder() throws IOException {
         try {
-            String query = "name='" + COURS_FOLDER_NAME + "' and mimeType='application/vnd.google-apps.folder' and trashed=false";
+            String query = "name='" + ROOT_FOLDER_NAME + "' and mimeType='application/vnd.google-apps.folder' and trashed=false";
             com.google.api.services.drive.model.FileList result = driveService.files().list()
                     .setQ(query).setSpaces("drive").execute();
             List<com.google.api.services.drive.model.File> files = result.getFiles();
@@ -93,9 +94,9 @@ public final class GoogleDriveService {
             // DRIVE_FILE scope: listing may return empty – just create a new folder
         }
 
-        // Créer le dossier racine
+        // Créer le dossier racine "Gestion Cours"
         com.google.api.services.drive.model.File folderMetadata = new com.google.api.services.drive.model.File();
-        folderMetadata.setName(COURS_FOLDER_NAME);
+        folderMetadata.setName(ROOT_FOLDER_NAME);
         folderMetadata.setMimeType("application/vnd.google-apps.folder");
         com.google.api.services.drive.model.File folder = driveService.files().create(folderMetadata)
                 .setFields("id").execute();
@@ -117,38 +118,48 @@ public final class GoogleDriveService {
     }
     
     /**
-     * Upload un fichier de chapitre vers Google Drive.
+     * Upload un fichier de chapitre vers Google Drive dans la structure hiérarchique.
+     * Structure: Gestion Cours > [Cours] > [Chapitre] > fichier_chapitre.pdf
      */
     public DriveUploadResult uploadChapitreFile(String filePath, String fileName, String coursTitle, String chapitreTitle) throws IOException {
         String coursFolderId = getOrCreateCoursFolder(coursTitle);
-        String chapitresFolderId = getOrCreateSubFolder(coursFolderId, CHAPITRES_FOLDER_NAME);
-        return uploadFile(filePath, fileName, chapitresFolderId, "Chapitre: " + chapitreTitle);
+        String chapitreFolderId = getOrCreateSubFolder(coursFolderId, sanitizeFolderName(chapitreTitle));
+        return uploadFile(filePath, fileName, chapitreFolderId, "Chapitre: " + chapitreTitle);
     }
     
     /**
-     * Upload un fichier de TD vers Google Drive.
+     * Upload un fichier de TD vers Google Drive dans la structure hiérarchique.
+     * Structure: Gestion Cours > [Cours] > [Chapitre] > TDs > fichier_td.pdf
      */
-    public DriveUploadResult uploadTdFile(String filePath, String fileName, String coursTitle, String tdTitle) throws IOException {
+    public DriveUploadResult uploadTdFile(String filePath, String fileName, String coursTitle, String chapitreTitle) throws IOException {
         String coursFolderId = getOrCreateCoursFolder(coursTitle);
-        String tdsFolderId = getOrCreateSubFolder(coursFolderId, TDS_FOLDER_NAME);
-        return uploadFile(filePath, fileName, tdsFolderId, "TD: " + tdTitle);
+        String chapitreFolderId = getOrCreateSubFolder(coursFolderId, sanitizeFolderName(chapitreTitle));
+        String tdsFolderId = getOrCreateSubFolder(chapitreFolderId, TDS_FOLDER_NAME);
+        return uploadFile(filePath, fileName, tdsFolderId, "TD du chapitre: " + chapitreTitle);
     }
     
     /**
-     * Upload un fichier vidéo vers Google Drive.
+     * Upload un fichier vidéo vers Google Drive dans la structure hiérarchique.
+     * Structure: Gestion Cours > [Cours] > [Chapitre] > Vidéos > fichier_video.mp4
      */
-    public DriveUploadResult uploadVideoFile(String filePath, String fileName, String coursTitle, String videoTitle) throws IOException {
+    public DriveUploadResult uploadVideoFile(String filePath, String fileName, String coursTitle, String chapitreTitle) throws IOException {
         String coursFolderId = getOrCreateCoursFolder(coursTitle);
-        String videosFolderId = getOrCreateSubFolder(coursFolderId, VIDEOS_FOLDER_NAME);
-        return uploadFile(filePath, fileName, videosFolderId, "Vidéo: " + videoTitle);
+        String chapitreFolderId = getOrCreateSubFolder(coursFolderId, sanitizeFolderName(chapitreTitle));
+        String videosFolderId = getOrCreateSubFolder(chapitreFolderId, VIDEOS_FOLDER_NAME);
+        return uploadFile(filePath, fileName, videosFolderId, "Vidéo du chapitre: " + chapitreTitle);
     }
     
     /**
      * Obtient ou crée un dossier pour un cours spécifique.
+     * Structure: Gestion Cours > Cours > [Nom du Cours]
      */
     private String getOrCreateCoursFolder(String coursTitle) throws IOException {
+        // Créer d'abord le dossier "Cours" dans "Gestion Cours"
+        String coursFolderId = getOrCreateSubFolder(rootFolderId, COURS_FOLDER_NAME);
+        
+        // Puis créer le dossier spécifique du cours
         String safeFolderName = sanitizeFolderName(coursTitle);
-        return getOrCreateSubFolder(rootFolderId, safeFolderName);
+        return getOrCreateSubFolder(coursFolderId, safeFolderName);
     }
     
     /**

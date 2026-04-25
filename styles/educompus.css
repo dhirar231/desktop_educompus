@@ -3077,3 +3077,297 @@
 .chip-session-en-cours  { -fx-background-color: rgba(41,182,216,0.12); -fx-text-fill: #29b6d8; }
 .chip-session-terminee  { -fx-background-color: rgba(240,165,0,0.12);  -fx-text-fill: #f0a500; }
 .chip-session-annulee   { -fx-background-color: rgba(214,41,62,0.12);  -fx-text-fill: #d6293e; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NOTIFICATION SYSTEM STYLES
+   Styles pour les popups de notifications automatiques des sessions live
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Styles pour les notifications d'information (30 minutes avant) */
+.notification-info .dialog-pane {
+  -fx-background-color: #e3f2fd;
+  -fx-border-color: #2196f3;
+  -fx-border-width: 2px;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+  -fx-effect: dropshadow(three-pass-box, rgba(33, 150, 243, 0.25), 16, 0.2, 0, 4);
+}
+
+.notification-info .header-panel {
+  -fx-background-color: #2196f3;
+  -fx-background-radius: 10px 10px 0 0;
+  -fx-padding: 12 16 12 16;
+}
+
+.notification-info .header-panel .label {
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+  -fx-font-size: 14px;
+}
+
+.notification-info .content {
+  -fx-padding: 16 20 16 20;
+  -fx-background-color: #e3f2fd;
+}
+
+.notification-info .content .label {
+  -fx-text-fill: #0d47a1;
+  -fx-font-size: 13px;
+  -fx-line-spacing: 2px;
+}
+
+/* Styles pour les notifications urgentes (5 minutes avant) */
+.notification-urgent .dialog-pane {
+  -fx-background-color: #fff3e0;
+  -fx-border-color: #ff9800;
+  -fx-border-width: 3px;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+  -fx-effect: dropshadow(three-pass-box, rgba(255, 152, 0, 0.4), 20, 0.3, 0, 6);
+}
+
+.notification-urgent .header-panel {
+  -fx-background-color: #ff9800;
+  -fx-background-radius: 9px 9px 0 0;
+  -fx-padding: 12 16 12 16;
+}
+
+.notification-urgent .header-panel .label {
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+  -fx-font-size: 15px;
+}
+
+.notification-urgent .content {
+  -fx-padding: 16 20 16 20;
+  -fx-background-color: #fff3e0;
+}
+
+.notification-urgent .content .label {
+  -fx-text-fill: #e65100;
+  -fx-font-size: 13px;
+  -fx-font-weight: 600;
+  -fx-line-spacing: 2px;
+}
+
+/* Animation pour les notifications urgentes */
+.notification-urgent {
+  -fx-effect: dropshadow(three-pass-box, rgba(255, 152, 0, 0.6), 18, 0.4, 0, 8);
+}
+
+/* Boutons dans les notifications */
+.notification-info .button,
+.notification-urgent .button {
+  -fx-background-radius: 8px;
+  -fx-border-radius: 8px;
+  -fx-padding: 10 16 10 16;
+  -fx-font-weight: bold;
+  -fx-font-size: 12px;
+  -fx-cursor: hand;
+}
+
+/* Bouton par défaut dans les notifications info */
+.notification-info .button:default {
+  -fx-background-color: #2196f3;
+  -fx-text-fill: white;
+  -fx-border-color: transparent;
+}
+
+.notification-info .button:default:hover {
+  -fx-background-color: #1976d2;
+}
+
+.notification-info .button:default:pressed {
+  -fx-background-color: #1565c0;
+}
+
+/* Boutons dans les notifications urgentes */
+.notification-urgent .button:default {
+  -fx-background-color: #ff9800;
+  -fx-text-fill: white;
+  -fx-border-color: transparent;
+  -fx-effect: dropshadow(three-pass-box, rgba(255, 152, 0, 0.3), 8, 0.2, 0, 2);
+}
+
+.notification-urgent .button:default:hover {
+  -fx-background-color: #f57c00;
+  -fx-effect: dropshadow(three-pass-box, rgba(255, 152, 0, 0.4), 10, 0.25, 0, 3);
+}
+
+.notification-urgent .button:default:pressed {
+  -fx-background-color: #ef6c00;
+}
+
+/* Bouton secondaire dans les notifications urgentes */
+.notification-urgent .button:cancel {
+  -fx-background-color: transparent;
+  -fx-text-fill: #e65100;
+  -fx-border-color: #ff9800;
+  -fx-border-width: 1px;
+}
+
+.notification-urgent .button:cancel:hover {
+  -fx-background-color: rgba(255, 152, 0, 0.1);
+}
+
+/* Styles pour les icônes dans les notifications */
+.notification-icon {
+  -fx-min-width: 24px;
+  -fx-min-height: 24px;
+  -fx-max-width: 24px;
+  -fx-max-height: 24px;
+  -fx-alignment: CENTER;
+}
+
+.notification-info .notification-icon {
+  -fx-background-color: rgba(33, 150, 243, 0.2);
+  -fx-background-radius: 999px;
+  -fx-text-fill: #2196f3;
+  -fx-font-size: 14px;
+}
+
+.notification-urgent .notification-icon {
+  -fx-background-color: rgba(255, 152, 0, 0.2);
+  -fx-background-radius: 999px;
+  -fx-text-fill: #ff9800;
+  -fx-font-size: 16px;
+}
+
+/* Styles pour les badges de statut de session dans les notifications */
+.notification-session-badge {
+  -fx-background-radius: 6px;
+  -fx-padding: 4 8 4 8;
+  -fx-font-size: 11px;
+  -fx-font-weight: bold;
+}
+
+.notification-session-badge.programmee {
+  -fx-background-color: rgba(33, 150, 243, 0.15);
+  -fx-text-fill: #2196f3;
+}
+
+.notification-session-badge.en-cours {
+  -fx-background-color: rgba(76, 175, 80, 0.15);
+  -fx-text-fill: #4caf50;
+}
+
+.notification-session-badge.urgent {
+  -fx-background-color: rgba(255, 152, 0, 0.15);
+  -fx-text-fill: #ff9800;
+}
+
+/* Styles pour les liens dans les notifications */
+.notification-link {
+  -fx-text-fill: #1976d2;
+  -fx-underline: true;
+  -fx-cursor: hand;
+  -fx-font-size: 12px;
+}
+
+.notification-link:hover {
+  -fx-text-fill: #1565c0;
+}
+
+/* Styles pour les messages d'erreur de notification */
+.notification-error .dialog-pane {
+  -fx-background-color: #ffebee;
+  -fx-border-color: #f44336;
+  -fx-border-width: 2px;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+}
+
+.notification-error .header-panel {
+  -fx-background-color: #f44336;
+  -fx-background-radius: 10px 10px 0 0;
+}
+
+.notification-error .header-panel .label {
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+}
+
+.notification-error .content .label {
+  -fx-text-fill: #c62828;
+}
+
+/* Styles pour les notifications de rattrapage */
+.notification-catchup .dialog-pane {
+  -fx-background-color: #f3e5f5;
+  -fx-border-color: #9c27b0;
+  -fx-border-width: 2px;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+}
+
+.notification-catchup .header-panel {
+  -fx-background-color: #9c27b0;
+  -fx-background-radius: 10px 10px 0 0;
+}
+
+.notification-catchup .header-panel .label {
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+}
+
+.notification-catchup .content .label {
+  -fx-text-fill: #6a1b9a;
+}
+
+/* Responsive design pour les notifications */
+@media screen and (max-width: 800px) {
+  .notification-info .dialog-pane,
+  .notification-urgent .dialog-pane {
+    -fx-max-width: 350px;
+  }
+  
+  .notification-info .content,
+  .notification-urgent .content {
+    -fx-padding: 12 16 12 16;
+  }
+}
+
+/* Animation d'entrée pour les notifications (optionnel) */
+.notification-fade-in {
+  -fx-opacity: 0.0;
+}
+
+.notification-fade-in:showing {
+  -fx-opacity: 1.0;
+}
+
+/* Styles pour les indicateurs de session live dans l'interface principale */
+.session-live-indicator {
+  -fx-background-color: #4caf50;
+  -fx-background-radius: 999px;
+  -fx-text-fill: white;
+  -fx-font-size: 10px;
+  -fx-font-weight: bold;
+  -fx-padding: 2 6 2 6;
+  -fx-effect: dropshadow(three-pass-box, rgba(76, 175, 80, 0.4), 8, 0.3, 0, 2);
+}
+
+.session-live-indicator.urgent {
+  -fx-background-color: #ff9800;
+  -fx-effect: dropshadow(three-pass-box, rgba(255, 152, 0, 0.4), 8, 0.3, 0, 2);
+}
+
+.session-live-indicator.critical {
+  -fx-background-color: #f44336;
+  -fx-effect: dropshadow(three-pass-box, rgba(244, 67, 54, 0.4), 8, 0.3, 0, 2);
+}
+
+/* Styles pour les cartes de session avec notifications */
+.session-card-with-notifications {
+  -fx-border-width: 2px;
+}
+
+.session-card-with-notifications.has-pending-notifications {
+  -fx-border-color: rgba(255, 152, 0, 0.6);
+  -fx-effect: dropshadow(three-pass-box, rgba(255, 152, 0, 0.2), 12, 0.2, 0, 4);
+}
+
+.session-card-with-notifications.notifications-sent {
+  -fx-border-color: rgba(76, 175, 80, 0.6);
+  -fx-effect: dropshadow(three-pass-box, rgba(76, 175, 80, 0.2), 12, 0.2, 0, 4);
+}

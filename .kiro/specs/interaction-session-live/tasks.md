@@ -71,13 +71,13 @@ Implémentation du module "Interaction en session live" pour EduCompus (JavaFX 1
   - Vérifier que tous les tests passent, demander à l'utilisateur si des questions se posent.
 
 - [ ] 5. Contrôleur de gestion enseignant (Backend)
-  - [ ] 5.1 Créer `BackSessionLiveController` dans `src/main/java/com/educompus/controller/back/`
+  - [x] 5.1 Créer `BackSessionLiveController` dans `src/main/java/com/educompus/controller/back/`
     - Implémenter toutes les actions CRUD selon la conception
     - Ajouter la gestion des filtres et recherche
     - Créer les méthodes de gestion des sessions (démarrer/terminer)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 7.2_
 
-  - [ ] 5.2 Créer l'interface FXML `BackSessionLive.fxml` dans `src/main/resources/View/back/`
+  - [x] 5.2 Créer l'interface FXML `BackSessionLive.fxml` dans `src/main/resources/View/back/`
     - Définir la structure de l'interface de gestion
     - Inclure ListView avec cellules personnalisées
     - Ajouter les champs de recherche et filtres
@@ -93,7 +93,7 @@ Implémentation du module "Interaction en session live" pour EduCompus (JavaFX 1
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
 - [ ] 6. Contrôleur d'affichage étudiant (Frontend)
-  - [ ] 6.1 Créer `FrontSessionLiveController` dans `src/main/java/com/educompus/controller/front/`
+  - [x] 6.1 Créer `FrontSessionLiveController` dans `src/main/java/com/educompus/controller/front/`
     - Implémenter l'affichage des sessions pour les étudiants
     - Créer la méthode de construction des cartes de session
     - Ajouter la gestion de la redirection vers plateformes externes
@@ -103,7 +103,7 @@ Implémentation du module "Interaction en session live" pour EduCompus (JavaFX 1
     - **Property 2: Affichage complet des informations de session**
     - **Valide: Requirements 2.5**
 
-  - [ ] 6.3 Créer l'interface FXML `FrontSessionLive.fxml` dans `src/main/resources/View/front/`
+  - [x] 6.3 Créer l'interface FXML `FrontSessionLive.fxml` dans `src/main/resources/View/front/`
     - Définir la structure d'affichage pour les étudiants
     - Créer les cartes de session avec indicateurs visuels
     - Inclure les boutons "Rejoindre session"
@@ -119,7 +119,7 @@ Implémentation du module "Interaction en session live" pour EduCompus (JavaFX 1
     - _Requirements: 2.1, 2.5, 3.1, 3.2_
 
 - [ ] 7. Gestion des erreurs et logging
-  - [ ] 7.1 Créer les classes d'exceptions personnalisées dans `src/main/java/com/educompus/exception/`
+  - [x] 7.1 Créer les classes d'exceptions personnalisées dans `src/main/java/com/educompus/exception/`
     - Implémenter `SessionNotActiveException`, `InvalidSessionLinkException`, etc.
     - Ajouter les constructeurs appropriés
     - _Requirements: 8.1, 8.2, 8.3_
@@ -143,13 +143,8 @@ Implémentation du module "Interaction en session live" pour EduCompus (JavaFX 1
     - **Valide: Requirements 8.1**
 
 - [ ] 8. Intégration avec l'interface utilisateur existante
-  - [ ] 8.1 Modifier `FrontCourseDetailController` pour intégrer l'affichage des sessions live
-    - Ajouter l'affichage des sessions dans le détail du cours
-    - Intégrer les indicateurs "Session interactive disponible"
-    - Inclure les icônes "Live" pour les sessions actives
-    - _Requirements: 2.2, 2.3, 2.4_
-
-  - [ ] 8.2 Modifier `FrontCourseDetail.fxml` pour inclure la section sessions live
+  - [x] 8.1 Modifier `FrontCourseDetailController` pour intégrer l'affichage des sessions live
+  - [x] 8.2 Modifier `FrontCourseDetail.fxml` pour inclure la section sessions live
     - Ajouter la zone d'affichage des sessions live
     - Intégrer les messages d'information pour les étudiants
     - _Requirements: 2.2, 2.3, 2.4_
@@ -159,7 +154,7 @@ Implémentation du module "Interaction en session live" pour EduCompus (JavaFX 1
     - **Valide: Requirements 7.5**
 
 - [ ] 9. Styles et apparence
-  - [ ] 9.1 Ajouter les styles CSS pour les sessions live dans `styles/educompus.css`
+  - [x] 9.1 Ajouter les styles CSS pour les sessions live dans `styles/educompus.css`
     - Créer les styles pour les cartes de session
     - Ajouter les indicateurs visuels (Live, statuts)
     - Définir les styles pour les boutons "Rejoindre session"

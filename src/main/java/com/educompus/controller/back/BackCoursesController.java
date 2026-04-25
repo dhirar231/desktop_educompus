@@ -12,6 +12,8 @@ import com.educompus.service.CoursValidationService;
 import com.educompus.service.FormValidator;
 import com.educompus.service.SessionLiveMetierService;
 import com.educompus.service.SessionLiveValidationService;
+import com.educompus.service.GoogleCalendarService;
+import com.educompus.service.SessionNotificationService;
 import com.educompus.service.ValidationResult;
 import com.educompus.util.Dialogs;
 import javafx.application.Platform;
@@ -103,6 +105,10 @@ public final class BackCoursesController {
     private final SessionLiveMetierService sessionMetier = new SessionLiveMetierService();
     private final ObservableList<SessionLive> sessionItems = FXCollections.observableArrayList();
 
+    // ── Calendrier ──
+    @FXML private VBox calendarContainer;
+    private BackCalendarController calendarCtrl;
+
 
 
     @FXML
@@ -128,6 +134,8 @@ public final class BackCoursesController {
         refreshAll();
         setupSessionListView();
         setupSessionFilters();
+        setupCalendar();
+        setupAutoStatusCallback();
     }
 
     private void setupListViews() {
@@ -544,10 +552,20 @@ public final class BackCoursesController {
                     
                     if (td.getFichier() != null && !td.getFichier().isBlank()) {
                         try {
+                            // Trouver le chapitre associé
+                            String chapitreTitre = td.getChapitreTitre();
+                            if (chapitreTitre == null || chapitreTitre.isBlank()) {
+                                chapitreTitre = chapitres.stream()
+                                    .filter(ch -> ch.getId() == td.getChapitreId())
+                                    .map(Chapitre::getTitre)
+                                    .findFirst()
+                                    .orElse("Chapitre_Inconnu");
+                            }
+                            
                             driveService.uploadTdFile(td.getFichier(), 
                                 "TD_" + td.getTitre() + ".pdf", 
                                 selectedCours.getTitre(), 
-                                td.getTitre());
+                                chapitreTitre);
                         } catch (Exception e) {
                             System.err.println("Erreur upload TD " + td.getTitre() + ": " + e.getMessage());
                         }
@@ -561,6 +579,16 @@ public final class BackCoursesController {
 
                     if (video.getUrlVideo() == null || video.getUrlVideo().isBlank()) continue;
                     try {
+                        // Trouver le chapitre associé
+                        String chapitreTitre = video.getChapitreTitre();
+                        if (chapitreTitre == null || chapitreTitre.isBlank()) {
+                            chapitreTitre = chapitres.stream()
+                                .filter(ch -> ch.getId() == video.getChapitreId())
+                                .map(Chapitre::getTitre)
+                                .findFirst()
+                                .orElse("Chapitre_Inconnu");
+                        }
+                        
                         java.io.File mp4 = new java.io.File(video.getUrlVideo());
                         if (mp4.exists() && video.getUrlVideo().toLowerCase().endsWith(".mp4")) {
                             // ✅ Uploader le vrai fichier MP4
@@ -570,7 +598,7 @@ public final class BackCoursesController {
                                     mp4.getAbsolutePath(),
                                     safeName + ".mp4",
                                     selectedCours.getTitre(),
-                                    video.getTitre());
+                                    chapitreTitre);
                             // Mettre à jour l'URL de la vidéo avec le lien Drive
                             video.setUrlVideo(r.getShareableLink());
                             repository.updateVideo(video);
@@ -584,7 +612,7 @@ public final class BackCoursesController {
                                 "Type: " + (video.isAIGenerated() ? "Générée par AI" : "Manuelle"));
                             driveService.uploadVideoFile(tempFile.getAbsolutePath(),
                                 video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + "_lien.txt",
-                                selectedCours.getTitre(), video.getTitre());
+                                selectedCours.getTitre(), chapitreTitre);
                             tempFile.delete();
                         }
                     } catch (Exception e) {
@@ -1685,6 +1713,7 @@ public final class BackCoursesController {
         if (sessionListView == null) return;
         sessionListView.setCellFactory(lv -> new ListCell<>() {
             private final Label statutBadge = new Label();
+            private final Label syncBadge   = new Label();
             private final Label nomCoursLbl  = new Label();
             private final Label dateHeureLbl = new Label();
             private final Label lienLbl      = new Label();
@@ -1710,7 +1739,7 @@ public final class BackCoursesController {
 
                 VBox info = new VBox(2, nomCoursLbl, dateHeureLbl, lienLbl);
                 HBox.setHgrow(info, javafx.scene.layout.Priority.ALWAYS);
-                row = new HBox(10, statutBadge, info, joinBtn, startBtn, endBtn, editBtn, delBtn);
+                row = new HBox(10, statutBadge, syncBadge, info, joinBtn, startBtn, endBtn, editBtn, delBtn);
                 row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 row.setPadding(new javafx.geometry.Insets(8, 12, 8, 12));
 
@@ -1738,6 +1767,11 @@ public final class BackCoursesController {
                     case TERMINEE  -> statutBadge.getStyleClass().add("chip-warning");
                     case ANNULEE   -> statutBadge.getStyleClass().add("chip-danger");
                 }
+
+                // Badge sync Calendar
+                Label sb = SessionNotificationService.buildSyncBadge(s);
+                syncBadge.setText(sb.getText());
+                syncBadge.setStyle(sb.getStyle());
 
                 // Boutons selon statut
                 startBtn.setDisable(s.getStatut() != SessionStatut.PLANIFIEE);
@@ -1821,6 +1855,10 @@ public final class BackCoursesController {
         if (!result.saved()) return;
         try {
             sessionRepo.ajouterSession(result.value());
+
+            // Synchronisation Google Calendar en arrière-plan
+            syncCalendarAjouter(result.value());
+
             info("✅ Session créée", "La session « " + safe(result.value().getNomCours()) + " » a été créée.");
             reloadSessions();
         } catch (Exception e) { error("Erreur création session", e); }
@@ -1831,6 +1869,10 @@ public final class BackCoursesController {
         if (!result.saved()) return;
         try {
             sessionRepo.modifierSession(result.value());
+
+            // Mise à jour Google Calendar en arrière-plan
+            syncCalendarModifier(result.value());
+
             info("✅ Session modifiée", "La session a été mise à jour.");
             reloadSessions();
         } catch (Exception e) { error("Erreur modification session", e); }
@@ -1840,6 +1882,9 @@ public final class BackCoursesController {
         if (!confirm("Supprimer la session",
                 "Supprimer la session « " + safe(session.getNomCours()) + " » ?\nCette action est irréversible.")) return;
         try {
+            // Supprimer l'événement Google Calendar en arrière-plan
+            syncCalendarSupprimer(session);
+
             sessionRepo.supprimerSession(session.getId());
             reloadSessions();
         } catch (Exception e) { error("Erreur suppression session", e); }
@@ -1880,6 +1925,73 @@ public final class BackCoursesController {
             cb.setContent(cc);
             info("Lien copié", "Impossible d'ouvrir le navigateur.\nLe lien a été copié dans le presse-papier :\n" + session.getLien());
         }
+    }
+
+    // ── Calendrier ────────────────────────────────────────────────────────────
+
+    private void setupCalendar() {
+        if (calendarContainer == null) return;
+        calendarCtrl = new BackCalendarController();
+        calendarContainer.getChildren().setAll(calendarCtrl.getRootNode());
+        VBox.setVgrow(calendarCtrl.getRootNode(), javafx.scene.layout.Priority.ALWAYS);
+    }
+
+    /** Rafraîchit le calendrier et la liste quand un statut change automatiquement. */
+    private void setupAutoStatusCallback() {
+        SessionNotificationService.getInstance().setOnStatutChange(session -> {
+            reloadSessions();
+            if (calendarCtrl != null) {
+                calendarContainer.getChildren().setAll(calendarCtrl.getRootNode());
+            }
+        });
+    }
+
+    // ── Synchronisation Google Calendar ──────────────────────────────────────
+
+    private void syncCalendarAjouter(SessionLive session) {
+        if (!GoogleCalendarService.isConfigured()) return;
+        Thread t = new Thread(() -> {
+            try {
+                GoogleCalendarService calendarService = new GoogleCalendarService();
+                String eventId = calendarService.creerEvenement(session);
+                if (eventId != null) {
+                    session.setGoogleEventId(eventId);
+                    sessionRepo.updateGoogleEventId(session.getId(), eventId);
+                    javafx.application.Platform.runLater(() ->
+                        info("📅 Google Calendar", "Session ajoutée à votre Google Calendar !\nRappel automatique 30 min avant."));
+                }
+            } catch (Exception e) {
+                System.err.println("[Calendar] Sync ajouter (ignoré): " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void syncCalendarModifier(SessionLive session) {
+        if (!GoogleCalendarService.isConfigured() || !session.estSynchroniseeCalendar()) return;
+        Thread t = new Thread(() -> {
+            try {
+                new GoogleCalendarService().mettreAJourEvenement(session);
+            } catch (Exception e) {
+                System.err.println("[Calendar] Sync modifier (ignoré): " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void syncCalendarSupprimer(SessionLive session) {
+        if (!GoogleCalendarService.isConfigured() || !session.estSynchroniseeCalendar()) return;
+        Thread t = new Thread(() -> {
+            try {
+                new GoogleCalendarService().supprimerEvenement(session.getGoogleEventId());
+            } catch (Exception e) {
+                System.err.println("[Calendar] Sync supprimer (ignoré): " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
     private FormResult<SessionLive> showSessionForm(SessionLive source) {
@@ -2006,4 +2118,244 @@ public final class BackCoursesController {
 
         return FormResult.saved(session);
     }
-} 
+    
+    /**
+     * Migre tous les contenus existants vers la nouvelle structure Google Drive hiérarchique.
+     */
+    @FXML
+    private void migrateAllContentsToDrive() {
+        // Vérifier que credentials.json existe
+        if (getClass().getResourceAsStream("/credentials.json") == null) {
+            error("Configuration Google Drive manquante",
+                new Exception("Le fichier credentials.json est introuvable dans les ressources."));
+            return;
+        }
+        
+        // Confirmer l'action
+        if (!confirm("Migration complète vers Google Drive", 
+            "Voulez-vous migrer TOUS les contenus existants vers Google Drive ?\n\n" +
+            "Cette opération va créer une structure hiérarchique :\n" +
+            "📁 Gestion Cours\n" +
+            "  └── 📁 [Nom du Cours]\n" +
+            "      ├── 📄 Cours_principal.pdf\n" +
+            "      └── 📁 [Chapitre]\n" +
+            "          ├── 📄 Chapitre.pdf\n" +
+            "          ├── 📁 TDs\n" +
+            "          └── 📁 Vidéos\n\n" +
+            "⚠️ Cette opération peut prendre du temps selon le nombre de fichiers.")) {
+            return;
+        }
+        
+        // Lancer la migration en arrière-plan
+        Task<Void> migrationTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                updateMessage("Initialisation de la migration...");
+                
+                com.educompus.service.GoogleDriveService driveService = new com.educompus.service.GoogleDriveService();
+                
+                // Récupérer tous les contenus
+                List<Cours> cours = repository.listCours("");
+                List<Chapitre> chapitres = repository.listChapitres("");
+                List<Td> tds = repository.listTds("");
+                List<VideoExplicative> videos = repository.listVideos("");
+                
+                int totalItems = cours.size() + chapitres.size() + tds.size() + videos.size();
+                int currentItem = 0;
+                
+                // Migrer tous les cours
+                updateMessage("Migration des cours...");
+                for (Cours c : cours) {
+                    currentItem++;
+                    if (c.getImage() != null && !c.getImage().startsWith("auto:")) {
+                        java.io.File file = new java.io.File(c.getImage());
+                        if (file.exists()) {
+                            try {
+                                String fileName = "Cours_" + c.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".pdf";
+                                driveService.uploadCoursFile(c.getImage(), fileName, c.getTitre());
+                                updateMessage("Cours uploadé: " + c.getTitre() + " (" + currentItem + "/" + totalItems + ")");
+                            } catch (Exception e) {
+                                System.err.println("Erreur cours " + c.getTitre() + ": " + e.getMessage());
+                            }
+                        }
+                    }
+                }
+                
+                // Migrer tous les chapitres
+                updateMessage("Migration des chapitres...");
+                for (Chapitre ch : chapitres) {
+                    currentItem++;
+                    if (ch.getFichierC() != null && !ch.getFichierC().isBlank()) {
+                        java.io.File file = new java.io.File(ch.getFichierC());
+                        if (file.exists()) {
+                            try {
+                                // Trouver le cours associé
+                                String coursTitle = cours.stream()
+                                    .filter(c -> c.getId() == ch.getCoursId())
+                                    .map(Cours::getTitre)
+                                    .findFirst()
+                                    .orElse("Cours_Inconnu");
+                                
+                                String fileName = "Chapitre_" + ch.getOrdre() + "_" + ch.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".pdf";
+                                driveService.uploadChapitreFile(ch.getFichierC(), fileName, coursTitle, ch.getTitre());
+                                updateMessage("Chapitre uploadé: " + ch.getTitre() + " (" + currentItem + "/" + totalItems + ")");
+                            } catch (Exception e) {
+                                System.err.println("Erreur chapitre " + ch.getTitre() + ": " + e.getMessage());
+                            }
+                        }
+                    }
+                }
+                
+                // Migrer tous les TDs
+                updateMessage("Migration des TDs...");
+                for (Td td : tds) {
+                    currentItem++;
+                    if (td.getFichier() != null && !td.getFichier().isBlank()) {
+                        java.io.File file = new java.io.File(td.getFichier());
+                        if (file.exists()) {
+                            try {
+                                // Trouver le cours et chapitre associés
+                                String coursTitle = cours.stream()
+                                    .filter(c -> c.getId() == td.getCoursId())
+                                    .map(Cours::getTitre)
+                                    .findFirst()
+                                    .orElse("Cours_Inconnu");
+                                
+                                String chapitreTitre = td.getChapitreTitre();
+                                if (chapitreTitre == null || chapitreTitre.isBlank()) {
+                                    chapitreTitre = chapitres.stream()
+                                        .filter(ch -> ch.getId() == td.getChapitreId())
+                                        .map(Chapitre::getTitre)
+                                        .findFirst()
+                                        .orElse("Chapitre_Inconnu");
+                                }
+                                
+                                String fileName = "TD_" + td.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".pdf";
+                                driveService.uploadTdFile(td.getFichier(), fileName, coursTitle, chapitreTitre);
+                                updateMessage("TD uploadé: " + td.getTitre() + " (" + currentItem + "/" + totalItems + ")");
+                            } catch (Exception e) {
+                                System.err.println("Erreur TD " + td.getTitre() + ": " + e.getMessage());
+                            }
+                        }
+                    }
+                }
+                
+                // Migrer toutes les vidéos
+                updateMessage("Migration des vidéos...");
+                for (VideoExplicative video : videos) {
+                    currentItem++;
+                    if (video.getUrlVideo() != null && !video.getUrlVideo().isBlank()) {
+                        try {
+                            // Trouver le cours et chapitre associés
+                            String coursTitle = cours.stream()
+                                .filter(c -> c.getId() == video.getCoursId())
+                                .map(Cours::getTitre)
+                                .findFirst()
+                                .orElse("Cours_Inconnu");
+                            
+                            String chapitreTitre = video.getChapitreTitre();
+                            if (chapitreTitre == null || chapitreTitre.isBlank()) {
+                                chapitreTitre = chapitres.stream()
+                                    .filter(ch -> ch.getId() == video.getChapitreId())
+                                    .map(Chapitre::getTitre)
+                                    .findFirst()
+                                    .orElse("Chapitre_Inconnu");
+                            }
+                            
+                            java.io.File file = new java.io.File(video.getUrlVideo());
+                            if (file.exists() && video.getUrlVideo().toLowerCase().endsWith(".mp4")) {
+                                // Upload du fichier MP4
+                                String fileName = video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".mp4";
+                                driveService.uploadVideoFile(video.getUrlVideo(), fileName, coursTitle, chapitreTitre);
+                                updateMessage("Vidéo uploadée: " + video.getTitre() + " (" + currentItem + "/" + totalItems + ")");
+                            } else {
+                                // Créer un fichier texte avec le lien
+                                java.io.File tempFile = java.io.File.createTempFile("Video_", ".txt");
+                                java.nio.file.Files.writeString(tempFile.toPath(),
+                                    "Titre: " + video.getTitre() + "\n" +
+                                    "Lien vidéo: " + video.getUrlVideo() + "\n" +
+                                    "Type: " + (video.isAIGenerated() ? "Générée par AI" : "Manuelle") + "\n" +
+                                    "Chapitre: " + chapitreTitre);
+                                
+                                String fileName = video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + "_lien.txt";
+                                driveService.uploadVideoFile(tempFile.getAbsolutePath(), fileName, coursTitle, chapitreTitre);
+                                tempFile.delete();
+                                updateMessage("Lien vidéo uploadé: " + video.getTitre() + " (" + currentItem + "/" + totalItems + ")");
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Erreur vidéo " + video.getTitre() + ": " + e.getMessage());
+                        }
+                    }
+                }
+                
+                updateMessage("Migration terminée !");
+                return null;
+            }
+        };
+        
+        // Afficher le dialogue de progression
+        Alert progressAlert = new Alert(Alert.AlertType.INFORMATION);
+        progressAlert.setTitle("Migration vers Google Drive");
+        progressAlert.setHeaderText("Migration en cours...");
+        
+        ProgressIndicator progressIndicator = new ProgressIndicator();
+        progressIndicator.setProgress(-1);
+        
+        Label progressLabel = new Label("Initialisation...");
+        progressLabel.textProperty().bind(migrationTask.messageProperty());
+        
+        VBox progressContent = new VBox(10, progressIndicator, progressLabel);
+        progressContent.setAlignment(javafx.geometry.Pos.CENTER);
+        progressContent.setPadding(new javafx.geometry.Insets(20));
+        
+        progressAlert.getDialogPane().setContent(progressContent);
+        progressAlert.getButtonTypes().clear();
+        progressAlert.getButtonTypes().add(ButtonType.CANCEL);
+        
+        Dialogs.style(progressAlert);
+        
+        // Gérer le succès
+        migrationTask.setOnSucceeded(e -> {
+            progressAlert.close();
+            info("✅ Migration réussie", 
+                "Tous vos contenus ont été migrés vers Google Drive !\n\n" +
+                "Structure hiérarchique créée :\n" +
+                "📁 Gestion Cours\n" +
+                "  └── 📁 [Nom du Cours]\n" +
+                "      ├── 📄 Cours_principal.pdf\n" +
+                "      └── 📁 [Chapitre]\n" +
+                "          ├── 📄 Chapitre.pdf\n" +
+                "          ├── 📁 Travaux Dirigés\n" +
+                "          │   └── 📄 TD_xxx.pdf\n" +
+                "          └── 📁 Vidéos Explicatives\n" +
+                "              └── 📄 Video_xxx.mp4\n\n" +
+                "Chaque contenu est maintenant organisé dans son chapitre !");
+        });
+        
+        // Gérer les erreurs
+        migrationTask.setOnFailed(e -> {
+            progressAlert.close();
+            Throwable exception = migrationTask.getException();
+            error("Erreur migration", new Exception("Échec de la migration: " + 
+                (exception != null ? exception.getMessage() : "Erreur inconnue")));
+        });
+        
+        // Gérer l'annulation
+        migrationTask.setOnCancelled(e -> {
+            progressAlert.close();
+            info("Migration annulée", "La migration vers Google Drive a été annulée.");
+        });
+        
+        // Lancer la tâche
+        Thread migrationThread = new Thread(migrationTask);
+        migrationThread.setDaemon(true);
+        migrationThread.start();
+        
+        // Afficher le dialogue
+        progressAlert.showAndWait().ifPresent(result -> {
+            if (result == ButtonType.CANCEL) {
+                migrationTask.cancel();
+            }
+        });
+    }
+}

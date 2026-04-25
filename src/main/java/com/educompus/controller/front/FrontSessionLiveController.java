@@ -292,17 +292,7 @@ public final class FrontSessionLiveController {
         String nomEtudiant = nomEtudiant();
 
         // 1. Ouvrir le lien externe
-        try {
-            java.awt.Desktop.getDesktop().browse(java.net.URI.create(session.getLien()));
-        } catch (Exception e) {
-            // Fallback : copier le lien
-            javafx.scene.input.Clipboard cb = javafx.scene.input.Clipboard.getSystemClipboard();
-            javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();
-            cc.putString(session.getLien());
-            cb.setContent(cc);
-            showInfo("Lien copié",
-                "Impossible d'ouvrir le navigateur.\nLien copié dans le presse-papier :\n" + session.getLien());
-        }
+        boolean ouvert = com.educompus.util.SessionLiveErrorHandler.ouvrirLienAvecFallback(session.getLien());
 
         // 2 & 3. Enregistrer JOIN + participant (en arrière-plan)
         Thread t = new Thread(() -> {
