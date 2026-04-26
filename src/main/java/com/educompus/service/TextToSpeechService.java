@@ -4,7 +4,7 @@ package com.educompus.service;
  * Text-to-Speech sans dépendance externe.
  * Windows : PowerShell SAPI.SpVoice (voix système)
  * macOS   : commande "say"
- * Linux   : commande "espeak"
+ * Linux   : commande "espeakkkkkkkk"
  */
 public class TextToSpeechService {
 
