@@ -87,7 +87,15 @@ public final class ExamRepository {
                 ps.setInt(3, examId);
                 ps.executeUpdate();
                 try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) q.setId(rs.getInt(1));
+                    if (rs.next()) {
+                        q.setId(rs.getInt(1));
+                    } else {
+                        try (java.sql.PreparedStatement last = conn.prepareStatement("SELECT LAST_INSERT_ID()")) {
+                            try (java.sql.ResultSet lrs = last.executeQuery()) {
+                                if (lrs.next()) q.setId(lrs.getInt(1));
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
         }
@@ -187,7 +195,15 @@ public final class ExamRepository {
                 ps.setInt(3, questionId);
                 ps.executeUpdate();
                 try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) a.setId(rs.getInt(1));
+                    if (rs.next()) {
+                        a.setId(rs.getInt(1));
+                    } else {
+                        try (java.sql.PreparedStatement last = conn.prepareStatement("SELECT LAST_INSERT_ID()")) {
+                            try (java.sql.ResultSet lrs = last.executeQuery()) {
+                                if (lrs.next()) a.setId(lrs.getInt(1));
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
         }
@@ -203,6 +219,9 @@ public final class ExamRepository {
             Set<String> courseColumns = courseTable == null ? Set.of() : columnsOf(conn, courseTable);
             Set<String> examColumns = columnsOf(conn, "exam");
             boolean hasQuestions = tableExists(conn, "question");
+
+            Set<String> questionColumns = hasQuestions ? columnsOf(conn, "question") : Set.of();
+            String questionDurationCol = pickColumn(questionColumns, "duree", "duration", "duration_seconds");
 
             String examTitleCol = pickColumn(examColumns, "titre", "title", "name", "nom");
             String examDescCol = pickColumn(examColumns, "description", "details", "contenu", "content");
@@ -244,6 +263,7 @@ public final class ExamRepository {
                     .append(courseTitleExpr).append(" AS course_title, ")
                     .append(courseDescExpr).append(" AS course_description, ")
                     .append(hasQuestions ? "COUNT(q.id)" : "0").append(" AS question_count ")
+                    .append((questionDurationCol == null) ? ", 0 AS total_duration_seconds " : ", SUM(q." + questionDurationCol + ") AS total_duration_seconds ")
                     .append("FROM exam e ");
 
             if (courseTable != null) sql.append(" LEFT JOIN ").append(courseTable).append(" c ON c.id = e.").append(examCourseCol);
@@ -288,7 +308,17 @@ public final class ExamRepository {
                         item.setDomainLabel(rs.getString("domain_label"));
                         item.setPublished(rs.getBoolean("published_flag"));
                         item.setQuestionCount(rs.getInt("question_count"));
-                        item.setEstimatedMinutes(Math.max(5, item.getQuestionCount() * 2));
+                        // prefer actual total duration from questions (store seconds for precise display), fallback to heuristic
+                        int totalSeconds = 0;
+                        try {
+                            totalSeconds = rs.getInt("total_duration_seconds");
+                        } catch (Exception ignored) {}
+                        if (totalSeconds > 0) {
+                            item.setEstimatedSeconds(totalSeconds);
+                        } else {
+                            int fallbackMinutes = Math.max(5, item.getQuestionCount() * 2);
+                            item.setEstimatedSeconds(fallbackMinutes * 60);
+                        }
                         out.add(item);
                     }
                     // If there are no rows, return an empty list instead of throwing.
@@ -310,6 +340,7 @@ public final class ExamRepository {
             Set<String> answerColumns = columnsOf(conn, "reponse");
 
             String questionTextCol = pickColumn(questionColumns, "texte", "text", "question");
+            String questionCategoryCol = pickColumn(questionColumns, "categorie", "category", "topic", "theme", "section", "skill", "competence", "competency", "category_id", "section_id");
             String questionDurationCol = pickColumn(questionColumns, "duree", "duration", "duration_seconds");
             String answerTextCol = pickColumn(answerColumns, "texte", "text", "label");
             String answerCorrectCol = pickColumn(answerColumns, "correcte", "is_correct", "correct");
@@ -322,7 +353,8 @@ public final class ExamRepository {
             String sql = """
                     SELECT
                         q.id AS question_id,
-                        q.%s AS question_text,
+                        %s AS question_text,
+                        %s AS question_category,
                         %s AS question_duration,
                         r.id AS answer_id,
                         r.%s AS answer_text,
@@ -332,7 +364,8 @@ public final class ExamRepository {
                     WHERE q.exam_id = ?
                     ORDER BY q.id ASC, r.id ASC
                     """.formatted(
-                    questionTextCol,
+                    safeColumnOrLiteral("q", questionTextCol, "''"),
+                    safeColumnOrLiteral("q", questionCategoryCol, "''"),
                     questionDurationCol == null ? "45" : "q." + questionDurationCol,
                     answerTextCol,
                     answerCorrectCol
@@ -349,6 +382,7 @@ public final class ExamRepository {
                             return q;
                         });
                         question.setText(rs.getString("question_text"));
+                        question.setCategory(rs.getString("question_category"));
                         question.setDurationSeconds(rs.getInt("question_duration"));
 
                         int answerId = rs.getInt("answer_id");
@@ -547,7 +581,16 @@ public final class ExamRepository {
                 ps.setInt(idx, item.getCourseId());
                 ps.executeUpdate();
                 try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) item.setExamId(rs.getInt(1));
+                    if (rs.next()) {
+                        item.setExamId(rs.getInt(1));
+                    } else {
+                        // Fallback for drivers that don't return generated keys
+                        try (java.sql.PreparedStatement last = conn.prepareStatement("SELECT LAST_INSERT_ID()")) {
+                            try (java.sql.ResultSet lrs = last.executeQuery()) {
+                                if (lrs.next()) item.setExamId(lrs.getInt(1));
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
             // notify listeners that exams changed
