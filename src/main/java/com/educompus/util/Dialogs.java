@@ -47,9 +47,9 @@ public final class Dialogs {
         for (ButtonType bt : d.getDialogPane().getButtonTypes()) {
             Node b = d.getDialogPane().lookupButton(bt);
             if (b == null) continue;
-            if (bt == ButtonType.OK) {
+            if (bt == ButtonType.OK || bt == ButtonType.YES) {
                 b.getStyleClass().add("btn-rgb");
-            } else if (bt == ButtonType.CANCEL) {
+            } else if (bt == ButtonType.CANCEL || bt == ButtonType.NO) {
                 b.getStyleClass().add("btn-rgb-outline");
             }
         }

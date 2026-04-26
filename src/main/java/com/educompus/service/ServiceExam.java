@@ -12,8 +12,6 @@ import java.util.List;
 
 public class ServiceExam {
 
-
-
     public void addExam(ExamCatalogueItem item) throws Exception {
         String sql = "INSERT INTO exam (titre, description, niveau, domaine, cours_id, is_published, date_creation) VALUES (?, ?, ?, ?, ?, ?, NOW())";
         try (Connection conn = EducompusDB.getConnection();
@@ -29,7 +27,9 @@ public class ServiceExam {
                 if (keys.next()) item.setExamId(keys.getInt(1));
             }
         }
-    }public void updateExam(ExamCatalogueItem item) throws Exception {
+    }
+
+    public void updateExam(ExamCatalogueItem item) throws Exception {
         if (item == null) throw new IllegalArgumentException("item is null");
         String sql = "UPDATE exam SET titre = ?, description = ?, niveau = ?, domaine = ?, cours_id = ?, is_published = ? WHERE id = ?";
         try (Connection conn = EducompusDB.getConnection();

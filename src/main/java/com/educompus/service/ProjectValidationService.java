@@ -97,7 +97,7 @@ public final class ProjectValidationService {
 
     private static void validateDeadline(String deadline, ValidationResult r) {
         if (deadline == null || deadline.isBlank()) {
-            // deadline optionnelle
+            r.addError("La deadline est obligatoire.");
             return;
         }
         String dl = deadline.trim();
