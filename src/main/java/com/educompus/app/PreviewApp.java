@@ -17,6 +17,15 @@ import java.io.File;
 public final class PreviewApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
+        // Start embedded HTTP server so mobile phones can open exams directly
+        try {
+            com.educompus.web.EmbeddedExamServer server = new com.educompus.web.EmbeddedExamServer(8000);
+            server.start();
+            System.out.println("EmbeddedExamServer started on port 8000");
+        } catch (Exception e) {
+            System.err.println("Could not start EmbeddedExamServer: " + e.getMessage());
+        }
+
         String fxmlPath = System.getProperty("fxml", "View/front/FrontLogin.fxml");
         String cssPath = System.getProperty("css", "styles/educompus.css");
         String title = System.getProperty("title", "EduCampus");

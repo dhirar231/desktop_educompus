@@ -8,6 +8,7 @@ public final class ExamQuestion {
     private String text;
     private int durationSeconds;
     private final List<ExamAnswer> answers = new ArrayList<>();
+    private String category;
 
     public int getId() {
         return id;
@@ -35,5 +36,13 @@ public final class ExamQuestion {
 
     public List<ExamAnswer> getAnswers() {
         return answers;
+    }
+
+    public String getCategory() {
+        return category == null ? "" : category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category == null ? "" : category;
     }
 }

@@ -75,6 +75,66 @@ public final class OpenAiClient {
         return "";
     }
 
+    public static String chatCompletion(String prompt, int maxTokens) throws IOException, InterruptedException {
+        String apiKey = System.getenv("OPENAI_API_KEY");
+        String model = System.getenv("OPENAI_MODEL");
+        if (apiKey == null || apiKey.isBlank()) {
+            var dotenv = loadDotenvConfig();
+            apiKey = dotenv.get("OPENAI_API_KEY");
+        }
+        if (model == null || model.isBlank()) {
+            var dotenv = loadDotenvConfig();
+            model = firstNonBlank(System.getenv("OPENAI_MODEL"), dotenv.get("OPENAI_MODEL"));
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("OPENAI_API_KEY not set in environment or .env");
+        }
+        if (model == null || model.isBlank()) {
+            model = "gpt-4o-mini";
+        }
+
+        JsonObject payload = new JsonObject();
+        payload.addProperty("model", model);
+        JsonArray messages = new JsonArray();
+        JsonObject userMsg = new JsonObject();
+        userMsg.addProperty("role", "user");
+        userMsg.addProperty("content", prompt);
+        messages.add(userMsg);
+        payload.add("messages", messages);
+        payload.addProperty("max_tokens", Math.max(128, Math.min(2000, maxTokens)));
+        // encourage varied outputs
+        payload.addProperty("temperature", 0.78);
+        payload.addProperty("top_p", 0.95);
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("https://api.openai.com/v1/chat/completions"))
+            .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(payload)))
+                .build();
+
+        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() / 100 != 2) {
+            throw new IOException("OpenAI API error: " + response.statusCode() + " - " + response.body());
+        }
+
+        JsonObject json = gson.fromJson(response.body(), JsonObject.class);
+        JsonArray choices = json.has("choices") ? json.getAsJsonArray("choices") : null;
+        if (choices != null && choices.size() > 0) {
+            JsonObject c0 = choices.get(0).getAsJsonObject();
+            JsonObject message = c0.has("message") ? c0.getAsJsonObject("message") : null;
+            if (message != null && message.has("content")) {
+                return message.get("content").getAsString().trim();
+            }
+            JsonElement textEl = c0.get("text");
+            if (textEl != null && !textEl.isJsonNull()) {
+                return textEl.getAsString().trim();
+            }
+        }
+        return "";
+    }
+
     private static java.util.Map<String, String> loadDotenvConfig() {
         java.util.Map<String, String> values = new java.util.LinkedHashMap<>();
         java.io.File desktopDir = new java.io.File(System.getProperty("user.dir")).getAbsoluteFile();
