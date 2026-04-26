@@ -51,12 +51,17 @@
                 <Button text="Modifier" onAction="#editExam" styleClass="btn-rgb-outline"/>
                 <Button text="Supprimer" onAction="#deleteExam" styleClass="btn-rgb-outline"/>
                 <Button text="Questions &amp; réponses" onAction="#openQuestionsPage" styleClass="btn-rgb-outline"/>
+                <Button text="Importer Excel" onAction="#importFromExcel" styleClass="btn-rgb-outline"/>
             </HBox>
         </top>
         <center>
             <VBox fx:id="examsTablePane" styleClass="card" spacing="10" BorderPane.alignment="CENTER">
                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                 <Label text="Liste des examens" styleClass="stat-title"/>
+                <HBox spacing="8" alignment="CENTER_RIGHT">
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Button text="Importer Excel" onAction="#importFromExcel" styleClass="btn-rgb" />
+                </HBox>
                 <ListView fx:id="examsList" VBox.vgrow="ALWAYS"/>
                 <HBox spacing="8" alignment="CENTER" styleClass="pagination" prefHeight="36">
                     <padding><Insets top="8" bottom="0" left="0" right="0"/></padding>
