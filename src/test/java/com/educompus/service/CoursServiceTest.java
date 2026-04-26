@@ -7,7 +7,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+/**
+ * Tests unitaires pour CoursService.
+ * Nécessite une connexion MySQL active (base educompus).
+ */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CoursServiceTest {
 
@@ -26,7 +29,7 @@ class CoursServiceTest {
         liste.forEach(c -> System.out.println("  Cours #" + c.getId() + " : " + c.getTitre()));
     }
 
-    // Test 1 : Ajouter
+    // ── Test 1 : Ajouter ────────────────────────────────────────────────────
 
     @Test
     @Order(1)
@@ -59,7 +62,7 @@ class CoursServiceTest {
         System.out.println("Cours ajouté avec ID : " + idCoursTest);
     }
 
-    //  Test 2 : Afficher
+    // ── Test 2 : Afficher ────────────────────────────────────────────────────
 
     @Test
     @Order(2)
@@ -70,7 +73,7 @@ class CoursServiceTest {
         liste.forEach(c -> assertNotNull(c.getTitre(), "Le titre ne doit pas être null."));
     }
 
-    //  Test 3 : Modifier
+    // ── Test 3 : Modifier ────────────────────────────────────────────────────
 
     @Test
     @Order(3)
@@ -96,7 +99,7 @@ class CoursServiceTest {
         assertTrue(trouve, "Le cours modifié doit apparaître dans la liste.");
     }
 
-    //  Test 4 : Supprimer
+    // ── Test 4 : Supprimer ───────────────────────────────────────────────────
 
     @Test
     @Order(4)
@@ -117,7 +120,7 @@ class CoursServiceTest {
         assertFalse(existe, "Le cours supprimé ne doit plus être dans la liste.");
     }
 
-    //  Test 5 :
+    // ── Test 5 : Validation logique ──────────────────────────────────────────
 
     @Test
     @Order(5)

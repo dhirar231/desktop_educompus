@@ -97,6 +97,8 @@ public class AuthUserRepository {
         }
     }
 
+<<<<<<< HEAD
+=======
     public AuthUser findByEmail(String email) throws SQLException {
         String sql = """
                 SELECT id, email, name, last_name, image_url, roles
@@ -135,6 +137,7 @@ public class AuthUserRepository {
         return null;
     }
 
+>>>>>>> origin/main
     public boolean emailExists(String email, Integer excludeUserId) throws SQLException {
         String sql = "SELECT 1 FROM `user` WHERE email = ? AND (? IS NULL OR id <> ?) LIMIT 1";
         try (Connection conn = EducompusDB.getConnection();

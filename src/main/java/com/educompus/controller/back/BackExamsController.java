@@ -37,6 +37,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.stage.FileChooser;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -276,6 +279,55 @@ public final class BackExamsController {
             reload();
         } catch (Exception e) {
             error("Erreur questions", e);
+        }
+    }
+
+    @FXML
+    private void importFromExcel(ActionEvent event) {
+        Window owner = examsList == null || examsList.getScene() == null ? null : examsList.getScene().getWindow();
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Importer examens depuis Excel");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx", "*.xls"));
+        java.io.File file = chooser.showOpenDialog(owner);
+        if (file == null) return;
+
+        int courseId = 0;
+        ExamCatalogueItem selected = currentExam();
+        if (selected != null) {
+            courseId = selected.getCourseId();
+        } else {
+            ComboBox<Cours> combo = comboCours();
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("Choisir le cours cible");
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            dialog.getDialogPane().setContent(combo);
+            Dialogs.style(dialog);
+            java.util.Optional<ButtonType> res = dialog.showAndWait();
+            if (res.isEmpty() || res.get().getButtonData() != javafx.scene.control.ButtonBar.ButtonData.OK_DONE) return;
+            Cours c = combo.getValue();
+            if (c == null) { info("Import", "Aucun cours sélectionné."); return; }
+            courseId = c.getId();
+        }
+
+        try {
+            String summary = com.educompus.util.ExcelExamImporter.importFromExcel(file, courseId);
+            String cleaned = summary == null ? "" : summary;
+            // remove any explicit debug-log reference
+            cleaned = cleaned.replaceAll("\\(.*excel_import_debug\\.log.*\\)", "").trim();
+
+            // try to extract counts and show a concise message
+            Pattern p = Pattern.compile("examens?\\s*[:\\-]?\\s*(\\d+).*questions?\\s*[:\\-]?\\s*(\\d+).*r[eé]ponses?\\s*[:\\-]?\\s*(\\d+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+            Matcher m = p.matcher(cleaned);
+            if (m.find()) {
+                String msg = String.format("Import terminé — examens: %s, questions: %s, réponses: %s", m.group(1), m.group(2), m.group(3));
+                info("Importation", msg);
+            } else {
+                if (cleaned.isBlank()) cleaned = "Import terminé.";
+                info("Importation", cleaned);
+            }
+            reload();
+        } catch (Exception e) {
+            error("Importation échouée", e);
         }
     }
 

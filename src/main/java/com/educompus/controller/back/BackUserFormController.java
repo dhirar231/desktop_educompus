@@ -7,10 +7,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
-import java.io.File;
 
 public class BackUserFormController {
 
@@ -96,22 +93,6 @@ public class BackUserFormController {
             close();
         } catch (Exception e) {
             showError(e.getMessage() == null ? "Operation impossible." : e.getMessage());
-        }
-    }
-
-    @FXML
-    private void onBrowseImage() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Sélectionner une image de profil");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif"),
-                new FileChooser.ExtensionFilter("Tous les fichiers", "*.*")
-        );
-
-        File selectedFile = fileChooser.showOpenDialog(titleLabel.getScene().getWindow());
-        if (selectedFile != null) {
-            // Convert to URI if it's a local file, so Image class can load it easily
-            imageField.setText(selectedFile.toURI().toString());
         }
     }
 
