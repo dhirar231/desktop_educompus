@@ -497,7 +497,23 @@ public final class BackProjectsController {
         try {
             Project updated = project.isMeetingActive() ? refreshProjectState(project) : projectMeetingService.openMeetingForProject(project);
             String room = safe(updated.getMeetingRoom());
-            browserService.openMeetingDialog("EduCompus | Meeting | " + room, projectMeetingService.joinUrl(updated, false));
+            String joinUrl = projectMeetingService.joinUrl(updated, false);
+            // open JCEF dialog asynchronously to avoid blocking UI
+            new Thread(() -> {
+                try {
+                    browserService.openMeetingDialog("EduCompus | Meeting | " + room, joinUrl);
+                } catch (Exception ex) {
+                    try {
+                        if (java.awt.Desktop.isDesktopSupported()) {
+                            java.awt.Desktop.getDesktop().browse(java.net.URI.create(joinUrl));
+                            return;
+                        }
+                    } catch (Exception browseEx) {
+                        // ignore and show original error below
+                    }
+                    javafx.application.Platform.runLater(() -> error("Meeting", ex));
+                }
+            }, "jcef-opener-back-project").start();
             replaceProjectInList(allProjects, updated);
             replaceProjectInList(projects, updated);
             renderAdminCards();
