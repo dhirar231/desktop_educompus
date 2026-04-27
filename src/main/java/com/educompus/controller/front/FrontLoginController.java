@@ -27,6 +27,10 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 import java.util.prefs.Preferences;
+import com.educompus.model.PlacementQuestion;
+import com.educompus.repository.UserRepository;
+import com.educompus.service.PlacementGenerator;
+import com.educompus.ui.PlacementDialog;
 
 public final class FrontLoginController {
     private static final String PREF_REMEMBER = "rememberMe";
@@ -233,7 +237,31 @@ public final class FrontLoginController {
         persistRememberMe(mail);
 
         try {
-            Navigator.goRoot((user.admin() || user.teacher()) ? "View/back/BackShell.fxml" : "View/front/FrontShell.fxml");
+            String target = (user.admin() || user.teacher()) ? "View/back/BackShell.fxml" : "View/front/FrontShell.fxml";
+            Navigator.goRoot(target);
+            // After navigation, show placement only for regular student users (once)
+            try {
+                if (!AppState.isAdmin() && !AppState.isTeacher()) {
+                    UserRepository ur = new UserRepository();
+                    if (!ur.hasCompletedPlacement(user.email())) {
+                        var qs = PlacementGenerator.generate(10, 10);
+                        javafx.stage.Window owner = Navigator.getStage();
+                        if (owner == null && cardPane != null && cardPane.getScene() != null) owner = cardPane.getScene().getWindow();
+                        PlacementDialog dlg = new PlacementDialog(owner, qs, user.email());
+                        boolean done = dlg.showAndWait();
+                        if (!done) {
+                            // If user explicitly abandoned the placement dialog, exit the application
+                            if (dlg.wasAbandoned()) {
+                                Platform.exit();
+                                return;
+                            }
+                            showError("Veuillez compléter le test de placement pour continuer.");
+                            return;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
         } catch (Exception e) {
             showError("Erreur interface: " + summarizeThrowable(e));
             e.printStackTrace();

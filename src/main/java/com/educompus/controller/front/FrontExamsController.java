@@ -27,6 +27,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import javafx.application.Platform;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.KeyCode;
+import javafx.beans.value.ChangeListener;
+import javafx.stage.Stage;
+import java.time.Instant;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
+
 public final class FrontExamsController {
     @FXML
     private TextField searchField;
@@ -86,6 +100,151 @@ public final class FrontExamsController {
     private Button nextQuestionButton;
     @FXML
     private Button submitQuizButton;
+    // Activity tracking for cheating detection
+    private Stage primaryStage;
+    private final List<String> activityLog = new ArrayList<>();
+    private ChangeListener<Boolean> stageFocusListener;
+    private javafx.event.EventHandler<KeyEvent> keyEventHandler;
+    private ScheduledExecutorService clipboardPoller;
+    private String lastClipboardString = "";
+    private volatile boolean trackingActive = false;
+    private volatile boolean cheatingDetected = false;
+    private ChangeListener<Boolean> fullScreenListener;
+
+    private synchronized void logActivity(String event) {
+        String ts = Instant.now().toString();
+        activityLog.add(ts + " " + event);
+        System.out.println("[ACTIVITY] " + ts + " " + event);
+    }
+
+    private void startActivityTracking(int examId) {
+        if (trackingActive) return;
+        try {
+            if (viewStack == null || viewStack.getScene() == null) return;
+            primaryStage = (Stage) viewStack.getScene().getWindow();
+            if (primaryStage != null) {
+                try { primaryStage.setFullScreen(true); } catch (Exception e) { try { primaryStage.setMaximized(true); } catch (Exception ignored) {} }
+                stageFocusListener = (obs, oldV, newV) -> {
+                    if (Boolean.FALSE.equals(newV)) {
+                        logActivity("window-lost-focus");
+                        handleCheatingDetectedInternal(examId, "focus-lost");
+                    } else {
+                        logActivity("window-gained-focus");
+                    }
+                };
+                primaryStage.focusedProperty().addListener(stageFocusListener);
+                fullScreenListener = (obs, oldV, newV) -> {
+                    if (Boolean.FALSE.equals(newV) && trackingActive && !cheatingDetected) {
+                        logActivity("fullscreen-exited");
+                        handleCheatingDetectedInternal(examId, "fullscreen-exit");
+                    }
+                };
+                primaryStage.fullScreenProperty().addListener(fullScreenListener);
+            }
+            javafx.scene.Scene scene = viewStack.getScene();
+            keyEventHandler = ev -> {
+                try {
+                    if (ev.getCode() == KeyCode.ESCAPE) {
+                        logActivity("key-escape");
+                        handleCheatingDetectedInternal(examId, "escape-pressed");
+                        return;
+                    }
+                    boolean copy = (ev.isControlDown() || ev.isShortcutDown()) && ev.getCode() == KeyCode.C;
+                    boolean paste = (ev.isControlDown() || ev.isShortcutDown()) && ev.getCode() == KeyCode.V;
+                    if (copy) logActivity("key-copy");
+                    if (paste) logActivity("key-paste");
+                } catch (Exception ignored) {}
+            };
+            scene.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
+            lastClipboardString = javafx.scene.input.Clipboard.getSystemClipboard().getString();
+            clipboardPoller = Executors.newSingleThreadScheduledExecutor();
+            clipboardPoller.scheduleAtFixedRate(() -> {
+                try {
+                    String cur = javafx.scene.input.Clipboard.getSystemClipboard().getString();
+                    if (cur == null) cur = "";
+                    if (!cur.equals(lastClipboardString) && !cur.isEmpty()) {
+                        lastClipboardString = cur;
+                        logActivity("clipboard-changed");
+                    }
+                } catch (Exception ignored) {}
+            }, 1, 1, TimeUnit.SECONDS);
+            trackingActive = true;
+            logActivity("tracking-started exam=" + examId);
+        } catch (Exception e) {
+            System.out.println("[DEBUG] startActivityTracking failed: " + e.getMessage());
+        }
+    }
+
+    private void stopActivityTracking(int examId, int percent) {
+        if (!trackingActive && !cheatingDetected) return;
+        // mark inactive early to avoid programmatic fullscreen changes being treated as cheating
+        trackingActive = false;
+        try {
+            if (primaryStage != null) {
+                try { if (fullScreenListener != null) primaryStage.fullScreenProperty().removeListener(fullScreenListener); } catch (Exception ignored) {}
+                try { primaryStage.setFullScreen(false); } catch (Exception ignored) {}
+                try { primaryStage.setMaximized(false); } catch (Exception ignored) {}
+                if (stageFocusListener != null) primaryStage.focusedProperty().removeListener(stageFocusListener);
+            }
+            if (viewStack != null && viewStack.getScene() != null && keyEventHandler != null) {
+                viewStack.getScene().removeEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
+            }
+            if (clipboardPoller != null) {
+                clipboardPoller.shutdownNow();
+                clipboardPoller = null;
+            }
+            logActivity("tracking-stopped score=" + percent);
+            try {
+                Path dir = Paths.get(System.getProperty("user.dir"), "var", "activity_logs");
+                Files.createDirectories(dir);
+                int uid = com.educompus.app.AppState.getUserId();
+                String fname = "exam_" + examId + "_user_" + uid + "_" + System.currentTimeMillis() + ".log";
+                Path file = dir.resolve(fname);
+                Files.write(file, activityLog, java.nio.charset.StandardCharsets.UTF_8);
+                logActivity("activity-saved " + file.toString());
+                String endpoint = System.getenv("BEHAVIOR_API_URL");
+                String apiKey = System.getenv("BEHAVIOR_API_KEY");
+                if (endpoint != null && !endpoint.isBlank()) {
+                    Executors.newSingleThreadExecutor().submit(() -> {
+                        try {
+                            com.educompus.service.BehaviorClient.sendReport(endpoint, apiKey, examId, uid, activityLog);
+                            System.out.println("[ACTIVITY] sent report to " + endpoint);
+                        } catch (Exception ex) {
+                            System.out.println("[ACTIVITY] send report failed: " + ex.getMessage());
+                        }
+                    });
+                }
+            } catch (IOException io) {
+                System.out.println("[ACTIVITY] failed to write activity log: " + io.getMessage());
+            }
+        } catch (Exception e) {
+            System.out.println("[ACTIVITY] stopActivityTracking failed: " + e.getMessage());
+        } finally {
+            activityLog.clear();
+        }
+    }
+
+    private void handleCheatingDetectedInternal(int examId, String reason) {
+        if (cheatingDetected) return;
+        cheatingDetected = true;
+        logActivity("cheating-detected " + reason);
+        try { stopActivityTracking(examId, 0); } catch (Exception ignored) {}
+        Platform.runLater(() -> {
+            try {
+                String email = com.educompus.app.AppState.getUserEmail();
+                try { repository.recordAttempt(email, examId, 0, false, null); } catch (Exception ignored) {}
+                Alert a = new Alert(Alert.AlertType.WARNING);
+                a.setTitle("Triche détectée");
+                a.setHeaderText("Essai de triche détecté");
+                a.setContentText("Essai de triche détecté: " + reason + "\nL'examen est terminé.");
+                try { com.educompus.util.Dialogs.style(a); } catch (Exception ignored) {}
+                a.showAndWait();
+                showPane(detailPane);
+            } catch (Exception e) {
+                System.out.println("[ACTIVITY] handleCheatingDetected failed: " + e.getMessage());
+            }
+        });
+    }
     
 
     private final ExamRepository repository = new ExamRepository();
@@ -259,6 +418,9 @@ public final class FrontExamsController {
         quizResultLabel.setText("Sélectionnez une réponse pour continuer.");
         renderQuestion();
         showPane(quizPane);
+        try {
+            startActivityTracking(selectedItem == null ? 0 : selectedItem.getExamId());
+        } catch (Exception ignored) {}
     }
 
     @FXML
@@ -309,6 +471,7 @@ public final class FrontExamsController {
         }
         int total = activeQuestions.size();
         int percent = total == 0 ? 0 : (int) Math.round((score * 100.0) / total);
+        try { stopActivityTracking(selectedItem == null ? 0 : selectedItem.getExamId(), percent); } catch (Exception ignored) {}
         quizResultLabel.setText("Résultat: %d/%d bonnes réponses (%d%%).".formatted(score, total, percent));
         nextQuestionButton.setDisable(true);
         submitQuizButton.setDisable(true);
@@ -505,6 +668,10 @@ public final class FrontExamsController {
         setPaneVisible(cataloguePane, pane == cataloguePane);
         setPaneVisible(detailPane, pane == detailPane);
         setPaneVisible(quizPane, pane == quizPane);
+        // stop activity tracking when leaving the quiz pane
+        if (pane != quizPane) {
+            try { stopActivityTracking(selectedItem == null ? 0 : selectedItem.getExamId(), -1); } catch (Exception ignored) {}
+        }
     }
 
     private static void setPaneVisible(VBox pane, boolean visible) {
@@ -554,3 +721,4 @@ public final class FrontExamsController {
         if (e != null) e.printStackTrace();
     }
 }
+
