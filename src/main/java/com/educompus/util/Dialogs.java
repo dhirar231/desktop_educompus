@@ -54,6 +54,9 @@ public final class Dialogs {
                 b.getStyleClass().add("btn-rgb");
             } else if (bt == ButtonType.CANCEL || bt == ButtonType.NO) {
                 b.getStyleClass().add("btn-rgb-outline");
+            } else {
+                // custom buttons default to outlined variant to avoid surprising primary actions
+                b.getStyleClass().add("btn-rgb-outline");
             }
         }
 
