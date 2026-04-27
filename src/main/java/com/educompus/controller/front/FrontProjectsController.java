@@ -258,7 +258,7 @@ public final class FrontProjectsController {
 
     private void setupSortCombos() {
         if (projectSortCombo != null) {
-            projectSortCombo.getItems().setAll("Plus recentes", "Mes favoris", "Titre A-Z", "Deadline");
+            projectSortCombo.getItems().setAll("Plus recentes", "Importants", "Titre A-Z", "Deadline");
             projectSortCombo.setValue("Plus recentes");
             projectSortCombo.valueProperty().addListener((obs, o, n) -> applyProjectFilter());
         }
@@ -617,7 +617,7 @@ public final class FrontProjectsController {
         title.setWrapText(true);
         HBox.setHgrow(title, Priority.ALWAYS);
 
-        Label fav = new Label(project.isFavorite() ? "❤" : "♡");
+        Label fav = new Label(project.isFavorite() ? "★" : "☆");
         fav.getStyleClass().add("favorite-icon");
         if (project.isFavorite()) {
             fav.getStyleClass().add("favorite-on");
@@ -626,7 +626,7 @@ public final class FrontProjectsController {
         }
         // keep minimal inline sizing; visual styling handled by CSS classes
         fav.setStyle("-fx-font-size:18px; -fx-cursor: hand;");
-        javafx.scene.control.Tooltip.install(fav, new Tooltip(project.isFavorite() ? "Retirer des favoris" : "Ajouter aux favoris"));
+        javafx.scene.control.Tooltip.install(fav, new Tooltip(project.isFavorite() ? "Retirer des importants" : "Ajouter aux importants"));
         HBox.setMargin(fav, new Insets(0, 8, 0, 0));
         fav.setOnMouseClicked(e -> {
             toggleFavorite(project, fav);
@@ -697,22 +697,22 @@ public final class FrontProjectsController {
         if (project == null) return;
         int uid = AppState.getUserId();
         if (uid <= 0) {
-            info("Favoris", "Veuillez vous connecter pour utiliser les favoris.");
+            info("Importants", "Veuillez vous connecter pour utiliser les projets importants.");
             return;
         }
         boolean target = !project.isFavorite();
         try {
             favoriteRepo.setFavorite(uid, project.getId(), target);
             project.setFavorite(target);
-            favLabel.setText(target ? "❤" : "♡");
-            javafx.scene.control.Tooltip.install(favLabel, new Tooltip(target ? "Retirer des favoris" : "Ajouter aux favoris"));
+            favLabel.setText(target ? "★" : "☆");
+            javafx.scene.control.Tooltip.install(favLabel, new Tooltip(target ? "Retirer des importants" : "Ajouter aux importants"));
             String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
-            if ("Mes favoris".equalsIgnoreCase(sort)) {
+            if ("Importants".equalsIgnoreCase(sort)) {
                 // refresh listing when in favorites view
                 applyProjectFilter();
             }
         } catch (Exception e) {
-            error("Favoris", e);
+            error("Importants", e);
         }
     }
 
@@ -739,7 +739,7 @@ public final class FrontProjectsController {
 	        }
 
         String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
-        if ("Mes favoris".equalsIgnoreCase(sort)) {
+        if ("Importants".equalsIgnoreCase(sort)) {
             int uid = AppState.getUserId();
             if (uid <= 0) {
                 projects.clear();
@@ -757,12 +757,14 @@ public final class FrontProjectsController {
                 projects.setAll(favs);
             }
         } else {
+            // Always prefer favorite (important) projects first, then apply chosen sort
+            Comparator<Project> favoritesFirst = Comparator.comparing((Project p) -> p == null || !p.isFavorite());
             if ("Titre A-Z".equalsIgnoreCase(sort)) {
-                projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()).toLowerCase()));
+                projects.sort(favoritesFirst.thenComparing(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()).toLowerCase())));
             } else if ("Deadline".equalsIgnoreCase(sort)) {
-                projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getDeadline())));
+                projects.sort(favoritesFirst.thenComparing(Comparator.comparing((Project p) -> safe(p == null ? null : p.getDeadline()))));
             } else {
-                projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())).reversed());
+                projects.sort(favoritesFirst.thenComparing(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())).reversed()));
             }
         }
 
