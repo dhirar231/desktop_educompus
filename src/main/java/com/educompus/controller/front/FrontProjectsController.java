@@ -38,6 +38,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.input.Clipboard;
+import com.educompus.util.Dialogs;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -1782,26 +1783,7 @@ public final class FrontProjectsController {
     }
 
     private static void styleDialog(Dialog<?> d) {
-        if (d == null || d.getDialogPane() == null) {
-            return;
-        }
-        String css = cssUri();
-        if (!css.isBlank() && !d.getDialogPane().getStylesheets().contains(css)) {
-            d.getDialogPane().getStylesheets().add(css);
-        }
-        if (!d.getDialogPane().getStyleClass().contains("rgb-dialog")) {
-            d.getDialogPane().getStyleClass().add("rgb-dialog");
-        }
-
-        for (ButtonType bt : d.getDialogPane().getButtonTypes()) {
-            Node b = d.getDialogPane().lookupButton(bt);
-            if (b == null) continue;
-            if (bt == ButtonType.OK) {
-                b.getStyleClass().add("btn-rgb");
-            } else if (bt == ButtonType.CANCEL) {
-                b.getStyleClass().add("btn-rgb-outline");
-            }
-        }
+        try { Dialogs.style(d); } catch (Exception ignored) {}
     }
 
     private static String cssUri() {

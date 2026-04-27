@@ -20,6 +20,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.geometry.Pos;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,18 +29,42 @@ import java.util.List;
 import java.util.Set;
 
 import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCode;
 import javafx.beans.value.ChangeListener;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.scene.control.ButtonType;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import java.time.Instant;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.URI;
+import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.util.Enumeration;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
+import java.awt.image.BufferedImage;
+import com.educompus.app.AppState;
+import com.educompus.util.Dialogs;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
 
 public final class FrontExamsController {
     @FXML
@@ -89,6 +114,8 @@ public final class FrontExamsController {
     @FXML
     private Label quizProgressLabel;
     @FXML
+    private Label quizTimerLabel;
+    @FXML
     private Label questionTextLabel;
     @FXML
     private VBox answersBox;
@@ -110,6 +137,11 @@ public final class FrontExamsController {
     private volatile boolean trackingActive = false;
     private volatile boolean cheatingDetected = false;
     private ChangeListener<Boolean> fullScreenListener;
+
+    // per-question UI timer
+    private ScheduledExecutorService questionTimerExecutor;
+    private ScheduledFuture<?> questionTimerFuture;
+    private volatile int questionRemainingSeconds = 0;
 
     private synchronized void logActivity(String event) {
         String ts = Instant.now().toString();
@@ -221,6 +253,8 @@ public final class FrontExamsController {
             System.out.println("[ACTIVITY] stopActivityTracking failed: " + e.getMessage());
         } finally {
             activityLog.clear();
+            // ensure per-question timer stopped when activity tracking stops
+            try { stopQuestionTimer(); } catch (Exception ignored) {}
         }
     }
 
@@ -370,7 +404,17 @@ public final class FrontExamsController {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox footer = new HBox(10, chip(item.getEstimatedMinutes() + " min", "chip chip-success"), spacer, openBtn);
+        // QR button near 'Voir examen'
+        Button qrBtn = new Button("QR");
+        qrBtn.getStyleClass().addAll("btn-rgb-outline", "small");
+        qrBtn.setOnAction(e -> {
+            try {
+                showQrDialog(item);
+            } catch (Exception ex) {
+                error("QR code", ex instanceof Exception ? (Exception) ex : new Exception(ex.toString()));
+            }
+        });
+        HBox footer = new HBox(10, chip(item.getEstimatedDurationLabel(), "chip chip-success"), spacer, qrBtn, openBtn);
         footer.getStyleClass().add("exam-card-footer");
 
         VBox card = new VBox(10, courseTitle, examTitle, chips, desc, footer);
@@ -579,6 +623,8 @@ public final class FrontExamsController {
         prevQuestionButton.setDisable(questionIndex == 0);
         nextQuestionButton.setDisable(questionIndex >= activeQuestions.size() - 1);
         submitQuizButton.setDisable(questionIndex != activeQuestions.size() - 1);
+        // start per-question timer (mm:ss)
+        try { startQuestionTimer(); } catch (Exception ignored) {}
     }
 
     private boolean captureCurrentAnswer(boolean showWarning) {
@@ -602,6 +648,265 @@ public final class FrontExamsController {
         return true;
     }
 
+    // Timer helpers for per-question countdown
+    private void startQuestionTimer() {
+        stopQuestionTimer();
+        if (activeQuestions == null || activeQuestions.isEmpty()) return;
+        int dur = activeQuestions.get(questionIndex).getDurationSeconds();
+        if (dur <= 0) dur = 45; // default
+        questionRemainingSeconds = dur;
+        updateTimerLabel(questionRemainingSeconds);
+        questionTimerExecutor = Executors.newSingleThreadScheduledExecutor();
+        questionTimerFuture = questionTimerExecutor.scheduleAtFixedRate(() -> {
+            try {
+                questionRemainingSeconds = Math.max(0, questionRemainingSeconds - 1);
+                int rem = questionRemainingSeconds;
+                Platform.runLater(() -> updateTimerLabel(rem));
+                if (rem <= 0) {
+                    stopQuestionTimer();
+                    Platform.runLater(() -> {
+                        if (questionIndex < activeQuestions.size() - 1) {
+                            questionIndex++;
+                            renderQuestion();
+                        } else {
+                            submitQuiz();
+                        }
+                    });
+                }
+            } catch (Exception ignored) {}
+        }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    private void stopQuestionTimer() {
+        try {
+            if (questionTimerFuture != null) {
+                questionTimerFuture.cancel(true);
+                questionTimerFuture = null;
+            }
+        } catch (Exception ignored) {}
+        try {
+            if (questionTimerExecutor != null) {
+                questionTimerExecutor.shutdownNow();
+                questionTimerExecutor = null;
+            }
+        } catch (Exception ignored) {}
+        questionRemainingSeconds = 0;
+        if (quizTimerLabel != null) Platform.runLater(() -> quizTimerLabel.setText("00:00"));
+    }
+
+    private void updateTimerLabel(int seconds) {
+        if (quizTimerLabel == null) return;
+        int s = Math.max(0, seconds);
+        int mm = s / 60;
+        int ss = s % 60;
+        quizTimerLabel.setText(String.format("%d:%02d", mm, ss));
+    }
+
+    // Try to find a LAN IPv4 address we can use instead of localhost
+    private static String findLocalLanAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface intf = en.nextElement();
+                try {
+                    if (!intf.isUp() || intf.isLoopback() || intf.isVirtual()) continue;
+                } catch (Exception ignored) {}
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (inetAddress instanceof Inet4Address && !inetAddress.isLoopbackAddress() && inetAddress.isSiteLocalAddress()) {
+                        return inetAddress.getHostAddress();
+                    }
+                }
+            }
+            // fallback to InetAddress.getLocalHost()
+            InetAddress local = InetAddress.getLocalHost();
+            if (local instanceof Inet4Address && !local.isLoopbackAddress()) return local.getHostAddress();
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    // Simple TCP connect probe (non-blocking-ish with timeout)
+    private static boolean isHostReachable(String host, int port, int timeoutMs) {
+        if (host == null || host.isBlank()) return false;
+        try (Socket s = new Socket()) {
+            s.connect(new InetSocketAddress(host, port), Math.max(200, timeoutMs));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Show QR dialog for an exam
+    private void showQrDialog(ExamCatalogueItem item) throws Exception {
+        if (item == null) return;
+        String base = AppState.getServerBaseUrl();
+        if (base == null || base.isBlank()) base = "http://localhost:8000";
+        // If the configured base uses localhost or loopback, try to replace with LAN IP so mobile can reach it
+        String usedBase = base;
+        try {
+            URI u = new URI(base);
+            String host = u.getHost();
+            if (host == null) {
+                // fallback: replace literal localhost occurrence
+                if (base.contains("localhost") || base.contains("127.0.0.1") || base.contains("0.0.0.0")) {
+                    String ip = findLocalLanAddress();
+                    if (ip != null && !ip.isBlank()) usedBase = base.replace("localhost", ip).replace("127.0.0.1", ip).replace("0.0.0.0", ip);
+                }
+            } else if ("localhost".equals(host) || "127.0.0.1".equals(host) || "0.0.0.0".equals(host)) {
+                String ip = findLocalLanAddress();
+                if (ip != null && !ip.isBlank()) {
+                    URI nu = new URI(u.getScheme(), u.getUserInfo(), ip, u.getPort(), u.getPath(), u.getQuery(), u.getFragment());
+                    usedBase = nu.toString();
+                }
+            }
+        } catch (Exception ignored) {
+            if (base.contains("localhost") || base.contains("127.0.0.1") || base.contains("0.0.0.0")) {
+                String ip = findLocalLanAddress();
+                if (ip != null && !ip.isBlank()) usedBase = base.replace("localhost", ip).replace("127.0.0.1", ip).replace("0.0.0.0", ip);
+            }
+        }
+
+        String url = usedBase.endsWith("/") ? usedBase + "exam/take/" + item.getExamId() : usedBase + "/exam/take/" + item.getExamId();
+        Image qr = generateQrImage(url, 300);
+        if (qr == null) throw new IllegalStateException("QR generation failed");
+
+        ImageView iv = new ImageView(qr);
+        iv.setPreserveRatio(true);
+        iv.setFitWidth(300);
+
+        Label title = new Label("Ouvrir l'examen sur un appareil mobile");
+        title.getStyleClass().add("dialog-title");
+
+        // URL is intentionally hidden in the dialog (copy-only)
+        Label subtitle = new Label(url);
+        subtitle.getStyleClass().add("page-subtitle");
+        subtitle.setWrapText(true);
+        subtitle.setVisible(false);
+        subtitle.setManaged(false);
+
+        javafx.scene.control.Button copyBtn = new javafx.scene.control.Button("Copier le lien");
+        // Use filled RGB button to match app template
+        copyBtn.getStyleClass().addAll("btn-rgb", "small");
+        copyBtn.setOnAction(ev -> {
+            try {
+                ClipboardContent cc = new ClipboardContent();
+                cc.putString(url);
+                Clipboard.getSystemClipboard().setContent(cc);
+                info("QR", "Lien copié dans le presse-papiers");
+            } catch (Exception ignored) {}
+        });
+
+        // App icon for header (optional)
+        ImageView appIcon = null;
+        try {
+            java.net.URL icoUrl = getClass().getResource("/assets/images/app-icon.png");
+            if (icoUrl == null) icoUrl = getClass().getResource("/assets/images/app-icon.ico");
+            if (icoUrl != null) {
+                Image appImg = new Image(icoUrl.toExternalForm(), 24, 24, true, true);
+                appIcon = new ImageView(appImg);
+                appIcon.getStyleClass().add("qr-dialog-app-icon");
+            }
+        } catch (Exception ignored) {}
+
+        // Header with title and close button
+        Button closeBtn = new Button("✕");
+        closeBtn.getStyleClass().addAll("btn-ghost", "qr-dialog-close");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox header;
+        if (appIcon != null) {
+            header = new HBox(8, appIcon, title, spacer, closeBtn);
+        } else {
+            header = new HBox(8, title, spacer, closeBtn);
+        }
+        header.getStyleClass().add("qr-dialog-header");
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        // Wrap QR image with a white frame so it stands out on gradient dialog
+        javafx.scene.layout.StackPane ivWrap = new javafx.scene.layout.StackPane(iv);
+        ivWrap.getStyleClass().add("qr-image-frame");
+
+        // Connectivity check for the generated URL (help user debug mobile reachability)
+        boolean reachable = true;
+        try {
+            URI checkUri = new URI(usedBase);
+            String checkHost = checkUri.getHost();
+            int checkPort = checkUri.getPort();
+            if (checkPort == -1) checkPort = "https".equalsIgnoreCase(checkUri.getScheme()) ? 443 : 80;
+            reachable = isHostReachable(checkHost == null ? "127.0.0.1" : checkHost, checkPort, 700);
+        } catch (Exception ignored) { reachable = false; }
+
+        Label warnLabel = new Label();
+        warnLabel.getStyleClass().add("qr-warning");
+        warnLabel.setWrapText(true);
+        warnLabel.setVisible(!reachable);
+
+        Button forceIpBtn = new Button("Forcer l'IP");
+        forceIpBtn.getStyleClass().addAll("btn-rgb-outline", "small");
+        forceIpBtn.setVisible(!reachable && findLocalLanAddress() != null);
+        // make a final copy of base for use inside the lambda (lambdas require effectively final variables)
+        final String baseForLambda = base;
+        forceIpBtn.setOnAction(ev -> {
+            try {
+                String ip = findLocalLanAddress();
+                if (ip == null) return;
+                URI original = new URI(baseForLambda);
+                URI forced = new URI(original.getScheme(), original.getUserInfo(), ip, original.getPort(), original.getPath(), original.getQuery(), original.getFragment());
+                String forcedBase = forced.toString();
+                String forcedUrl = forcedBase.endsWith("/") ? forcedBase + "exam/take/" + item.getExamId() : forcedBase + "/exam/take/" + item.getExamId();
+                Image newQr = generateQrImage(forcedUrl, 300);
+                if (newQr != null) iv.setImage(newQr);
+                copyBtn.setOnAction(ev2 -> {
+                    try { ClipboardContent cc = new ClipboardContent(); cc.putString(forcedUrl); Clipboard.getSystemClipboard().setContent(cc); info("QR", "Lien copié"); } catch (Exception ignored) {}
+                });
+                warnLabel.setText("QR régénéré avec l'IP locale " + ip + ". Si le mobile ne peut toujours pas accéder, vérifiez que le serveur écoute sur 0.0.0.0 et que le pare-feu autorise le port.");
+                warnLabel.setVisible(true);
+            } catch (Exception ignored) {}
+        });
+
+        // Center the copy button in its own bar
+        HBox copyBar = new HBox(copyBtn);
+        copyBar.setAlignment(Pos.CENTER);
+        copyBar.getStyleClass().add("qr-dialog-copybar");
+
+        VBox body = new VBox(12, header, ivWrap, warnLabel, forceIpBtn, copyBar);
+        body.getStyleClass().addAll("qr-dialog-root", "qr-dialog-body");
+
+        Scene scene = new Scene(body);
+        try {
+            String css = getClass().getResource("/styles/educompus.css").toExternalForm();
+            if (css != null) scene.getStylesheets().add(css);
+        } catch (Exception ignored) {}
+
+        Stage dialog = new Stage();
+        dialog.initOwner(null);
+        try { dialog.initOwner((Stage) viewStack.getScene().getWindow()); } catch (Exception ignored) {}
+        dialog.initModality(Modality.WINDOW_MODAL);
+        dialog.setTitle("QR - Examen #" + item.getExamId());
+        dialog.setScene(scene);
+        // set application icon for this dialog when available
+        try {
+            java.net.URL ico = getClass().getResource("/assets/images/app-icon.png");
+            if (ico == null) ico = getClass().getResource("/assets/images/app-icon.ico");
+            if (ico != null) dialog.getIcons().add(new Image(ico.toExternalForm()));
+        } catch (Exception ignored) {}
+        dialog.setResizable(false);
+        dialog.show();
+    }
+
+    private Image generateQrImage(String text, int size) throws WriterException {
+        try {
+            QRCodeWriter writer = new QRCodeWriter();
+            BitMatrix matrix = writer.encode(text == null ? "" : text, BarcodeFormat.QR_CODE, size, size);
+            BufferedImage img = MatrixToImageWriter.toBufferedImage(matrix);
+            return SwingFXUtils.toFXImage(img, null);
+        } catch (WriterException we) {
+            throw we;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private void selectItem(ExamCatalogueItem item, Node cardNode) {
         selectedItem = item;
         if (selectedCard != null) {
@@ -623,7 +928,7 @@ public final class FrontExamsController {
             selectedLevelChip.setText("Niveau");
             selectedDomainChip.setText("Domaine");
             selectedQuestionChip.setText("0 question");
-            selectedDurationChip.setText("0 min");
+            selectedDurationChip.setText("0:00");
             startExamButton.setDisable(true);
             return;
         }
@@ -635,7 +940,7 @@ public final class FrontExamsController {
         selectedLevelChip.setText(item.getLevelLabel());
         selectedDomainChip.setText(item.getDomainLabel());
         selectedQuestionChip.setText(item.getQuestionCount() + " questions");
-        selectedDurationChip.setText(item.getEstimatedMinutes() + " min");
+        selectedDurationChip.setText(item.getEstimatedDurationLabel());
         // determine if user already passed
         String email = com.educompus.app.AppState.getUserEmail();
         boolean passed = repository.hasPassed(email, item.getExamId());
@@ -670,6 +975,7 @@ public final class FrontExamsController {
         setPaneVisible(quizPane, pane == quizPane);
         // stop activity tracking when leaving the quiz pane
         if (pane != quizPane) {
+            try { stopQuestionTimer(); } catch (Exception ignored) {}
             try { stopActivityTracking(selectedItem == null ? 0 : selectedItem.getExamId(), -1); } catch (Exception ignored) {}
         }
     }
@@ -709,6 +1015,7 @@ public final class FrontExamsController {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        try { Dialogs.style(alert); } catch (Exception ignored) {}
         alert.showAndWait();
     }
 
@@ -717,6 +1024,7 @@ public final class FrontExamsController {
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(e == null ? "Erreur" : String.valueOf(e.getMessage()));
+        try { Dialogs.style(alert); } catch (Exception ignored) {}
         alert.showAndWait();
         if (e != null) e.printStackTrace();
     }
