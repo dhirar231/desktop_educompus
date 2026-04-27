@@ -48,6 +48,7 @@ server.stop(delaySeconds);
 private class TakeHandler implements HttpHandler {
 @Override
 public void handle(HttpExchange exchange) throws IOException {
+			try {
 if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
 sendOptions(exchange);
 return;
@@ -172,19 +173,32 @@ return;
 													if(qCards.length>0){ qCards.forEach(function(c){ c.style.display='none'; }); show(0); }
 												})();
 												</script>
-												""".formatted(examId);
+												""";
+
+												// avoid String.formatted on a string that contains JavaScript
+												// '%' (modulo) tokens which break Formatter parsing. Replace
+												// only the exam placeholder with the id.
+												script = script.replace("educompus_exam_done_%d", "educompus_exam_done_" + examId);
 
 												sb.append(script);
 
 												sb.append("</body></html>");
 
 			sendHtml(exchange, 200, sb.toString());
+			} catch (Throwable t) {
+				t.printStackTrace();
+				try {
+					sendText(exchange, 500, "Server error: " + escapeHtml(String.valueOf(t)));
+				} catch (IOException ignored) {
+				}
+			}
 }
 }
 
 private class SubmitHandler implements HttpHandler {
 @Override
 public void handle(HttpExchange exchange) throws IOException {
+			try {
 if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
 sendOptions(exchange);
 return;
@@ -264,6 +278,13 @@ try {
 				sb.append("</body></html>");
 
 				sendHtml(exchange, 200, sb.toString());
+			} catch (Throwable t) {
+				t.printStackTrace();
+				try {
+					sendText(exchange, 500, "Server error: " + escapeHtml(String.valueOf(t)));
+				} catch (IOException ignored) {
+				}
+			}
 }
 }
 

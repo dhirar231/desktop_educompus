@@ -548,6 +548,7 @@ public final class FrontExamsController {
                     javafx.scene.control.ButtonType download = new javafx.scene.control.ButtonType("Télécharger");
                     javafx.scene.control.ButtonType close = javafx.scene.control.ButtonType.OK;
                     done.getButtonTypes().setAll(download, close);
+                    com.educompus.util.Dialogs.style(done);
                     java.util.Optional<javafx.scene.control.ButtonType> res = done.showAndWait();
                     if (res.isPresent() && res.get() == download) {
                         try {
@@ -566,12 +567,13 @@ public final class FrontExamsController {
                 } else {
                 // failed
                 repository.recordAttempt(email, examId, percent, false, null);
-                if (attemptNumber == 1) {
+                    if (attemptNumber == 1) {
                     javafx.scene.control.Alert ask = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
                     ask.setTitle("Echec - Essai");
                     ask.setHeaderText("Votre score est " + percent + "%.");
                     ask.setContentText("Voulez-vous retenter l'examen maintenant ? (2 essais maximum)");
                     ask.getButtonTypes().setAll(javafx.scene.control.ButtonType.YES, javafx.scene.control.ButtonType.NO);
+                    com.educompus.util.Dialogs.style(ask);
                     java.util.Optional<javafx.scene.control.ButtonType> r = ask.showAndWait();
                     if (r.isPresent() && r.get() == javafx.scene.control.ButtonType.YES) {
                         // restart quiz
@@ -784,8 +786,8 @@ public final class FrontExamsController {
         subtitle.setManaged(false);
 
         javafx.scene.control.Button copyBtn = new javafx.scene.control.Button("Copier le lien");
-        // Use filled RGB button to match app template
-        copyBtn.getStyleClass().addAll("btn-rgb", "small");
+        // Use outlined RGB (entouré) style to match app template's gradient border
+        copyBtn.getStyleClass().addAll("btn-rgb-outline", "small", "qr-copy-btn");
         copyBtn.setOnAction(ev -> {
             try {
                 ClipboardContent cc = new ClipboardContent();
@@ -807,17 +809,14 @@ public final class FrontExamsController {
             }
         } catch (Exception ignored) {}
 
-        // Header with title and close button
-        Button closeBtn = new Button("✕");
-        closeBtn.getStyleClass().addAll("btn-ghost", "qr-dialog-close");
-
+        // Header with title (removed internal close button - window chrome still allows closing)
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox header;
         if (appIcon != null) {
-            header = new HBox(8, appIcon, title, spacer, closeBtn);
+            header = new HBox(8, appIcon, title, spacer);
         } else {
-            header = new HBox(8, title, spacer, closeBtn);
+            header = new HBox(8, title, spacer);
         }
         header.getStyleClass().add("qr-dialog-header");
         header.setAlignment(Pos.CENTER_LEFT);
@@ -839,11 +838,14 @@ public final class FrontExamsController {
         Label warnLabel = new Label();
         warnLabel.getStyleClass().add("qr-warning");
         warnLabel.setWrapText(true);
+        // hide and remove from layout when reachable (so no empty gap appears)
         warnLabel.setVisible(!reachable);
+        warnLabel.setManaged(!reachable);
 
         Button forceIpBtn = new Button("Forcer l'IP");
         forceIpBtn.getStyleClass().addAll("btn-rgb-outline", "small");
         forceIpBtn.setVisible(!reachable && findLocalLanAddress() != null);
+        forceIpBtn.setManaged(forceIpBtn.isVisible());
         // make a final copy of base for use inside the lambda (lambdas require effectively final variables)
         final String baseForLambda = base;
         forceIpBtn.setOnAction(ev -> {
@@ -861,6 +863,7 @@ public final class FrontExamsController {
                 });
                 warnLabel.setText("QR régénéré avec l'IP locale " + ip + ". Si le mobile ne peut toujours pas accéder, vérifiez que le serveur écoute sur 0.0.0.0 et que le pare-feu autorise le port.");
                 warnLabel.setVisible(true);
+                warnLabel.setManaged(true);
             } catch (Exception ignored) {}
         });
 
@@ -870,7 +873,8 @@ public final class FrontExamsController {
         copyBar.getStyleClass().add("qr-dialog-copybar");
 
         VBox body = new VBox(12, header, ivWrap, warnLabel, forceIpBtn, copyBar);
-        body.getStyleClass().addAll("qr-dialog-root", "qr-dialog-body");
+        // include global root variables so dialog uses the same theme colors
+        body.getStyleClass().addAll("root", "qr-dialog-root", "qr-dialog-body");
 
         Scene scene = new Scene(body);
         try {
@@ -882,7 +886,8 @@ public final class FrontExamsController {
         dialog.initOwner(null);
         try { dialog.initOwner((Stage) viewStack.getScene().getWindow()); } catch (Exception ignored) {}
         dialog.initModality(Modality.WINDOW_MODAL);
-        dialog.setTitle("QR - Examen #" + item.getExamId());
+        // Show the exam title in the window title for clarity
+        dialog.setTitle("QR - " + (item.getExamTitle() == null || item.getExamTitle().isBlank() ? "Examen #" + item.getExamId() : item.getExamTitle()));
         dialog.setScene(scene);
         // set application icon for this dialog when available
         try {
