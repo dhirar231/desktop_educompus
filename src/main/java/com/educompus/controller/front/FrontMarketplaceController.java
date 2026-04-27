@@ -162,25 +162,25 @@ public class FrontMarketplaceController {
 
     /** Mini-card verticale compacte : image + titre + justification + prix + bouton */
     private VBox buildMiniCard(Produit p, String justification) {
-        VBox card = new VBox(8);
+        VBox card = new VBox(4);
         card.setAlignment(Pos.TOP_CENTER);
-        card.setPrefWidth(160); card.setMaxWidth(160); card.setMinWidth(160);
-        card.setPadding(new Insets(10, 10, 12, 10));
+        card.setPrefWidth(130); card.setMaxWidth(130); card.setMinWidth(130);
+        card.setPadding(new Insets(7, 8, 8, 8));
         card.setStyle(
             "-fx-background-color: white;" +
-            "-fx-background-radius: 14px;" +
+            "-fx-background-radius: 10px;" +
             "-fx-border-color: rgba(6,106,201,0.18);" +
-            "-fx-border-radius: 14px;" +
+            "-fx-border-radius: 10px;" +
             "-fx-border-width: 1;" +
-            "-fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.08), 10, 0.10, 0, 3);" +
+            "-fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.06), 8, 0.08, 0, 2);" +
             "-fx-cursor: hand;"
         );
         card.setOnMouseClicked(e -> ouvrirDetail(p));
 
-        // Avatar circulaire 48x48
+        // Avatar circulaire 36x36
         StackPane avatar = new StackPane();
-        avatar.setMinWidth(48); avatar.setMaxWidth(48);
-        avatar.setMinHeight(48); avatar.setMaxHeight(48);
+        avatar.setMinWidth(36); avatar.setMaxWidth(36);
+        avatar.setMinHeight(36); avatar.setMaxHeight(36);
         avatar.setStyle(
             "-fx-background-color: linear-gradient(to bottom right, rgba(0,210,255,0.2), rgba(106,17,203,0.2));" +
             "-fx-background-radius: 999px;"
@@ -189,9 +189,9 @@ public class FrontMarketplaceController {
         if (p.getImage() != null && !p.getImage().isBlank()) {
             try {
                 javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(
-                        new javafx.scene.image.Image(p.getImage(), 48, 48, true, true, true));
-                iv.setFitWidth(48); iv.setFitHeight(48);
-                javafx.scene.shape.Circle clip = new javafx.scene.shape.Circle(24, 24, 24);
+                        new javafx.scene.image.Image(p.getImage(), 36, 36, true, true, true));
+                iv.setFitWidth(36); iv.setFitHeight(36);
+                javafx.scene.shape.Circle clip = new javafx.scene.shape.Circle(18, 18, 18);
                 iv.setClip(clip);
                 avatar.getChildren().add(iv);
             } catch (Exception ignored) { addInitiale(avatar, p); }
@@ -199,32 +199,31 @@ public class FrontMarketplaceController {
 
         // Titre
         Label nom = new Label(p.getNom());
-        nom.setStyle("-fx-font-size: 11.5px; -fx-font-weight: 800; -fx-text-fill: #1e293b;");
+        nom.setStyle("-fx-font-size: 10px; -fx-font-weight: 800; -fx-text-fill: #1e293b;");
         nom.setWrapText(true);
         nom.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        nom.setMaxWidth(140);
+        nom.setMaxWidth(114);
 
         // Justification IA
-        String justifText = (justification != null && !justification.isBlank())
-                ? justification : "";
+        String justifText = (justification != null && !justification.isBlank()) ? justification : "";
         Label justif = new Label(justifText);
         justif.setWrapText(true);
         justif.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        justif.setMaxWidth(140);
-        justif.setStyle("-fx-font-size: 9px; -fx-text-fill: #7c3aed; -fx-font-style: italic;");
+        justif.setMaxWidth(114);
+        justif.setStyle("-fx-font-size: 8px; -fx-text-fill: #7c3aed; -fx-font-style: italic;");
         justif.setVisible(!justifText.isBlank());
         justif.setManaged(!justifText.isBlank());
 
         // Prix
-        Label prix = new Label(String.format("%.2f TND", p.getPrix()));
-        prix.setStyle("-fx-font-size: 12px; -fx-font-weight: 900; -fx-text-fill: #2563eb;");
+        Label prix = new Label(String.format("%.0f TND", p.getPrix()));
+        prix.setStyle("-fx-font-size: 10px; -fx-font-weight: 900; -fx-text-fill: #2563eb;");
 
-        // Bouton
-        Button btnAdd = new Button(p.getStock() == 0 ? "Indisponible" : "+ Panier");
+        // Bouton compact
+        Button btnAdd = new Button(p.getStock() == 0 ? "X" : "+");
         btnAdd.setMaxWidth(Double.MAX_VALUE);
         btnAdd.setStyle(p.getStock() == 0
-            ? "-fx-background-color: #f1f5f9; -fx-text-fill: #94a3b8; -fx-background-radius: 8px; -fx-font-size: 10px; -fx-padding: 5 8 5 8;"
-            : "-fx-background-color: #2563eb; -fx-text-fill: white; -fx-background-radius: 8px; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 5 8 5 8; -fx-cursor: hand;");
+            ? "-fx-background-color: #f1f5f9; -fx-text-fill: #94a3b8; -fx-background-radius: 6px; -fx-font-size: 10px; -fx-padding: 3 6 3 6;"
+            : "-fx-background-color: #2563eb; -fx-text-fill: white; -fx-background-radius: 6px; -fx-font-size: 10px; -fx-font-weight: 700; -fx-padding: 3 6 3 6; -fx-cursor: hand;");
         btnAdd.setDisable(p.getStock() == 0);
         btnAdd.setOnMouseClicked(e -> e.consume());
         btnAdd.setOnAction(e -> onAjouterPanier(p));
