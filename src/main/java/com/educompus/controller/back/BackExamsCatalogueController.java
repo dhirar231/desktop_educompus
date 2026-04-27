@@ -368,14 +368,7 @@ public final class BackExamsCatalogueController {
     }
 
     private static void styleDialog(javafx.scene.control.Dialog<?> dialog) {
-        if (dialog == null || dialog.getDialogPane() == null) return;
-        String css = cssUri();
-        if (!css.isBlank() && !dialog.getDialogPane().getStylesheets().contains(css)) {
-            dialog.getDialogPane().getStylesheets().add(css);
-        }
-        if (!dialog.getDialogPane().getStyleClass().contains("rgb-dialog")) {
-            dialog.getDialogPane().getStyleClass().add("rgb-dialog");
-        }
+        try { com.educompus.util.Dialogs.style(dialog); } catch (Exception ignored) {}
     }
 
     private static String cssUri() {

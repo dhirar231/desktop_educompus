@@ -1152,23 +1152,7 @@ public final class BackProjectsController {
     }
 
     private static void styleDialog(javafx.scene.control.Dialog<?> d) {
-        if (d == null || d.getDialogPane() == null) return;
-        String css = cssUri();
-        if (!css.isBlank() && !d.getDialogPane().getStylesheets().contains(css)) {
-            d.getDialogPane().getStylesheets().add(css);
-        }
-        if (!d.getDialogPane().getStyleClass().contains("rgb-dialog")) {
-            d.getDialogPane().getStyleClass().add("rgb-dialog");
-        }
-        for (javafx.scene.control.ButtonType bt : d.getDialogPane().getButtonTypes()) {
-            javafx.scene.Node b = d.getDialogPane().lookupButton(bt);
-            if (b == null) continue;
-            if (bt == javafx.scene.control.ButtonType.OK) {
-                b.getStyleClass().add("btn-rgb");
-            } else if (bt == javafx.scene.control.ButtonType.CANCEL) {
-                b.getStyleClass().add("btn-rgb-outline");
-            }
-        }
+        try { com.educompus.util.Dialogs.style(d); } catch (Exception ignored) {}
     }
 
     private static String cssUri() {

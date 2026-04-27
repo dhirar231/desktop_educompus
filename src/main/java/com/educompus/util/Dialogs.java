@@ -4,6 +4,9 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
+import javafx.scene.image.Image;
+import javafx.stage.Window;
+import javafx.stage.Stage;
 
 public final class Dialogs {
     private Dialogs() {}
@@ -53,6 +56,24 @@ public final class Dialogs {
                 b.getStyleClass().add("btn-rgb-outline");
             }
         }
+
+        // Try to set application icon on the dialog's window if possible
+        try {
+            Window w = d.getDialogPane().getScene().getWindow();
+            if (w instanceof Stage) {
+                Stage s = (Stage) w;
+                java.net.URL ico = Dialogs.class.getResource("/assets/images/app-icon.png");
+                if (ico == null) {
+                    ico = Dialogs.class.getResource("/assets/images/app-icon.ico");
+                }
+                if (ico != null) {
+                    try {
+                        Image img = new Image(ico.toExternalForm());
+                        if (!s.getIcons().contains(img)) s.getIcons().add(img);
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private static String cssUri() {
