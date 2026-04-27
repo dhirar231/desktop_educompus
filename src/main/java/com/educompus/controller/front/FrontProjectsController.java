@@ -13,6 +13,7 @@ import com.educompus.repository.NotificationRepository;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.util.ProjectRules;
+import com.educompus.repository.FavoriteRepository;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -51,10 +52,15 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public final class FrontProjectsController {
     private enum KanbanReturn {
@@ -199,6 +205,7 @@ public final class FrontProjectsController {
     private final ProjectSubmissionRepository submissionRepo = new ProjectSubmissionRepository();
     private final NotificationRepository notificationRepo = new NotificationRepository();
     private final KanbanTaskRepository kanbanRepo = new KanbanTaskRepository();
+    private final FavoriteRepository favoriteRepo = new FavoriteRepository();
     private final ProjectMeetingService projectMeetingService = new ProjectMeetingService();
     private final JcefBrowserService browserService = JcefBrowserService.getInstance();
 
@@ -250,7 +257,7 @@ public final class FrontProjectsController {
 
     private void setupSortCombos() {
         if (projectSortCombo != null) {
-            projectSortCombo.getItems().setAll("Plus recentes", "Titre A-Z", "Deadline");
+            projectSortCombo.getItems().setAll("Plus recentes", "Mes favoris", "Titre A-Z", "Deadline");
             projectSortCombo.setValue("Plus recentes");
             projectSortCombo.valueProperty().addListener((obs, o, n) -> applyProjectFilter());
         }
@@ -565,6 +572,12 @@ public final class FrontProjectsController {
     @FXML
     private void reloadProjects(ActionEvent event) {
         allProjects.setAll(projectRepo.listAll(""));
+        // annotate favorites for current user to avoid querying per-card
+        int uid = AppState.getUserId();
+        List<Integer> favIds = uid > 0 ? favoriteRepo.listProjectIdsByUser(uid) : List.of();
+        for (Project p : allProjects) {
+            p.setFavorite(favIds.contains(p.getId()));
+        }
         applyProjectFilter();
     }
 
@@ -593,8 +606,9 @@ public final class FrontProjectsController {
         VBox card = new VBox(10);
         card.getStyleClass().add("project-card");
         card.setPadding(new Insets(14));
-        card.setPrefWidth(260);
-        card.setMinWidth(240);
+        // give slightly more horizontal space so long date strings and the favorite icon fit
+        card.setPrefWidth(300);
+        card.setMinWidth(260);
 
         HBox top = new HBox(10);
         Label title = new Label(safe(project.getTitle()));
@@ -602,8 +616,28 @@ public final class FrontProjectsController {
         title.setWrapText(true);
         HBox.setHgrow(title, Priority.ALWAYS);
 
+        Label fav = new Label(project.isFavorite() ? "❤" : "♡");
+        fav.getStyleClass().add("favorite-icon");
+        if (project.isFavorite()) {
+            fav.getStyleClass().add("favorite-on");
+        } else {
+            fav.getStyleClass().remove("favorite-on");
+        }
+        // keep minimal inline sizing; visual styling handled by CSS classes
+        fav.setStyle("-fx-font-size:18px; -fx-cursor: hand;");
+        javafx.scene.control.Tooltip.install(fav, new Tooltip(project.isFavorite() ? "Retirer des favoris" : "Ajouter aux favoris"));
+        HBox.setMargin(fav, new Insets(0, 8, 0, 0));
+        fav.setOnMouseClicked(e -> {
+            toggleFavorite(project, fav);
+            e.consume();
+        });
+
         Label chip = new Label(deadlineChipText(project.getDeadline()));
         chip.getStyleClass().addAll("chip", "chip-info");
+        chip.setWrapText(false);
+        // prefer to reserve enough width for a full timestamp (yyyy/MM/dd HH:mm:ss)
+        chip.setPrefWidth(170);
+        chip.setMaxWidth(170);
 
         top.getChildren().addAll(title, chip);
 
@@ -629,7 +663,7 @@ public final class FrontProjectsController {
             openSubmit(null);
         });
 
-        HBox actions = new HBox(10, grow, btnVoir, btnSubmit);
+        HBox actions = new HBox(10, grow, fav, btnVoir, btnSubmit);
         actions.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
         card.getChildren().addAll(top, subtitle, actions);
@@ -658,6 +692,29 @@ public final class FrontProjectsController {
         // no-op (buttons are per-card)
     }
 
+    private void toggleFavorite(Project project, Label favLabel) {
+        if (project == null) return;
+        int uid = AppState.getUserId();
+        if (uid <= 0) {
+            info("Favoris", "Veuillez vous connecter pour utiliser les favoris.");
+            return;
+        }
+        boolean target = !project.isFavorite();
+        try {
+            favoriteRepo.setFavorite(uid, project.getId(), target);
+            project.setFavorite(target);
+            favLabel.setText(target ? "❤" : "♡");
+            javafx.scene.control.Tooltip.install(favLabel, new Tooltip(target ? "Retirer des favoris" : "Ajouter aux favoris"));
+            String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
+            if ("Mes favoris".equalsIgnoreCase(sort)) {
+                // refresh listing when in favorites view
+                applyProjectFilter();
+            }
+        } catch (Exception e) {
+            error("Favoris", e);
+        }
+    }
+
     private void applyProjectFilter() {
         String q = projectSearchField == null ? "" : String.valueOf(projectSearchField.getText());
         String query = safe(q).toLowerCase();
@@ -680,7 +737,25 @@ public final class FrontProjectsController {
 	            projects.setAll(filtered);
 	        }
 
-	        String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
+        String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
+        if ("Mes favoris".equalsIgnoreCase(sort)) {
+            int uid = AppState.getUserId();
+            if (uid <= 0) {
+                projects.clear();
+            } else {
+                List<Integer> favIds = favoriteRepo.listProjectIdsByUser(uid);
+                java.util.Map<Integer, Project> byId = new HashMap<>();
+                for (Project p : projects) {
+                    byId.put(p.getId(), p);
+                }
+                List<Project> favs = new ArrayList<>();
+                for (Integer id : favIds) {
+                    Project p = byId.get(id);
+                    if (p != null) favs.add(p);
+                }
+                projects.setAll(favs);
+            }
+        } else {
             if ("Titre A-Z".equalsIgnoreCase(sort)) {
                 projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()).toLowerCase()));
             } else if ("Deadline".equalsIgnoreCase(sort)) {
@@ -688,6 +763,7 @@ public final class FrontProjectsController {
             } else {
                 projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())).reversed());
             }
+        }
 
         if (selectedProject != null) {
             boolean stillThere = false;
@@ -1731,7 +1807,36 @@ public final class FrontProjectsController {
 
     private static String deadlineChipText(String deadline) {
         String d = safe(deadline);
-        return d.isBlank() ? "Sans date" : d;
+        if (d.isBlank()) return "Sans date";
+        // try multiple known patterns and return a consistent full timestamp: yyyy/MM/dd HH:mm:ss
+        String[] patterns = new String[]{
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm",
+                "yyyy/MM/dd HH:mm:ss",
+                "yyyy/MM/dd HH:mm",
+                "dd/MM/yyyy HH:mm:ss",
+                "dd/MM/yyyy HH:mm",
+                "dd/MM/yy HH:mm",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String p : patterns) {
+            try {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(p);
+                if (p.contains("H") || p.contains("m")) {
+                    LocalDateTime dt = LocalDateTime.parse(d, fmt);
+                    return dt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+                } else {
+                    LocalDate ld = LocalDate.parse(d, fmt);
+                    return ld.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+                }
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        // fallback: if string contains dashes, replace with slashes for display
+        if (d.contains("-")) {
+            return d.replace('-', '/');
+        }
+        return d;
     }
 
     private static void info(String title, String message) {

@@ -56,6 +56,9 @@ import java.io.File;
 import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
 import java.util.ArrayList;
@@ -1120,7 +1123,32 @@ public final class BackProjectsController {
 
     private static String deadlineChipText(String deadline) {
         String d = safe(deadline);
-        return d.isBlank() ? "Sans date" : d;
+        if (d.isBlank()) return "Sans date";
+        String[] patterns = new String[]{
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm",
+                "yyyy/MM/dd HH:mm:ss",
+                "yyyy/MM/dd HH:mm",
+                "dd/MM/yyyy HH:mm:ss",
+                "dd/MM/yyyy HH:mm",
+                "dd/MM/yy HH:mm",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String p : patterns) {
+            try {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(p);
+                if (p.contains("H") || p.contains("m")) {
+                    LocalDateTime dt = LocalDateTime.parse(d, fmt);
+                    return dt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+                } else {
+                    LocalDate ld = LocalDate.parse(d, fmt);
+                    return ld.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+                }
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        if (d.contains("-")) return d.replace('-', '/');
+        return d;
     }
 
     private static void info(String title, String message) {
