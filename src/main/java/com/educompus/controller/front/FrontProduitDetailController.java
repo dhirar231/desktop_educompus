@@ -4,6 +4,7 @@ import com.educompus.app.AppState;
 import com.educompus.model.Avis;
 import com.educompus.model.Panier;
 import com.educompus.model.Produit;
+import com.educompus.service.ChatHistoriqueService;
 import com.educompus.service.GroqRecommandationService;
 import com.educompus.service.ServiceAvis;
 import com.educompus.service.ServicePanier;
@@ -50,6 +51,10 @@ public class FrontProduitDetailController {
     private final ServiceAvis   serviceAvis   = new ServiceAvis();
     private final ServicePanier servicePanier = new ServicePanier();
     private final GroqRecommandationService groqService = new GroqRecommandationService();
+    private final ChatHistoriqueService chatHistorique  = new ChatHistoriqueService();
+    // Historique en mémoire (role + texte + heure)
+    private final java.util.List<ChatHistoriqueService.Message> historiqueMessages =
+            new java.util.ArrayList<>();
 
     // Chat
     @FXML private ScrollPane chatScrollPane;
@@ -82,10 +87,15 @@ public class FrontProduitDetailController {
 
     public void setProduit(Produit p) {
         this.produit = p;
-        nbConsultations++;  // incrémenter à chaque ouverture de la fiche
+        nbConsultations++;
         remplirInfos();
         chargerAvis();
-        ajouterMessageAssistant("Bonjour ! Je suis votre assistant EduCampus. Posez-moi vos questions sur \"" + p.getNom() + "\" !");
+        // Charger l'historique du chat depuis le disque
+        chargerHistoriqueChat();
+        // Message de bienvenue seulement si pas d'historique
+        if (historiqueMessages.isEmpty()) {
+            ajouterMessageAssistant("Bonjour ! Je suis votre assistant EduCampus. Posez-moi vos questions sur \"" + p.getNom() + "\" !");
+        }
     }
 
     public void setOnRetour(Runnable callback) {
@@ -138,6 +148,25 @@ public class FrontProduitDetailController {
 
     // ── Chat assistant ────────────────────────────────────────────────────────
 
+    private void chargerHistoriqueChat() {
+        historiqueMessages.clear();
+        if (chatMessages == null) return;
+        chatMessages.getChildren().clear();
+
+        List<ChatHistoriqueService.Message> saved =
+                chatHistorique.charger(AppState.getUserId(), produit.getId());
+
+        for (ChatHistoriqueService.Message m : saved) {
+            historiqueMessages.add(m);
+            if ("client".equals(m.role)) {
+                ajouterMessageClient(m.texte);
+            } else {
+                ajouterMessageAssistant(m.texte);
+            }
+        }
+        scrollerChat();
+    }
+
     @FXML
     private void onEnvoyerMessage(ActionEvent event) {
         if (chatInput == null) return;
@@ -178,6 +207,11 @@ public class FrontProduitDetailController {
 
     private void ajouterMessageClient(String texte) {
         if (chatMessages == null) return;
+        String heure = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+        // Sauvegarder dans l'historique
+        historiqueMessages.add(new ChatHistoriqueService.Message("client", texte, heure));
+        if (produit != null) chatHistorique.sauvegarder(AppState.getUserId(), produit.getId(), historiqueMessages);
+
         HBox row = new HBox();
         row.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         Label msg = new Label(texte);
@@ -193,10 +227,14 @@ public class FrontProduitDetailController {
 
     private void ajouterMessageAssistant(String texte) {
         if (chatMessages == null) return;
+        String heure = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+        // Sauvegarder dans l'historique
+        historiqueMessages.add(new ChatHistoriqueService.Message("assistant", texte, heure));
+        if (produit != null) chatHistorique.sauvegarder(AppState.getUserId(), produit.getId(), historiqueMessages);
+
         HBox row = new HBox(8);
         row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
-        // Avatar assistant
         Label avatar = new Label("AI");
         avatar.setStyle("-fx-background-color: linear-gradient(to right, #7c3aed, #2563eb);" +
                 "-fx-text-fill: white; -fx-background-radius: 999px;" +

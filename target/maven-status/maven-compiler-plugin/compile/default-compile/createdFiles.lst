@@ -7,12 +7,14 @@ com\educompus\controller\back\BackCoursesController$4.class
 com\educompus\service\ServicePanier.class
 com\educompus\controller\back\BackExamQuestionsController$2.class
 com\educompus\model\VideoExplicative.class
+com\educompus\service\ChatHistoriqueService$Message.class
 com\educompus\controller\back\TeacherResponsesController.class
 com\educompus\service\VideoExplicatifService.class
 com\educompus\controller\back\BackLoginController.class
 com\educompus\controller\front\SplashController.class
 com\educompus\repository\EducompusDB.class
 com\educompus\model\ExamCatalogueItem.class
+com\educompus\service\TodoService.class
 com\educompus\controller\back\BackCoursesController$FormResult.class
 com\educompus\service\ProjectValidationService.class
 com\educompus\service\ServiceStatistiques$ProduitStat.class
@@ -27,6 +29,7 @@ com\educompus\controller\back\BackMarketplaceController.class
 com\educompus\service\ServiceProduit.class
 com\educompus\service\TDService.class
 com\educompus\service\TextToSpeechService.class
+com\educompus\service\ChatHistoriqueService.class
 com\educompus\repository\CourseManagementRepository.class
 com\educompus\model\KanbanTask.class
 com\educompus\util\BadWordsFilter.class
@@ -38,6 +41,7 @@ com\educompus\controller\back\BackUsersController.class
 com\educompus\controller\front\FrontProfileController.class
 com\educompus\controller\front\FrontMesCommandesController.class
 com\educompus\controller\back\BackUserImportController$ImportItem.class
+com\educompus\service\TodoService$Tache.class
 com\educompus\controller\back\BackKanbanController.class
 com\educompus\controller\back\BackMarketplaceAjoutController.class
 com\educompus\controller\front\FrontExamsController.class
@@ -45,6 +49,7 @@ com\educompus\service\ServiceLigneCommande.class
 com\educompus\service\FacturePNGService.class
 com\educompus\util\Dialogs.class
 com\educompus\controller\back\BackExamsCatalogueController.class
+com\educompus\service\PollinationsImageService.class
 com\educompus\controller\back\BackMarketplaceModifController.class
 com\educompus\service\CloudinaryService.class
 com\educompus\controller\back\BackCoursesController$3.class

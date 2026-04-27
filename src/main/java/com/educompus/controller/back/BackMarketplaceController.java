@@ -3,6 +3,7 @@ package com.educompus.controller.back;
 import com.educompus.model.Produit;
 import com.educompus.nav.Navigator;
 import com.educompus.service.GroqRecommandationService;
+import com.educompus.service.PollinationsImageService;
 import com.educompus.service.ServiceProduit;
 import com.educompus.util.ProduitValidator;
 import javafx.application.Platform;
@@ -243,7 +244,7 @@ public class BackMarketplaceController {
         grid.add(ligneIA, 1, r++ * 2);
         ajouterLigne2Col(grid, r++, "Prix (TND) *", fieldPrix, errPrix, "Stock *", fieldStock, errStock);
         ajouterLigne2Col(grid, r++, "Type *", fieldType, errType, "Categorie *", fieldCat, errCat);
-        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage), errImg);
+        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage, fieldNom, fieldType, fieldCat), errImg);
 
         // Attacher validation
         ProduitValidator.attacher(fieldNom, errNom, fieldDesc, errDesc, fieldPrix, errPrix,
@@ -317,7 +318,7 @@ public class BackMarketplaceController {
         grid.add(ligneIA, 1, r++ * 2);
         ajouterLigne2Col(grid, r++, "Prix (TND) *", fieldPrix, errPrix, "Stock *", fieldStock, errStock);
         ajouterLigne2Col(grid, r++, "Type *", fieldType, errType, "Categorie *", fieldCat, errCat);
-        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage), errImg);
+        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage, fieldNom, fieldType, fieldCat), errImg);
 
         ProduitValidator.attacher(fieldNom, errNom, fieldDesc, errDesc, fieldPrix, errPrix,
                 fieldStock, errStock, fieldType, errType, fieldCat, errCat, fieldImage, errImg);
@@ -452,9 +453,11 @@ public class BackMarketplaceController {
         GridPane.setHgrow(pair, Priority.ALWAYS);
     }
 
-    private HBox creerLigneImage(TextField fieldImage) {
+    private HBox creerLigneImage(TextField fieldImage,
+                                  TextField fieldNom, ComboBox<String> fieldType,
+                                  ComboBox<String> fieldCat) {
         Button btnParcourir = new Button("📁 Parcourir");
-        btnParcourir.getStyleClass().add("btn-ghost");
+        btnParcourir.getStyleClass().add("btn-rgb-outline");
         btnParcourir.setOnAction(e -> {
             FileChooser fc = new FileChooser();
             fc.setTitle("Choisir une image");
@@ -463,7 +466,13 @@ public class BackMarketplaceController {
             File f = fc.showOpenDialog(listeProduits.getScene().getWindow());
             if (f != null) fieldImage.setText(f.toURI().toString());
         });
-        HBox row = new HBox(8, fieldImage, btnParcourir);
+
+        Button btnIA = new Button("🎨 Générer IA");
+        btnIA.getStyleClass().add("btn-rgb-outline");
+        btnIA.setStyle("-fx-text-fill: #7c3aed;");
+        btnIA.setOnAction(e -> genererImageIA(fieldNom, fieldType, fieldCat, fieldImage, btnIA));
+
+        HBox row = new HBox(8, fieldImage, btnParcourir, btnIA);
         HBox.setHgrow(fieldImage, Priority.ALWAYS);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
@@ -517,6 +526,52 @@ public class BackMarketplaceController {
         l.setVisible(false);
         l.setManaged(false);
         return l;
+    }
+
+    // ── Génération image IA (Pollinations) ───────────────────────────────────
+
+    private void genererImageIA(TextField fieldNom, ComboBox<String> fieldType,
+                                 ComboBox<String> fieldCat, TextField fieldImage,
+                                 Button btnIA) {
+        String nom  = fieldNom.getText().trim();
+        String type = fieldType.getValue();
+        String cat  = fieldCat.getValue();
+
+        if (nom.isBlank()) {
+            showAlert(Alert.AlertType.WARNING, "Champ manquant",
+                    "Remplissez d'abord le nom du produit.");
+            return;
+        }
+
+        btnIA.setDisable(true);
+        btnIA.setText("⏳ Génération...");
+
+        new Thread(() -> {
+            try {
+                String prompt = PollinationsImageService.construirePrompt(
+                        nom,
+                        type  != null ? type : "educational product",
+                        cat   != null ? cat  : "education");
+
+                PollinationsImageService service = new PollinationsImageService();
+                java.io.File img = service.genererImage(prompt, 512, 512);
+
+                javafx.application.Platform.runLater(() -> {
+                    fieldImage.setText(img.toURI().toString());
+                    btnIA.setDisable(false);
+                    btnIA.setText("🎨 Générer IA");
+                    showAlert(Alert.AlertType.INFORMATION, "Image générée",
+                            "Image créée avec succès par Pollinations AI !");
+                });
+            } catch (Exception ex) {
+                javafx.application.Platform.runLater(() -> {
+                    btnIA.setDisable(false);
+                    btnIA.setText("🎨 Générer IA");
+                    showAlert(Alert.AlertType.ERROR, "Erreur",
+                            "Génération échouée : " + ex.getMessage());
+                });
+            }
+        }, "pollinations-img").start();
     }
 
     // ── Helpers alert ─────────────────────────────────────────────────────────
