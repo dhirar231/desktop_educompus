@@ -4,11 +4,14 @@ import com.educompus.app.AppState;
 import com.educompus.model.Commande;
 import com.educompus.model.LigneCommande;
 import com.educompus.model.Livraison;
+import com.educompus.model.Produit;
 import com.educompus.service.CloudinaryService;
 import com.educompus.service.FacturePNGService;
+import com.educompus.service.GarantiePNGService;
 import com.educompus.service.ServiceCommande;
 import com.educompus.service.ServiceLigneCommande;
 import com.educompus.service.ServiceLivraison;
+import com.educompus.service.ServiceProduit;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -31,6 +34,7 @@ public class FrontMesCommandesController {
     private final ServiceCommande      serviceCommande      = new ServiceCommande();
     private final ServiceLigneCommande serviceLigneCommande = new ServiceLigneCommande();
     private final ServiceLivraison     serviceLivraison     = new ServiceLivraison();
+    private final ServiceProduit       serviceProduit       = new ServiceProduit();
 
     private Runnable onRetourCallback;
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -149,7 +153,23 @@ public class FrontMesCommandesController {
                         lc.getPrixUnitaire() * lc.getQuantite()));
                 st.setStyle("-fx-font-weight: 800; -fx-text-fill: -edu-primary; -fx-font-size: 13px;");
 
-                row.getChildren().addAll(infos, st);
+                // Bouton garantie si type = Materiel
+                HBox actions = new HBox(6);
+                actions.setAlignment(Pos.CENTER_RIGHT);
+                if (lc.getProduitId() != null) {
+                    try {
+                        Produit produit = serviceProduit.findById(lc.getProduitId());
+                        if (produit != null && "Materiel".equalsIgnoreCase(produit.getType())) {
+                            Button btnGarantie = new Button("🛡 Garantie");
+                            btnGarantie.getStyleClass().add("btn-rgb-outline");
+                            btnGarantie.setStyle("-fx-font-size: 10px; -fx-text-fill: #7c3aed;");
+                            btnGarantie.setOnAction(e -> genererGarantie(cmd, lc, produit, btnGarantie));
+                            actions.getChildren().add(btnGarantie);
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                row.getChildren().addAll(infos, st, actions);
                 corps.getChildren().add(row);
             }
         } catch (Exception ignored) {}
@@ -240,6 +260,46 @@ public class FrontMesCommandesController {
         } catch (Exception ignored) {}
 
         return pied;
+    }
+
+    // ── Génération garantie PNG ───────────────────────────────────────────────
+
+    private void genererGarantie(Commande cmd, LigneCommande lc, Produit produit, Button btn) {
+        btn.setDisable(true);
+        btn.setText("⏳");
+        new Thread(() -> {
+            try {
+                GarantiePNGService svc = new GarantiePNGService();
+                File png = svc.generer(cmd, lc, produit);
+                Platform.runLater(() -> {
+                    btn.setDisable(false);
+                    btn.setText("🛡 Garantie");
+                    try {
+                        if (java.awt.Desktop.isDesktopSupported())
+                            java.awt.Desktop.getDesktop().open(png);
+                    } catch (Exception ignored) {}
+                    Alert info = new Alert(Alert.AlertType.INFORMATION);
+                    info.setTitle("Certificat de garantie");
+                    info.setHeaderText(null);
+                    info.setContentText("Certificat généré :\n" + png.getAbsolutePath());
+                    if (commandesBox.getScene() != null)
+                        info.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    info.showAndWait();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    btn.setDisable(false);
+                    btn.setText("🛡 Garantie");
+                    Alert err = new Alert(Alert.AlertType.ERROR);
+                    err.setTitle("Erreur");
+                    err.setHeaderText(null);
+                    err.setContentText("Impossible de générer la garantie :\n" + ex.getMessage());
+                    if (commandesBox.getScene() != null)
+                        err.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    err.showAndWait();
+                });
+            }
+        }, "garantie-png").start();
     }
 
     // ── Impression facture PNG ────────────────────────────────────────────────

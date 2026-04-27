@@ -124,6 +124,7 @@ com\educompus\app\AppState$Role.class
 com\educompus\app\PreviewApp.class
 com\educompus\controller\back\BackStatistiquesController.class
 com\educompus\controller\back\BackUsersController$1.class
+com\educompus\service\GarantiePNGService.class
 com\educompus\util\MarketplaceConfig.class
 com\educompus\controller\back\BackExamsController.class
 com\educompus\controller\front\FrontPanierController.class
