@@ -57,6 +57,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import javafx.application.Platform;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -1108,8 +1109,23 @@ public final class FrontProjectsController {
             String joinUrl = projectMeetingService.joinUrl(project, muted);
             String room = safe(project.getMeetingRoom());
             String title = "EduCompus | Meeting | " + (room.isBlank() ? ("Project " + project.getId()) : room);
-            browserService.openMeetingDialog(title, joinUrl);
-            updateMeetingPanel(project);
+            // open JCEF dialog in background thread to avoid freezing JavaFX UI
+            new Thread(() -> {
+                try {
+                    System.out.println("[MEETING] Opening in JCEF dialog...");
+                    browserService.openMeetingDialog(title, joinUrl);
+                    javafx.application.Platform.runLater(() -> updateMeetingPanel(project));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    javafx.application.Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Meeting Error");
+                        alert.setHeaderText("Impossible d'ouvrir le meeting");
+                        alert.setContentText("JCEF failed to load meeting.");
+                        alert.showAndWait();
+                    });
+                }
+            }, "jcef-opener").start();
         } catch (Exception e) {
             error("Meeting", e);
         }

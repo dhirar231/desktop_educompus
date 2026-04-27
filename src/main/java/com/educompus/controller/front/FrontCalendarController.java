@@ -91,20 +91,31 @@ public final class FrontCalendarController {
     }
 
     private void loadBrowser(String url) {
-        try {
-            String meetingUrl = safe(url);
-            System.out.println("[Meeting] Loading Jitsi URL in student view: " + meetingUrl);
-            if (browserHandle == null || !browserHandle.isShowing()) {
-                browserHandle = browserService.openMeetingDialog("Salle Jitsi etudiant", meetingUrl);
-            } else {
-                browserHandle.show();
+        String meetingUrl = safe(url);
+        System.out.println("[Meeting] Loading Jitsi URL in student view: " + meetingUrl);
+        new Thread(() -> {
+            try {
+                if (browserHandle == null || !browserHandle.isShowing()) {
+                    browserHandle = browserService.openMeetingDialog("Salle Jitsi etudiant", meetingUrl);
+                } else {
+                    browserHandle.show();
+                }
+                browserHandle.load(meetingUrl);
+                if (helperLabel != null) {
+                    javafx.application.Platform.runLater(() -> helperLabel.setText("Salle ouverte dans une fenetre separee: " + meetingUrl));
+                }
+            } catch (Exception ex) {
+                try {
+                    if (java.awt.Desktop.isDesktopSupported()) {
+                        java.awt.Desktop.getDesktop().browse(java.net.URI.create(meetingUrl));
+                        javafx.application.Platform.runLater(() -> helperLabel.setText("Salle ouverte dans le navigateur: " + meetingUrl));
+                        return;
+                    }
+                } catch (Exception browseEx) {
+                    // ignore and show original error below
+                }
+                javafx.application.Platform.runLater(() -> Dialogs.error("Meeting", "Initialisation JCEF impossible: " + safe(ex.getMessage())));
             }
-            browserHandle.load(meetingUrl);
-            if (helperLabel != null) {
-                helperLabel.setText("Salle ouverte dans une fenetre separee: " + meetingUrl);
-            }
-        } catch (Exception ex) {
-            Dialogs.error("Meeting", "Initialisation JCEF impossible: " + safe(ex.getMessage()));
-        }
+        }, "jcef-opener-calendar").start();
     }
 }
