@@ -64,13 +64,28 @@ public class PollinationsImageService {
 
     /**
      * Construit un prompt optimisé pour un produit éducatif.
+     * Inclut la description pour que l'image soit cohérente avec le contenu.
      */
-    public static String construirePrompt(String nomProduit, String type, String categorie) {
-        String base = "professional educational product cover image, ";
-        base += nomProduit + ", ";
-        base += type + " for " + categorie + ", ";
-        base += "clean modern design, flat illustration, blue and white colors, ";
-        base += "high quality, no text, no watermark";
-        return base;
+    public static String construirePrompt(String nomProduit, String type,
+                                           String categorie, String description) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("professional educational product cover image, ");
+        sb.append(nomProduit).append(", ");
+        sb.append(type).append(" about ").append(categorie).append(", ");
+
+        // Extraire les mots-clés de la description (max 20 mots)
+        if (description != null && !description.isBlank()) {
+            String[] mots = description.trim().split("\\s+");
+            int limite = Math.min(mots.length, 20);
+            for (int i = 0; i < limite; i++) {
+                String mot = mots[i].replaceAll("[^a-zA-ZÀ-ÿ]", "");
+                if (mot.length() > 3) sb.append(mot).append(" ");
+            }
+        }
+
+        sb.append(", clean modern flat illustration, ");
+        sb.append("blue purple gradient, educational icons, ");
+        sb.append("high quality, no text, no watermark, 4k");
+        return sb.toString();
     }
 }

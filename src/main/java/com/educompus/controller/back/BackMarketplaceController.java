@@ -244,7 +244,7 @@ public class BackMarketplaceController {
         grid.add(ligneIA, 1, r++ * 2);
         ajouterLigne2Col(grid, r++, "Prix (TND) *", fieldPrix, errPrix, "Stock *", fieldStock, errStock);
         ajouterLigne2Col(grid, r++, "Type *", fieldType, errType, "Categorie *", fieldCat, errCat);
-        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage, fieldNom, fieldType, fieldCat), errImg);
+        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage, fieldNom, fieldType, fieldCat, fieldDesc), errImg);
 
         // Attacher validation
         ProduitValidator.attacher(fieldNom, errNom, fieldDesc, errDesc, fieldPrix, errPrix,
@@ -318,7 +318,7 @@ public class BackMarketplaceController {
         grid.add(ligneIA, 1, r++ * 2);
         ajouterLigne2Col(grid, r++, "Prix (TND) *", fieldPrix, errPrix, "Stock *", fieldStock, errStock);
         ajouterLigne2Col(grid, r++, "Type *", fieldType, errType, "Categorie *", fieldCat, errCat);
-        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage, fieldNom, fieldType, fieldCat), errImg);
+        ajouterLigne(grid, r++, "Image (optionnel)", creerLigneImage(fieldImage, fieldNom, fieldType, fieldCat, fieldDesc), errImg);
 
         ProduitValidator.attacher(fieldNom, errNom, fieldDesc, errDesc, fieldPrix, errPrix,
                 fieldStock, errStock, fieldType, errType, fieldCat, errCat, fieldImage, errImg);
@@ -455,7 +455,7 @@ public class BackMarketplaceController {
 
     private HBox creerLigneImage(TextField fieldImage,
                                   TextField fieldNom, ComboBox<String> fieldType,
-                                  ComboBox<String> fieldCat) {
+                                  ComboBox<String> fieldCat, TextArea fieldDesc) {
         Button btnParcourir = new Button("📁 Parcourir");
         btnParcourir.getStyleClass().add("btn-rgb-outline");
         btnParcourir.setOnAction(e -> {
@@ -470,7 +470,7 @@ public class BackMarketplaceController {
         Button btnIA = new Button("🎨 Générer IA");
         btnIA.getStyleClass().add("btn-rgb-outline");
         btnIA.setStyle("-fx-text-fill: #7c3aed;");
-        btnIA.setOnAction(e -> genererImageIA(fieldNom, fieldType, fieldCat, fieldImage, btnIA));
+        btnIA.setOnAction(e -> genererImageIA(fieldNom, fieldType, fieldCat, fieldImage, btnIA, fieldDesc));
 
         HBox row = new HBox(8, fieldImage, btnParcourir, btnIA);
         HBox.setHgrow(fieldImage, Priority.ALWAYS);
@@ -532,10 +532,11 @@ public class BackMarketplaceController {
 
     private void genererImageIA(TextField fieldNom, ComboBox<String> fieldType,
                                  ComboBox<String> fieldCat, TextField fieldImage,
-                                 Button btnIA) {
+                                 Button btnIA, TextArea fieldDesc) {
         String nom  = fieldNom.getText().trim();
         String type = fieldType.getValue();
         String cat  = fieldCat.getValue();
+        String desc = fieldDesc != null ? fieldDesc.getText().trim() : "";
 
         if (nom.isBlank()) {
             showAlert(Alert.AlertType.WARNING, "Champ manquant",
@@ -551,10 +552,11 @@ public class BackMarketplaceController {
                 String prompt = PollinationsImageService.construirePrompt(
                         nom,
                         type  != null ? type : "educational product",
-                        cat   != null ? cat  : "education");
+                        cat   != null ? cat  : "education",
+                        desc);
 
-                PollinationsImageService service = new PollinationsImageService();
-                java.io.File img = service.genererImage(prompt, 512, 512);
+                PollinationsImageService svc = new PollinationsImageService();
+                java.io.File img = svc.genererImage(prompt, 512, 512);
 
                 javafx.application.Platform.runLater(() -> {
                     fieldImage.setText(img.toURI().toString());
