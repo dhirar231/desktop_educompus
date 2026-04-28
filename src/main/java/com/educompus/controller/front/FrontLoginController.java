@@ -56,6 +56,10 @@ import java.util.Optional;
 import java.util.prefs.Preferences;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
+import com.educompus.model.PlacementQuestion;
+import com.educompus.repository.UserRepository;
+import com.educompus.service.PlacementGenerator;
+import com.educompus.ui.PlacementDialog;
 
 public final class FrontLoginController {
     private static final String PREF_REMEMBER = "rememberMe";
@@ -304,8 +308,33 @@ public final class FrontLoginController {
         AppState.setUserImageUrl(user.imageUrl());
 
         try {
-            Navigator.goRoot(
-                    (user.admin() || user.teacher()) ? "View/back/BackShell.fxml" : "View/front/FrontShell.fxml");
+            String target = (user.admin() || user.teacher()) ? "View/back/BackShell.fxml"
+                    : "View/front/FrontShell.fxml";
+            Navigator.goRoot(target);
+            // After navigation, show placement only for regular student users (once)
+            try {
+                if (!AppState.isAdmin() && !AppState.isTeacher()) {
+                    UserRepository ur = new UserRepository();
+                    if (!ur.hasCompletedPlacement(user.email())) {
+                        var qs = PlacementGenerator.generate(10, 10);
+                        javafx.stage.Window owner = Navigator.getStage();
+                        if (owner == null && cardPane != null && cardPane.getScene() != null)
+                            owner = cardPane.getScene().getWindow();
+                        PlacementDialog dlg = new PlacementDialog(owner, qs, user.email());
+                        boolean done = dlg.showAndWait();
+                        if (!done) {
+                            // If user explicitly abandoned the placement dialog, exit the application
+                            if (dlg.wasAbandoned()) {
+                                Platform.exit();
+                                return;
+                            }
+                            showError("Veuillez compléter le test de placement pour continuer.");
+                            return;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
         } catch (Exception e) {
             showError("Erreur interface: " + summarizeThrowable(e));
             e.printStackTrace();
@@ -382,8 +411,8 @@ public final class FrontLoginController {
             return;
         }
 
-        WindowsHelloAuthService.VerificationResult helloResult =
-                WindowsHelloAuthService.verify("Authenticate to continue with EduCampus Quick Login");
+        WindowsHelloAuthService.VerificationResult helloResult = WindowsHelloAuthService
+                .verify("Authenticate to continue with EduCampus Quick Login");
         if (!helloResult.success()) {
             showError(helloResult.message());
             shake(cardPane);
@@ -461,7 +490,8 @@ public final class FrontLoginController {
         refreshSavedAccountsUi();
     }
 
-    private void handleLimitReachedDuringSave(String mail, String pass, List<SavedAccountService.SavedAccountEntry> accounts) {
+    private void handleLimitReachedDuringSave(String mail, String pass,
+            List<SavedAccountService.SavedAccountEntry> accounts) {
         if (accounts == null || accounts.isEmpty()) {
             showError("Saved account limit reached.");
             return;
@@ -619,8 +649,7 @@ public final class FrontLoginController {
                             + "var el = document.getElementById('g-recaptcha-response');"
                             + "return el && el.value ? el.value : '';"
                             + "} catch (e) { return ''; }"
-                            + "})()"
-            );
+                            + "})()");
             String tokenFromPage = value == null ? "" : String.valueOf(value).trim();
             if (!tokenFromPage.isBlank()) {
                 captchaToken = tokenFromPage;
@@ -951,8 +980,8 @@ public final class FrontLoginController {
             boolean exists = DbAuthService.emailExists(mail);
             if (forgotInfoLabel != null) {
                 forgotInfoLabel.setText(exists
-                        ? "Si ce compte existe, un lien de rÃ©initialisation sera envoyÃ© (Ã  brancher sur Symfony)."
-                        : "Si ce compte existe, un lien de rÃ©initialisation sera envoyÃ© (Ã  brancher sur Symfony).");
+                        ? "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony)."
+                        : "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony).");
                 forgotInfoLabel.setManaged(true);
                 forgotInfoLabel.setVisible(true);
             }

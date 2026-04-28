@@ -21,7 +21,7 @@
 
     <VBox spacing="4">
         <Label text="Catalogue des examens" styleClass="page-title"/>
-        <Label text="Choisissez un cours, consultez la fiche du quiz, puis lancez l'examen dans une page dediee." styleClass="page-subtitle" wrapText="true"/>
+        <Label text="Choisissez un cours, consultez la fiche du quiz, puis lancez l'examen dans une page dédiée." styleClass="page-subtitle" wrapText="true"/>
     </VBox>
 
     <HBox spacing="10">
@@ -62,7 +62,7 @@
                 <Button text="&#x2190; Catalogue" onAction="#backToCatalogue" styleClass="btn-rgb-outline"/>
                 <Region HBox.hgrow="ALWAYS"/>
                     <Button fx:id="startExamButton" text="Passer examen" styleClass="btn-rgb" onAction="#startSelectedExam"/>
-                    <Button fx:id="downloadCertButton" text="Telecharger certificat" styleClass="btn-rgb-outline" visible="false" managed="false" onAction="#downloadCertificate"/>
+                    <Button fx:id="downloadCertButton" text="Télécharger certificat" styleClass="btn-rgb-outline" visible="false" managed="false" onAction="#downloadCertificate"/>
             </HBox>
 
             <VBox styleClass="card" spacing="12" VBox.vgrow="ALWAYS">
@@ -89,12 +89,16 @@
             <VBox styleClass="card" spacing="12" VBox.vgrow="ALWAYS">
                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                 <Label fx:id="quizTitleLabel" text="Quiz" styleClass="stat-value" wrapText="true"/>
-                <Label fx:id="quizProgressLabel" text="Question 1/1" styleClass="page-subtitle"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label fx:id="quizProgressLabel" text="Question 1/1" styleClass="page-subtitle"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="quizTimerLabel" text="00:00" styleClass="quiz-timer"/>
+                </HBox>
                 <Label fx:id="questionTextLabel" text="Question" styleClass="exam-question" wrapText="true"/>
                 <VBox fx:id="answersBox" spacing="10" VBox.vgrow="ALWAYS"/>
-                <Label fx:id="quizResultLabel" text="Selectionnez une reponse pour continuer." styleClass="page-subtitle" wrapText="true"/>
+                <Label fx:id="quizResultLabel" text="Sélectionnez une réponse pour continuer." styleClass="page-subtitle" wrapText="true"/>
                 <HBox spacing="10">
-                    <Button fx:id="prevQuestionButton" text="Precedent" styleClass="btn-rgb-outline" onAction="#previousQuestion"/>
+                    <Button fx:id="prevQuestionButton" text="Précédent" styleClass="btn-rgb-outline" onAction="#previousQuestion"/>
                     <Button fx:id="nextQuestionButton" text="Suivant" styleClass="btn-rgb" onAction="#nextQuestion"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Button fx:id="submitQuizButton" text="Valider" styleClass="btn-rgb" onAction="#submitQuiz"/>

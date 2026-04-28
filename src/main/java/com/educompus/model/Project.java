@@ -9,6 +9,13 @@ public class Project {
     private int createdById;
     private boolean published;
     private String createdAt;
+    private String meetingRoom;
+    private String meetingUrl;
+    private boolean meetingActive;
+    private int meetingStartedById;
+    private String meetingStartedAt;
+    // transient flag set by controllers to indicate current user's favorite state
+    private boolean favorite;
 
     public int getId() {
         return id;
@@ -72,6 +79,54 @@ public class Project {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getMeetingRoom() {
+        return meetingRoom;
+    }
+
+    public void setMeetingRoom(String meetingRoom) {
+        this.meetingRoom = meetingRoom;
+    }
+
+    public String getMeetingUrl() {
+        return meetingUrl;
+    }
+
+    public void setMeetingUrl(String meetingUrl) {
+        this.meetingUrl = meetingUrl;
+    }
+
+    public boolean isMeetingActive() {
+        return meetingActive;
+    }
+
+    public void setMeetingActive(boolean meetingActive) {
+        this.meetingActive = meetingActive;
+    }
+
+    public int getMeetingStartedById() {
+        return meetingStartedById;
+    }
+
+    public void setMeetingStartedById(int meetingStartedById) {
+        this.meetingStartedById = meetingStartedById;
+    }
+
+    public String getMeetingStartedAt() {
+        return meetingStartedAt;
+    }
+
+    public void setMeetingStartedAt(String meetingStartedAt) {
+        this.meetingStartedAt = meetingStartedAt;
+    }
+
+    public boolean isFavorite() {
+        return favorite;
+    }
+
+    public void setFavorite(boolean favorite) {
+        this.favorite = favorite;
     }
 }
 

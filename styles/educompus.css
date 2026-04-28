@@ -79,6 +79,19 @@
   -fx-scale-y: 0.9;
 }
 
+.notifications-badge {
+  -fx-background-color: -edu-danger;
+  -fx-text-fill: white;
+  -fx-font-size: 10px;
+  -fx-font-weight: 800;
+  -fx-background-radius: 999px;
+  -fx-padding: 2 6 2 6;
+  -fx-translate-x: 8;
+  -fx-translate-y: -6;
+  -fx-min-width: 18px;
+  -fx-alignment: center;
+}
+
 .btn-icon:hover .topbar-svg {
   -fx-fill: -edu-primary;
 }
@@ -323,6 +336,259 @@
   -fx-background-color: derive(-edu-primary-soft-2, -2%);
 }
 
+.meeting-menu-btn {
+  -fx-background-radius: 14px;
+  -fx-border-radius: 14px;
+  -fx-border-width: 2;
+  -fx-padding: 0;
+  -fx-font-weight: 800;
+  -fx-cursor: hand;
+}
+
+.meeting-menu-btn>.label {
+  -fx-padding: 10 12 10 16;
+}
+
+.meeting-menu-btn>.arrow-button {
+  -fx-background-color: transparent;
+  -fx-padding: 0 14 0 8;
+  -fx-background-radius: 0 14 14 0;
+}
+
+.meeting-menu-btn>.arrow-button>.arrow {
+  -fx-background-color: #5b6473;
+}
+
+.meeting-menu-btn:hover {
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 210, 255, 0.18), 16, 0.18, 0, 4);
+}
+
+.meeting-menu-btn-active {
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
+  -fx-text-fill: white;
+}
+
+.meeting-menu-btn-active>.arrow-button>.arrow {
+  -fx-background-color: white;
+}
+
+.meeting-menu-btn-idle {
+  -fx-background-color: -edu-card;
+  -fx-text-fill: -edu-text;
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
+}
+
+.meeting-menu-btn-idle:hover {
+  -fx-background-color: -edu-primary-soft-2;
+}
+
+.meeting-menu-btn .context-menu {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 14px;
+  -fx-border-color: rgba(6, 106, 201, 0.20);
+  -fx-border-radius: 14px;
+  -fx-padding: 6;
+}
+
+.meeting-menu-btn .menu-item {
+  -fx-background-radius: 10px;
+}
+
+.meeting-menu-btn .menu-item:focused,
+.meeting-menu-btn .menu-item:hover {
+  -fx-background-color: -edu-primary-soft-2;
+}
+
+/* Dialog / Alert styling used when Dialogs.style() adds `rgb-dialog` */
+.rgb-dialog .dialog-pane {
+  -fx-background-color: linear-gradient(to bottom right, -edu-card, -edu-surface);
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-color: rgba(6, 106, 201, 0.12);
+  -fx-border-width: 1;
+  -fx-padding: 14px;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.08), 18, 0.18, 0, 6);
+}
+
+.rgb-dialog .content.label {
+  -fx-text-fill: -edu-text;
+  -fx-font-size: 14px;
+  -fx-padding: 6px 0px 6px 0px;
+}
+
+.rgb-dialog .graphic {
+  -fx-background-color: -edu-primary;
+  -fx-background-radius: 999px;
+  -fx-min-width: 44px;
+  -fx-min-height: 44px;
+  -fx-alignment: center;
+  -fx-text-fill: white;
+  -fx-padding: 6px;
+}
+
+.rgb-dialog .button-bar {
+  -fx-background-color: transparent;
+  -fx-padding: 8px 12px 6px 12px;
+  -fx-alignment: center-right;
+}
+
+.rgb-dialog .button-bar .button {
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+}
+
+.rgb-dialog .header-panel {
+  -fx-padding: 0 0 6px 0;
+}
+
+/* Quiz timer chip shown in header or overlay */
+.quiz-timer {
+  -fx-font-weight: 800;
+  -fx-font-size: 13px;
+  -fx-text-fill: white;
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
+  -fx-padding: 6 12 6 12;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.12), 10, 0.12, 0, 3);
+  -fx-min-width: 64px;
+  -fx-alignment: CENTER;
+}
+
+.quiz-timer:disabled {
+  -fx-opacity: 0.6;
+}
+
+/* Placement results dialog styles */
+.placement-results-dialog {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-color: -edu-rgb-border;
+  -fx-border-width: 2;
+  -fx-padding: 16;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.08), 18, 0.12, 0, 8);
+}
+
+.placement-results-title {
+  -fx-font-size: 16px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+  -fx-alignment: center;
+  -fx-padding: 0 0 6 0;
+}
+
+.placement-results-lang {
+  -fx-font-weight: 700;
+  -fx-text-fill: -edu-text;
+}
+
+.placement-results-percent {
+  -fx-font-size: 20px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-primary;
+}
+
+.placement-results-level {
+  -fx-padding: 6 12 6 12;
+  -fx-background-radius: 999px;
+  -fx-border-radius: 999px;
+  -fx-font-weight: 800;
+  -fx-text-fill: white;
+  -fx-font-size: 12px;
+  -fx-alignment: center;
+}
+
+.level-A1 {
+  -fx-background-color: linear-gradient(to right, rgba(6, 106, 201, 0.95), rgba(0, 210, 255, 0.95));
+}
+
+.level-A2 {
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95));
+}
+
+.level-B1 {
+  -fx-background-color: linear-gradient(to right, rgba(6, 201, 106, 0.95), rgba(106, 17, 203, 0.95));
+}
+
+.level-B2 {
+  -fx-background-color: linear-gradient(to right, rgba(255, 166, 0, 0.95), rgba(239, 68, 68, 0.95));
+}
+
+.level-C1 {
+  -fx-background-color: linear-gradient(to right, rgba(106, 17, 203, 0.95), rgba(6, 106, 201, 0.95));
+}
+
+.level-C2 {
+  -fx-background-color: linear-gradient(to right, rgba(48, 48, 48, 0.95), rgba(0, 0, 0, 0.95));
+}
+
+/* Quiz timer label */
+.quiz-timer {
+  -fx-font-weight: 900;
+  -fx-font-size: 13px;
+  -fx-text-fill: white;
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
+  -fx-padding: 6 12 6 12;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.12), 10, 0.12, 0, 3);
+}
+
+.dialog-title {
+  -fx-font-weight: bold;
+  -fx-font-size: 14px;
+}
+
+/* Placement dialog styling */
+.placement-dialog-root {
+  -fx-background-color: -edu-card;
+  -fx-padding: 12;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-color: -edu-border;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.06), 18, 0.12, 0, 6);
+}
+
+.placement-dialog-body {
+  -fx-padding: 8 6 6 6;
+}
+
+.placement-choices .radio-button {
+  -fx-padding: 6 0 6 6;
+}
+
+.placement-nav {
+  -fx-padding: 8 0 0 0;
+}
+
+/* header / title */
+.placement-title {
+  -fx-font-size: 15px;
+  -fx-font-weight: 700;
+  -fx-text-fill: -edu-text;
+}
+
+.placement-progress {
+  -fx-font-size: 12px;
+  -fx-text-fill: -edu-text-muted;
+  -fx-alignment: CENTER_RIGHT;
+}
+
+/* radio button polish */
+.placement-choices .radio-button {
+  -fx-font-size: 13px;
+  -fx-padding: 8 0 8 0;
+}
+
+/* small responsive tweaks */
+@media screen and (max-width: 700px) {
+  .placement-dialog-body {
+    -fx-pref-width: 320px;
+  }
+}
+
 /* RGB modern ComboBox (Kanban status) */
 .combo-rgb {
   -fx-background-color: -edu-card;
@@ -391,6 +657,99 @@
   -fx-padding: 8 14 8 14;
 }
 
+.mailing-dialog {
+  -fx-background-color: transparent;
+}
+
+.mailing-hero {
+  -fx-background-color: linear-gradient(to right, rgba(6, 106, 201, 0.12), rgba(106, 17, 203, 0.08));
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.50), rgba(6, 106, 201, 0.40), rgba(106, 17, 203, 0.32));
+  -fx-border-width: 1;
+  -fx-border-radius: 18px;
+  -fx-background-radius: 18px;
+}
+
+.mailing-panel {
+  -fx-background-radius: 18px;
+  -fx-border-radius: 18px;
+}
+
+.mailing-config {
+  -fx-text-fill: -edu-primary;
+  -fx-font-weight: 700;
+  -fx-background-color: rgba(6, 106, 201, 0.08);
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-color: rgba(6, 106, 201, 0.16);
+  -fx-padding: 10 12 10 12;
+}
+
+.mailing-field {
+  -fx-background-radius: 14px;
+  -fx-border-radius: 14px;
+}
+
+.mailing-scroll {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+}
+
+.mailing-scroll>.viewport {
+  -fx-background-color: transparent;
+}
+
+.mailing-students-box {
+  -fx-background-color: rgba(6, 106, 201, 0.04);
+  -fx-background-radius: 14px;
+  -fx-border-color: rgba(6, 106, 201, 0.14);
+  -fx-border-radius: 14px;
+  -fx-border-width: 1;
+}
+
+.mail-student-check {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 12px;
+  -fx-border-color: rgba(6, 106, 201, 0.12);
+  -fx-border-radius: 12px;
+  -fx-border-width: 1;
+  -fx-padding: 10 12 10 12;
+}
+
+.mail-student-check:hover {
+  -fx-background-color: -edu-primary-soft-2;
+  -fx-border-color: rgba(6, 106, 201, 0.22);
+}
+
+.mail-student-check:selected {
+  -fx-background-color: rgba(6, 106, 201, 0.10);
+  -fx-border-color: rgba(6, 106, 201, 0.32);
+}
+
+.mail-student-check .box {
+  -fx-background-radius: 8px;
+  -fx-border-radius: 8px;
+  -fx-border-color: rgba(6, 106, 201, 0.35);
+}
+
+.mailing-hint {
+  -fx-background-color: rgba(106, 17, 203, 0.06);
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-color: rgba(106, 17, 203, 0.12);
+  -fx-padding: 10 12 10 12;
+}
+
+.mailing-status {
+  -fx-padding: 8 4 4 4;
+}
+
+.mailing-action-btn,
+.mailing-primary-btn {
+  -fx-background-radius: 14px;
+  -fx-border-radius: 14px;
+  -fx-padding: 10 18 10 18;
+}
+
 .btn-icon {
   -fx-background-color: transparent;
   -fx-text-fill: -edu-text-muted;
@@ -446,9 +805,9 @@
 
 .card {
   -fx-background-color: -edu-card;
-  -fx-background-radius: -edu-radius-md;
+  -fx-background-radius: 14px;
   -fx-border-color: -edu-border;
-  -fx-border-radius: -edu-radius-md;
+  -fx-border-radius: 14px;
   -fx-border-width: 1;
   -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
 }
@@ -651,6 +1010,141 @@
   -fx-effect: dropshadow(three-pass-box, derive(-edu-primary, 70%), 12, 0.12, 0, 2);
 }
 
+/* QR dialog styles (modal matching app theme) */
+.qr-dialog-root {
+  -fx-padding: 12;
+  -fx-background-color: transparent;
+}
+
+.qr-dialog-body {
+  -fx-background-color: linear-gradient(to bottom right, -edu-card, -edu-surface);
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  /* Gradient RGB border to match app template */
+  -fx-border-color: -edu-rgb-border;
+  -fx-border-width: 2;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.12), 22, 0.18, 0, 6);
+  -fx-padding: 16;
+  -fx-alignment: center;
+  -fx-max-width: 520px;
+}
+
+.qr-dialog-header {
+  -fx-alignment: CENTER_LEFT;
+  -fx-spacing: 8;
+  -fx-padding: 2 0 10 0;
+}
+
+.qr-dialog-close {
+  -fx-background-color: transparent;
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-size: 14px;
+  -fx-padding: 4 8 4 8;
+  -fx-background-radius: 6px;
+  -fx-cursor: hand;
+}
+
+.qr-dialog-close:hover {
+  -fx-background-color: -edu-surface-2;
+  -fx-text-fill: -edu-primary;
+}
+
+.qr-dialog-copybar {
+  -fx-padding: 12 0 0 0;
+}
+
+/* Copy button variant used in QR dialog: outlined "entouré" gradient blue */
+.qr-copy-btn {
+  -fx-background-color: white;
+  -fx-text-fill: -edu-primary;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-border-width: 2;
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
+  -fx-padding: 10 18 10 18;
+  -fx-font-weight: 800;
+  -fx-cursor: hand;
+  -fx-effect: dropshadow(three-pass-box, rgba(6, 106, 201, 0.06), 12, 0.10, 0, 4);
+}
+
+.qr-copy-btn:hover {
+  -fx-background-color: -edu-primary-soft-2;
+}
+
+.qr-warning {
+  -fx-background-color: rgba(255, 244, 229, 0.9);
+  -fx-border-color: rgba(245, 158, 11, 0.18);
+  -fx-border-width: 1;
+  -fx-padding: 10;
+  -fx-background-radius: 8px;
+  -fx-border-radius: 8px;
+  -fx-text-fill: #7a4a00;
+  -fx-font-size: 12px;
+}
+
+.qr-dialog-app-icon {
+  -fx-background-color: white;
+  -fx-background-radius: 999px;
+  -fx-padding: 3;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.06), 8, 0.08, 0, 3);
+  -fx-border-color: rgba(6, 106, 201, 0.12);
+  -fx-border-width: 1;
+  -fx-border-radius: 999px;
+}
+
+.qr-image-frame {
+  -fx-background-color: white;
+  -fx-padding: 12;
+  -fx-background-radius: 8px;
+  -fx-border-radius: 8px;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.08), 16, 0.12, 0, 6);
+}
+
+.qr-dialog-close {
+  -fx-background-color: white;
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95));
+  -fx-border-width: 1;
+  -fx-border-radius: 6px;
+  -fx-background-radius: 6px;
+  -fx-padding: 2 8 2 8;
+  -fx-cursor: hand;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.04), 6, 0.08, 0, 2);
+}
+
+.qr-dialog-close:hover {
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.04), rgba(6, 106, 201, 0.04));
+  -fx-text-fill: -edu-primary;
+}
+
+.dialog-title {
+  -fx-font-size: 16px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+  -fx-padding: 6 0 6 0;
+}
+
+.btn-rgb.small,
+.btn-rgb-compact.small,
+.btn-rgb-outline.small {
+  -fx-font-size: 12px;
+  -fx-padding: 6 10 6 10;
+}
+
+.qr-dialog-body .page-subtitle {
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-size: 12px;
+  -fx-padding: 8 0 0 0;
+  -fx-opacity: 0;
+  /* hidden when used as copy-only */
+  -fx-max-height: 0;
+  -fx-min-height: 0;
+}
+
+.btn-rgb.small,
+.btn-rgb-compact.small {
+  -fx-min-width: 120px;
+}
+
 .chip {
   -fx-background-radius: -edu-radius-pill;
   -fx-padding: 5 10 5 10;
@@ -736,6 +1230,28 @@
 .project-card.selected {
   -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
   -fx-border-width: 2;
+}
+
+.favorite-icon {
+  -fx-font-size: 18px;
+  -fx-text-fill: -edu-primary;
+  -fx-cursor: hand;
+  -fx-padding: 6 8 6 8;
+  -fx-background-color: transparent;
+  -fx-border-radius: 12px;
+  -fx-background-radius: 12px;
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.95), rgba(6, 106, 201, 0.95), rgba(106, 17, 203, 0.95));
+  -fx-border-width: 2;
+  -fx-alignment: center;
+  -fx-min-width: 34px;
+  -fx-min-height: 34px;
+}
+
+.favorite-icon.favorite-on {
+  -fx-background-color: linear-gradient(to right, rgba(0, 210, 255, 0.98), rgba(6, 106, 201, 0.98), rgba(106, 17, 203, 0.98));
+  -fx-text-fill: white;
+  -fx-border-color: transparent;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.12), 8, 0.12, 0, 2);
 }
 
 .project-card-title {
@@ -1088,6 +1604,36 @@
 
 .user-menu-signout:hover {
   -fx-background-color: -edu-primary-soft-2;
+}
+
+.notification-item,
+.notification-item-unread {
+  -fx-background-color: rgba(6, 106, 201, 0.05);
+  -fx-background-radius: 12px;
+  -fx-padding: 10 12 10 12;
+  -fx-border-radius: 12px;
+}
+
+.notification-item-unread {
+  -fx-background-color: rgba(6, 106, 201, 0.12);
+  -fx-border-color: rgba(6, 106, 201, 0.28);
+  -fx-border-width: 1px;
+}
+
+.notification-title {
+  -fx-text-fill: -edu-text;
+  -fx-font-size: 13px;
+  -fx-font-weight: 800;
+}
+
+.notification-message {
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-size: 12px;
+}
+
+.notification-date {
+  -fx-text-fill: -edu-text-muted;
+  -fx-font-size: 11px;
 }
 
 .sidebar-scroll {
@@ -1867,145 +2413,180 @@
   -fx-padding: 8 0 0 0;
 }
 
-/* ── Course Detail Page ── */
-.course-detail-hero {
-  -fx-background-color: linear-gradient(to bottom right, rgba(6, 106, 201, 0.92), rgba(106, 17, 203, 0.85));
-  -fx-background-radius: 16px;
-  -fx-border-radius: 16px;
+/* ── Course Detail — amélioration CSS ── */
+
+/* Hero banner gradient */
+.course-hero-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 18px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 18px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.12), 22, 0.15, 0, 5);
 }
 
-.course-detail-title {
-  -fx-font-size: 26px;
+.course-hero-banner {
+  -fx-background-color: linear-gradient(to bottom right, rgba(6, 106, 201, 0.92), rgba(106, 17, 203, 0.85));
+  -fx-background-radius: 18px 18px 0 0;
+}
+
+.course-hero-title {
+  -fx-font-size: 24px;
   -fx-font-weight: 900;
   -fx-text-fill: white;
+  -fx-wrap-text: true;
 }
 
-.course-detail-section-title {
+.course-hero-desc {
+  -fx-text-fill: rgba(255, 255, 255, 0.82);
+  -fx-font-size: 13px;
+  -fx-wrap-text: true;
+}
+
+.course-hero-meta {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 0 0 18px 18px;
+  -fx-border-color: -edu-border transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+}
+
+.meta-icon {
+  -fx-fill: -edu-primary;
+  -fx-scale-x: 0.78;
+  -fx-scale-y: 0.78;
+}
+
+.meta-text {
+  -fx-text-fill: -edu-text;
+  -fx-font-weight: 600;
+  -fx-font-size: 13px;
+}
+
+/* Chapitre accordion */
+.chapitre-header {
+  -fx-background-color: -edu-surface;
+  -fx-background-radius: 12px;
+  -fx-border-radius: 12px;
+  -fx-cursor: hand;
+}
+
+.chapitre-header:hover {
+  -fx-background-color: -edu-primary-soft-2;
+}
+
+.chapitre-num {
+  -fx-min-width: 30px;
+  -fx-min-height: 30px;
+  -fx-max-width: 30px;
+  -fx-max-height: 30px;
+  -fx-alignment: CENTER;
+  -fx-background-color: -edu-primary;
+  -fx-background-radius: 999px;
+  -fx-text-fill: white;
+  -fx-font-weight: 900;
+  -fx-font-size: 12px;
+}
+
+.chapitre-title {
   -fx-font-size: 14px;
   -fx-font-weight: 800;
   -fx-text-fill: -edu-text;
 }
 
-.course-detail-desc {
-  -fx-font-size: 13px;
-  -fx-text-fill: -edu-text;
-  -fx-line-spacing: 4px;
-}
-
-.course-detail-info-card {
-  -fx-min-width: 220px;
-}
-
-.course-info-icon {
-  -fx-min-width: 32px;
-  -fx-min-height: 32px;
-  -fx-max-width: 32px;
-  -fx-max-height: 32px;
-  -fx-background-color: -edu-primary-soft;
-  -fx-background-radius: 999px;
-}
-
-.course-info-label {
-  -fx-font-size: 11px;
+.chapitre-chevron {
   -fx-text-fill: -edu-text-muted;
-  -fx-font-weight: 600;
+  -fx-font-weight: 900;
+  -fx-font-size: 14px;
 }
 
-.course-info-value {
-  -fx-font-size: 13px;
+.chapitre-section-label {
+  -fx-font-size: 11px;
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text-muted;
+  -fx-padding: 8 0 4 0;
+  -fx-text-transform: uppercase;
+}
+
+/* Resource rows */
+.resource-row {
+  -fx-background-color: -edu-surface;
+  -fx-background-radius: 10px;
+  -fx-border-radius: 10px;
+  -fx-border-color: -edu-border;
+  -fx-border-width: 1;
+}
+
+.resource-row:hover {
+  -fx-background-color: -edu-primary-soft-2;
+  -fx-border-color: derive(-edu-primary, 72%);
+}
+
+.resource-name {
   -fx-font-weight: 700;
   -fx-text-fill: -edu-text;
+  -fx-font-size: 13px;
 }
 
-/* ── Back office stat cards ── */
-.back-stat-card {
-  -fx-background-color: -edu-card;
-  -fx-background-radius: 14px;
-  -fx-border-color: -edu-border;
-  -fx-border-radius: 14px;
-  -fx-border-width: 1;
-  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.07), 14, 0.12, 0, 3);
-}
-
-.back-stat-card:hover {
-  -fx-border-color: derive(-edu-primary, 72%);
-  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.12), 18, 0.15, 0, 5);
-}
-
-.back-stat-icon {
-  -fx-min-width: 40px;
-  -fx-min-height: 40px;
-  -fx-max-width: 40px;
-  -fx-max-height: 40px;
-  -fx-background-radius: 12px;
-  -fx-alignment: CENTER;
-}
-
-.back-stat-icon-blue {
-  -fx-background-color: rgba(6, 106, 201, 0.12);
-}
-
-.back-stat-icon-purple {
-  -fx-background-color: rgba(106, 17, 203, 0.12);
-}
-
-.back-stat-icon-green {
-  -fx-background-color: rgba(12, 188, 135, 0.12);
-}
-
-.back-stat-icon-orange {
-  -fx-background-color: rgba(247, 195, 46, 0.18);
-}
-
-.back-stat-svg {
-  -fx-fill: -edu-primary;
-  -fx-scale-x: 0.82;
-  -fx-scale-y: 0.82;
-}
-
-.back-stat-icon-purple .back-stat-svg {
-  -fx-fill: #6a11cb;
-}
-
-.back-stat-icon-green .back-stat-svg {
-  -fx-fill: #0cbc87;
-}
-
-.back-stat-icon-orange .back-stat-svg {
-  -fx-fill: #c8960a;
-}
-
-/* ── Back table améliorée ── */
-.back-table {
-  -fx-background-color: transparent;
-  -fx-border-color: -edu-border;
-  -fx-border-radius: 12px;
-  -fx-background-radius: 12px;
-}
-
-.back-table .column-header-background {
-  -fx-background-color: linear-gradient(to right, rgba(6, 106, 201, 0.06), rgba(106, 17, 203, 0.04));
-  -fx-background-radius: 12px 12px 0 0;
-  -fx-border-color: -edu-border;
-  -fx-border-width: 0 0 1 0;
-}
-
-.back-table .column-header .label {
-  -fx-text-fill: -edu-primary;
-  -fx-font-weight: 800;
-  -fx-font-size: 12px;
-}
-
-.back-table .table-row-cell {
-  -fx-background-color: -edu-card;
+/* Detail topbar */
+.detail-topbar {
+  -fx-background-color: -edu-bg;
   -fx-border-color: transparent transparent -edu-border transparent;
   -fx-border-width: 0 0 1 0;
 }
 
-.back-table .table-row-cell:filled:hover {
-  -fx-background-color: -edu-primary-soft;
+/* ── Description chapitre ── */
+.chapitre-desc {
+  -fx-text-fill: -edu-text;
+  -fx-font-size: 13px;
+  -fx-line-spacing: 3px;
+  -fx-padding: 8 0 4 0;
+  -fx-background-color: rgba(6, 106, 201, 0.04);
+  -fx-background-radius: 8px;
+  -fx-border-color: rgba(6, 106, 201, 0.12);
+  -fx-border-radius: 8px;
+  -fx-border-width: 1;
+  -fx-padding: 10 14 10 14;
 }
 
 .back-table .table-row-cell:filled:selected {
   -fx-background-color: -edu-primary-soft-2;
+}
+
+/* ── Amélioration card chapitre ── */
+.card .chapitre-header {
+  -fx-background-radius: 12px 12px 0 0;
+}
+
+/* ── Amélioration page cours front ── */
+.course-catalog-card {
+  -fx-background-color: -edu-card;
+  -fx-background-radius: 16px;
+  -fx-border-color: -edu-border;
+  -fx-border-radius: 16px;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.10), 18, 0.15, 0, 4);
+}
+
+.course-catalog-card:hover {
+  -fx-border-color: linear-gradient(to right, rgba(0, 210, 255, 0.65), rgba(6, 106, 201, 0.65), rgba(106, 17, 203, 0.65));
+  -fx-effect: dropshadow(three-pass-box, rgba(15, 23, 42, 0.18), 24, 0.18, 0, 8);
+  -fx-scale-x: 1.01;
+  -fx-scale-y: 1.01;
+}
+
+.course-catalog-banner {
+  -fx-background-color: linear-gradient(to bottom right, rgba(6, 106, 201, 0.15), rgba(106, 17, 203, 0.10));
+  -fx-background-radius: 16px 16px 0 0;
+}
+
+.course-catalog-title {
+  -fx-font-size: 15px;
+  -fx-font-weight: 900;
+  -fx-text-fill: -edu-text;
+}
+
+.course-catalog-footer {
+  -fx-border-color: -edu-border transparent transparent transparent;
+  -fx-border-width: 1 0 0 0;
+  -fx-padding: 8 0 0 0;
 }

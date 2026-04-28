@@ -1,0 +1,4 @@
+Exam Title,Exam Description,Exam Level,Course Id,Question Text,Duration,Choice 1,Choice 2,Choice 3,Choice 4,Correct
+"Sample Exam 1","Basic arithmetic quiz","1A",1,"What is 2 + 2?","70","1","2","3","4","D"
+"Sample Exam 1","Basic arithmetic quiz","1A",1,"What is 3 + 4?","45","5","6","7","8","A"
+"Sample Exam 2","General knowledge","2B",2,"Capital of France?","60","Berlin","London","Paris","Rome","C"

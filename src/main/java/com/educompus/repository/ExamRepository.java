@@ -5,6 +5,8 @@ import com.educompus.model.ExamCatalogueItem;
 import com.educompus.model.ExamQuestion;
 
 import java.sql.Connection;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,6 +21,8 @@ import java.util.Set;
 public final class ExamRepository {
     private boolean fallbackUsed;
     private String sourceLabel = "";
+    // Incremented whenever exams are added/updated/deleted/published so UI controllers can refresh.
+    public static final LongProperty CHANGE_COUNTER = new SimpleLongProperty(0);
 
     public boolean isFallbackUsed() {
         return fallbackUsed;
@@ -83,7 +87,15 @@ public final class ExamRepository {
                 ps.setInt(3, examId);
                 ps.executeUpdate();
                 try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) q.setId(rs.getInt(1));
+                    if (rs.next()) {
+                        q.setId(rs.getInt(1));
+                    } else {
+                        try (java.sql.PreparedStatement last = conn.prepareStatement("SELECT LAST_INSERT_ID()")) {
+                            try (java.sql.ResultSet lrs = last.executeQuery()) {
+                                if (lrs.next()) q.setId(lrs.getInt(1));
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
         }
@@ -183,7 +195,15 @@ public final class ExamRepository {
                 ps.setInt(3, questionId);
                 ps.executeUpdate();
                 try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) a.setId(rs.getInt(1));
+                    if (rs.next()) {
+                        a.setId(rs.getInt(1));
+                    } else {
+                        try (java.sql.PreparedStatement last = conn.prepareStatement("SELECT LAST_INSERT_ID()")) {
+                            try (java.sql.ResultSet lrs = last.executeQuery()) {
+                                if (lrs.next()) a.setId(lrs.getInt(1));
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
         }
@@ -199,6 +219,9 @@ public final class ExamRepository {
             Set<String> courseColumns = courseTable == null ? Set.of() : columnsOf(conn, courseTable);
             Set<String> examColumns = columnsOf(conn, "exam");
             boolean hasQuestions = tableExists(conn, "question");
+
+            Set<String> questionColumns = hasQuestions ? columnsOf(conn, "question") : Set.of();
+            String questionDurationCol = pickColumn(questionColumns, "duree", "duration", "duration_seconds");
 
             String examTitleCol = pickColumn(examColumns, "titre", "title", "name", "nom");
             String examDescCol = pickColumn(examColumns, "description", "details", "contenu", "content");
@@ -240,6 +263,7 @@ public final class ExamRepository {
                     .append(courseTitleExpr).append(" AS course_title, ")
                     .append(courseDescExpr).append(" AS course_description, ")
                     .append(hasQuestions ? "COUNT(q.id)" : "0").append(" AS question_count ")
+                    .append((questionDurationCol == null) ? ", 0 AS total_duration_seconds " : ", SUM(q." + questionDurationCol + ") AS total_duration_seconds ")
                     .append("FROM exam e ");
 
             if (courseTable != null) sql.append(" LEFT JOIN ").append(courseTable).append(" c ON c.id = e.").append(examCourseCol);
@@ -284,7 +308,17 @@ public final class ExamRepository {
                         item.setDomainLabel(rs.getString("domain_label"));
                         item.setPublished(rs.getBoolean("published_flag"));
                         item.setQuestionCount(rs.getInt("question_count"));
-                        item.setEstimatedMinutes(Math.max(5, item.getQuestionCount() * 2));
+                        // prefer actual total duration from questions (store seconds for precise display), fallback to heuristic
+                        int totalSeconds = 0;
+                        try {
+                            totalSeconds = rs.getInt("total_duration_seconds");
+                        } catch (Exception ignored) {}
+                        if (totalSeconds > 0) {
+                            item.setEstimatedSeconds(totalSeconds);
+                        } else {
+                            int fallbackMinutes = Math.max(5, item.getQuestionCount() * 2);
+                            item.setEstimatedSeconds(fallbackMinutes * 60);
+                        }
                         out.add(item);
                     }
                     // If there are no rows, return an empty list instead of throwing.
@@ -306,6 +340,7 @@ public final class ExamRepository {
             Set<String> answerColumns = columnsOf(conn, "reponse");
 
             String questionTextCol = pickColumn(questionColumns, "texte", "text", "question");
+            String questionCategoryCol = pickColumn(questionColumns, "categorie", "category", "topic", "theme", "section", "skill", "competence", "competency", "category_id", "section_id");
             String questionDurationCol = pickColumn(questionColumns, "duree", "duration", "duration_seconds");
             String answerTextCol = pickColumn(answerColumns, "texte", "text", "label");
             String answerCorrectCol = pickColumn(answerColumns, "correcte", "is_correct", "correct");
@@ -318,7 +353,8 @@ public final class ExamRepository {
             String sql = """
                     SELECT
                         q.id AS question_id,
-                        q.%s AS question_text,
+                        %s AS question_text,
+                        %s AS question_category,
                         %s AS question_duration,
                         r.id AS answer_id,
                         r.%s AS answer_text,
@@ -328,7 +364,8 @@ public final class ExamRepository {
                     WHERE q.exam_id = ?
                     ORDER BY q.id ASC, r.id ASC
                     """.formatted(
-                    questionTextCol,
+                    safeColumnOrLiteral("q", questionTextCol, "''"),
+                    safeColumnOrLiteral("q", questionCategoryCol, "''"),
                     questionDurationCol == null ? "45" : "q." + questionDurationCol,
                     answerTextCol,
                     answerCorrectCol
@@ -345,6 +382,7 @@ public final class ExamRepository {
                             return q;
                         });
                         question.setText(rs.getString("question_text"));
+                        question.setCategory(rs.getString("question_category"));
                         question.setDurationSeconds(rs.getInt("question_duration"));
 
                         int answerId = rs.getInt("answer_id");
@@ -543,9 +581,20 @@ public final class ExamRepository {
                 ps.setInt(idx, item.getCourseId());
                 ps.executeUpdate();
                 try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) item.setExamId(rs.getInt(1));
+                    if (rs.next()) {
+                        item.setExamId(rs.getInt(1));
+                    } else {
+                        // Fallback for drivers that don't return generated keys
+                        try (java.sql.PreparedStatement last = conn.prepareStatement("SELECT LAST_INSERT_ID()")) {
+                            try (java.sql.ResultSet lrs = last.executeQuery()) {
+                                if (lrs.next()) item.setExamId(lrs.getInt(1));
+                            }
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
@@ -584,6 +633,8 @@ public final class ExamRepository {
                 ps.setInt(idx, item.getExamId());
                 ps.executeUpdate();
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
@@ -604,6 +655,8 @@ public final class ExamRepository {
                 ps.setInt(2, examId);
                 ps.executeUpdate();
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
@@ -617,6 +670,8 @@ public final class ExamRepository {
                 ps.setInt(1, id);
                 ps.executeUpdate();
             }
+            // notify listeners that exams changed
+            CHANGE_COUNTER.set(CHANGE_COUNTER.get() + 1);
         }
     }
 
@@ -642,6 +697,21 @@ public final class ExamRepository {
     private static final String ATTEMPTS_FILE = "var/exam_attempts.properties";
 
     public int getAttemptCount(String userEmail, int examId) {
+        // Prefer DB-backed attempts if table exists
+        try (java.sql.Connection conn = EducompusDB.getConnection()) {
+            if (tableExists(conn, "exam_attempts")) {
+                String sql = "SELECT attempts FROM exam_attempts WHERE user_email = ? AND exam_id = ?";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, userEmail);
+                    ps.setInt(2, examId);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) return rs.getInt(1);
+                        return 0;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        // fallback to file-based storage
         try {
             java.util.Properties p = new java.util.Properties();
             java.io.File f = new java.io.File(ATTEMPTS_FILE);
@@ -654,6 +724,47 @@ public final class ExamRepository {
     }
 
     public void recordAttempt(String userEmail, int examId, int scorePercent, boolean passed, String certificatePath) throws Exception {
+        // Try to persist in DB first (preferred)
+        try (java.sql.Connection conn = EducompusDB.getConnection()) {
+            if (tableExists(conn, "exam_attempts")) {
+                // check existing row
+                String sel = "SELECT attempts FROM exam_attempts WHERE user_email = ? AND exam_id = ?";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sel)) {
+                    ps.setString(1, userEmail);
+                    ps.setInt(2, examId);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            int prev = rs.getInt(1);
+                            String update = "UPDATE exam_attempts SET attempts = ?, passed = ?, certificate_path = ?, last_score = ?, last_attempted = NOW() WHERE user_email = ? AND exam_id = ?";
+                            try (java.sql.PreparedStatement ups = conn.prepareStatement(update)) {
+                                ups.setInt(1, prev + 1);
+                                ups.setBoolean(2, passed);
+                                ups.setString(3, certificatePath);
+                                ups.setInt(4, scorePercent);
+                                ups.setString(5, userEmail);
+                                ups.setInt(6, examId);
+                                ups.executeUpdate();
+                                return;
+                            }
+                        } else {
+                            String insert = "INSERT INTO exam_attempts (user_email, exam_id, attempts, passed, certificate_path, last_score, last_attempted) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                            try (java.sql.PreparedStatement ins = conn.prepareStatement(insert)) {
+                                ins.setString(1, userEmail);
+                                ins.setInt(2, examId);
+                                ins.setInt(3, 1);
+                                ins.setBoolean(4, passed);
+                                ins.setString(5, certificatePath);
+                                ins.setInt(6, scorePercent);
+                                ins.executeUpdate();
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // fallback to file-based storage
         java.util.Properties p = new java.util.Properties();
         java.io.File f = new java.io.File(ATTEMPTS_FILE);
         if (f.exists()) try (java.io.FileInputStream in = new java.io.FileInputStream(f)) { p.load(in); }
@@ -671,6 +782,19 @@ public final class ExamRepository {
     }
 
     public String getCertificatePath(String userEmail, int examId) {
+        try (java.sql.Connection conn = EducompusDB.getConnection()) {
+            if (tableExists(conn, "exam_attempts")) {
+                String sql = "SELECT certificate_path FROM exam_attempts WHERE user_email = ? AND exam_id = ?";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, userEmail);
+                    ps.setInt(2, examId);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) return rs.getString(1);
+                        return null;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
         try {
             java.util.Properties p = new java.util.Properties();
             java.io.File f = new java.io.File(ATTEMPTS_FILE);
@@ -683,6 +807,19 @@ public final class ExamRepository {
     }
 
     public boolean hasPassed(String userEmail, int examId) {
+        try (java.sql.Connection conn = EducompusDB.getConnection()) {
+            if (tableExists(conn, "exam_attempts")) {
+                String sql = "SELECT passed FROM exam_attempts WHERE user_email = ? AND exam_id = ?";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, userEmail);
+                    ps.setInt(2, examId);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) return rs.getBoolean(1);
+                        return false;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
         try {
             java.util.Properties p = new java.util.Properties();
             java.io.File f = new java.io.File(ATTEMPTS_FILE);
@@ -696,6 +833,64 @@ public final class ExamRepository {
 
     public java.util.List<com.educompus.model.ExamAttemptRecord> listAttemptsForExam(int examId) {
         java.util.List<com.educompus.model.ExamAttemptRecord> out = new java.util.ArrayList<>();
+        // Try DB-backed retrieval first
+        try (java.sql.Connection conn = EducompusDB.getConnection()) {
+            if (tableExists(conn, "exam_attempts")) {
+                String sql = examId == 0
+                        ? "SELECT user_email, exam_id, attempts, passed, certificate_path FROM exam_attempts"
+                        : "SELECT user_email, exam_id, attempts, passed, certificate_path FROM exam_attempts WHERE exam_id = ?";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                    if (examId != 0) ps.setInt(1, examId);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            String email = rs.getString("user_email");
+                            int eid = rs.getInt("exam_id");
+                            int attempts = rs.getInt("attempts");
+                            boolean passed = rs.getBoolean("passed");
+                            String cert = rs.getString("certificate_path");
+
+                            String examTitle = "Examen #" + eid;
+                            String courseName = "";
+                            try {
+                                if (tableExists(conn, "exam")) {
+                                    java.sql.PreparedStatement q = conn.prepareStatement("SELECT titre AS t, cours_id FROM exam WHERE id = ?");
+                                    q.setInt(1, eid);
+                                    try (java.sql.ResultSet rset = q.executeQuery()) {
+                                        if (rset.next()) {
+                                            String t = rset.getString("t");
+                                            examTitle = t == null || t.isBlank() ? examTitle : t;
+                                            int cid = 0;
+                                            try { cid = rset.getInt("cours_id"); } catch (Exception ignored) {}
+                                            if (cid > 0) {
+                                                try (java.sql.PreparedStatement cq = conn.prepareStatement("SELECT titre FROM cours WHERE id = ?")) {
+                                                    cq.setInt(1, cid);
+                                                    try (java.sql.ResultSet crows = cq.executeQuery()) {
+                                                        if (crows.next()) courseName = crows.getString(1);
+                                                    }
+                                                } catch (Exception ignored) {
+                                                    try (java.sql.PreparedStatement cq2 = conn.prepareStatement("SELECT title FROM course WHERE id = ?")) {
+                                                        cq2.setInt(1, cid);
+                                                        try (java.sql.ResultSet crows2 = cq2.executeQuery()) {
+                                                            if (crows2.next()) courseName = crows2.getString(1);
+                                                        }
+                                                    } catch (Exception ignored2) {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+
+                            com.educompus.model.ExamAttemptRecord r = new com.educompus.model.ExamAttemptRecord(email, attempts, passed, cert, courseName, examTitle);
+                            out.add(r);
+                        }
+                        return out;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // fallback to file-based parsing
         try {
             java.util.Properties p = new java.util.Properties();
             java.io.File f = new java.io.File(ATTEMPTS_FILE);
@@ -715,7 +910,7 @@ public final class ExamRepository {
                 int attempts = Integer.parseInt(p.getProperty(key, "0"));
                 boolean passed = Boolean.parseBoolean(p.getProperty("passed." + sanitizedEmail + "." + eid, "false"));
                 String cert = p.getProperty("certificate." + sanitizedEmail + "." + eid);
-                // attempt to resolve exam title and course name from DB
+
                 String examTitle = "Examen #" + eid;
                 String courseName = "";
                 try (java.sql.Connection conn2 = EducompusDB.getConnection()) {
@@ -730,14 +925,12 @@ public final class ExamRepository {
                                 int cid = 0;
                                 try { cid = rset.getInt("cours_id"); } catch (Exception ignored) {}
                                 if (cid > 0) {
-                                    // try course table
                                     try (java.sql.PreparedStatement cq = conn2.prepareStatement("SELECT titre FROM cours WHERE id = ?")) {
                                         cq.setInt(1, cid);
                                         try (java.sql.ResultSet crows = cq.executeQuery()) {
                                             if (crows.next()) courseName = crows.getString(1);
                                         }
                                     } catch (Exception ignored) {
-                                        // try alternative course table name
                                         try (java.sql.PreparedStatement cq2 = conn2.prepareStatement("SELECT title FROM course WHERE id = ?")) {
                                             cq2.setInt(1, cid);
                                             try (java.sql.ResultSet crows2 = cq2.executeQuery()) {

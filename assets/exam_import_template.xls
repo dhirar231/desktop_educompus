@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <OfficeDocumentSettings xmlns="urn:schemas-microsoft-com:office:office">
+  <AllowPNG/>
+ </OfficeDocumentSettings>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>5196</WindowHeight>
+  <WindowWidth>17064</WindowWidth>
+  <WindowTopX>32767</WindowTopX>
+  <WindowTopY>32767</WindowTopY>
+  <ProtectStructure>False</ProtectStructure>
+  <ProtectWindows>False</ProtectWindows>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Aptos Narrow" x:Family="Swiss" ss:Size="11"
+    ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s62">
+   <NumberFormat ss:Format="d\-mmm"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Template">
+  <Table ss:ExpandedColumnCount="11" ss:ExpandedRowCount="2" x:FullColumns="1"
+   x:FullRows="1" ss:DefaultColumnWidth="62.400000000000006"
+   ss:DefaultRowHeight="14.4">
+   <Row>
+    <Cell><Data ss:Type="String">Exam Title</Data></Cell>
+    <Cell><Data ss:Type="String">Exam Description</Data></Cell>
+    <Cell><Data ss:Type="String">Exam Level</Data></Cell>
+    <Cell><Data ss:Type="String">Course Id</Data></Cell>
+    <Cell><Data ss:Type="String">Question Text</Data></Cell>
+    <Cell><Data ss:Type="String">Duration</Data></Cell>
+    <Cell><Data ss:Type="String">Choice 1</Data></Cell>
+    <Cell><Data ss:Type="String">Choice 2</Data></Cell>
+    <Cell><Data ss:Type="String">Choice 3</Data></Cell>
+    <Cell><Data ss:Type="String">Choice 4</Data></Cell>
+    <Cell><Data ss:Type="String">Correct</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">TL</Data></Cell>
+    <Cell><Data ss:Type="String">Basic arithmetic quiz</Data></Cell>
+    <Cell><Data ss:Type="String">3A</Data></Cell>
+    <Cell><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s62"><Data ss:Type="String">what is result of 9-8?</Data></Cell>
+    <Cell><Data ss:Type="Number">80</Data></Cell>
+    <Cell><Data ss:Type="String">1</Data></Cell>
+    <Cell><Data ss:Type="String">2</Data></Cell>
+    <Cell><Data ss:Type="String">3</Data></Cell>
+    <Cell><Data ss:Type="String">4</Data></Cell>
+    <Cell><Data ss:Type="String">A</Data></Cell>
+   </Row>
+  </Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <PageSetup>
+    <Header x:Margin="0.4921259845"/>
+    <Footer x:Margin="0.4921259845"/>
+    <PageMargins x:Bottom="0.984251969" x:Left="0.78740157499999996"
+     x:Right="0.78740157499999996" x:Top="0.984251969"/>
+   </PageSetup>
+   <Selected/>
+   <Panes>
+    <Pane>
+     <Number>3</Number>
+     <ActiveRow>2</ActiveRow>
+     <ActiveCol>4</ActiveCol>
+    </Pane>
+   </Panes>
+   <ProtectObjects>False</ProtectObjects>
+   <ProtectScenarios>False</ProtectScenarios>
+  </WorksheetOptions>
+ </Worksheet>
+</Workbook>

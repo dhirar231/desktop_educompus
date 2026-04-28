@@ -6,10 +6,14 @@ import com.educompus.model.KanbanTask;
 import com.educompus.model.Project;
 import com.educompus.model.ProjectSubmission;
 import com.educompus.model.ProjectSubmissionView;
+import com.educompus.service.JcefBrowserService;
+import com.educompus.service.ProjectMeetingService;
 import com.educompus.repository.KanbanTaskRepository;
+import com.educompus.repository.NotificationRepository;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.util.ProjectRules;
+import com.educompus.repository.FavoriteRepository;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -34,6 +38,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.input.Clipboard;
+import com.educompus.util.Dialogs;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -46,10 +52,16 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import javafx.application.Platform;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public final class FrontProjectsController {
     private enum KanbanReturn {
@@ -94,6 +106,21 @@ public final class FrontProjectsController {
     private Label viewDescLabel;
 
     @FXML
+    private Label viewMeetingStatusLabel;
+
+    @FXML
+    private Label viewMeetingLinkLabel;
+
+    @FXML
+    private Button viewMeetingOpenButton;
+
+    @FXML
+    private Button viewMeetingMutedButton;
+
+    @FXML
+    private Button viewMeetingCopyButton;
+
+    @FXML
     private Label submitTitleLabel;
 
     @FXML
@@ -104,6 +131,18 @@ public final class FrontProjectsController {
 
     @FXML
     private Label selectedProjectLabel;
+
+    @FXML
+    private Label submitMeetingStatusLabel;
+
+    @FXML
+    private Button submitMeetingOpenButton;
+
+    @FXML
+    private Button submitMeetingMutedButton;
+
+    @FXML
+    private Button submitMeetingCopyButton;
 
     @FXML
     private TextArea responseArea;
@@ -165,7 +204,11 @@ public final class FrontProjectsController {
     // repositories used by this controller
     private final ProjectRepository projectRepo = new ProjectRepository();
     private final ProjectSubmissionRepository submissionRepo = new ProjectSubmissionRepository();
+    private final NotificationRepository notificationRepo = new NotificationRepository();
     private final KanbanTaskRepository kanbanRepo = new KanbanTaskRepository();
+    private final FavoriteRepository favoriteRepo = new FavoriteRepository();
+    private final ProjectMeetingService projectMeetingService = new ProjectMeetingService();
+    private final JcefBrowserService browserService = JcefBrowserService.getInstance();
 
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
     private final ObservableList<Project> allProjects = FXCollections.observableArrayList();
@@ -215,7 +258,7 @@ public final class FrontProjectsController {
 
     private void setupSortCombos() {
         if (projectSortCombo != null) {
-            projectSortCombo.getItems().setAll("Plus recentes", "Titre A-Z", "Deadline");
+            projectSortCombo.getItems().setAll("Plus recentes", "Importants", "Titre A-Z", "Deadline");
             projectSortCombo.setValue("Plus recentes");
             projectSortCombo.valueProperty().addListener((obs, o, n) -> applyProjectFilter());
         }
@@ -287,10 +330,10 @@ public final class FrontProjectsController {
     private static String validateSubmissionFields(String response, String cahierPath, String dossierPath) {
         String r = safe(response);
         if (r.isBlank()) {
-            return "Reponse requise (texte + chiffres).";
+            return "Réponse requise (texte + chiffres).";
         }
         if (!isSubmissionResponseValid(r)) {
-            return "Reponse invalide (autorise: lettres, chiffres, espaces).";
+            return "Réponse invalide (autorisé: lettres, chiffres, espaces).";
         }
 
         String c = safe(cahierPath);
@@ -530,6 +573,12 @@ public final class FrontProjectsController {
     @FXML
     private void reloadProjects(ActionEvent event) {
         allProjects.setAll(projectRepo.listAll(""));
+        // annotate favorites for current user to avoid querying per-card
+        int uid = AppState.getUserId();
+        List<Integer> favIds = uid > 0 ? favoriteRepo.listProjectIdsByUser(uid) : List.of();
+        for (Project p : allProjects) {
+            p.setFavorite(favIds.contains(p.getId()));
+        }
         applyProjectFilter();
     }
 
@@ -558,8 +607,9 @@ public final class FrontProjectsController {
         VBox card = new VBox(10);
         card.getStyleClass().add("project-card");
         card.setPadding(new Insets(14));
-        card.setPrefWidth(260);
-        card.setMinWidth(240);
+        // give slightly more horizontal space so long date strings and the favorite icon fit
+        card.setPrefWidth(300);
+        card.setMinWidth(260);
 
         HBox top = new HBox(10);
         Label title = new Label(safe(project.getTitle()));
@@ -567,8 +617,28 @@ public final class FrontProjectsController {
         title.setWrapText(true);
         HBox.setHgrow(title, Priority.ALWAYS);
 
+        Label fav = new Label(project.isFavorite() ? "★" : "☆");
+        fav.getStyleClass().add("favorite-icon");
+        if (project.isFavorite()) {
+            fav.getStyleClass().add("favorite-on");
+        } else {
+            fav.getStyleClass().remove("favorite-on");
+        }
+        // keep minimal inline sizing; visual styling handled by CSS classes
+        fav.setStyle("-fx-font-size:18px; -fx-cursor: hand;");
+        javafx.scene.control.Tooltip.install(fav, new Tooltip(project.isFavorite() ? "Retirer des importants" : "Ajouter aux importants"));
+        HBox.setMargin(fav, new Insets(0, 8, 0, 0));
+        fav.setOnMouseClicked(e -> {
+            toggleFavorite(project, fav);
+            e.consume();
+        });
+
         Label chip = new Label(deadlineChipText(project.getDeadline()));
         chip.getStyleClass().addAll("chip", "chip-info");
+        chip.setWrapText(false);
+        // prefer to reserve enough width for a full timestamp (yyyy/MM/dd HH:mm:ss)
+        chip.setPrefWidth(170);
+        chip.setMaxWidth(170);
 
         top.getChildren().addAll(title, chip);
 
@@ -594,7 +664,7 @@ public final class FrontProjectsController {
             openSubmit(null);
         });
 
-        HBox actions = new HBox(10, grow, btnVoir, btnSubmit);
+        HBox actions = new HBox(10, grow, fav, btnVoir, btnSubmit);
         actions.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
         card.getChildren().addAll(top, subtitle, actions);
@@ -623,6 +693,29 @@ public final class FrontProjectsController {
         // no-op (buttons are per-card)
     }
 
+    private void toggleFavorite(Project project, Label favLabel) {
+        if (project == null) return;
+        int uid = AppState.getUserId();
+        if (uid <= 0) {
+            info("Importants", "Veuillez vous connecter pour utiliser les projets importants.");
+            return;
+        }
+        boolean target = !project.isFavorite();
+        try {
+            favoriteRepo.setFavorite(uid, project.getId(), target);
+            project.setFavorite(target);
+            favLabel.setText(target ? "★" : "☆");
+            javafx.scene.control.Tooltip.install(favLabel, new Tooltip(target ? "Retirer des importants" : "Ajouter aux importants"));
+            String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
+            if ("Importants".equalsIgnoreCase(sort)) {
+                // refresh listing when in favorites view
+                applyProjectFilter();
+            }
+        } catch (Exception e) {
+            error("Importants", e);
+        }
+    }
+
     private void applyProjectFilter() {
         String q = projectSearchField == null ? "" : String.valueOf(projectSearchField.getText());
         String query = safe(q).toLowerCase();
@@ -645,14 +738,35 @@ public final class FrontProjectsController {
 	            projects.setAll(filtered);
 	        }
 
-	        String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
-            if ("Titre A-Z".equalsIgnoreCase(sort)) {
-                projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()).toLowerCase()));
-            } else if ("Deadline".equalsIgnoreCase(sort)) {
-                projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getDeadline())));
+        String sort = projectSortCombo == null ? "" : safe(projectSortCombo.getValue());
+        if ("Importants".equalsIgnoreCase(sort)) {
+            int uid = AppState.getUserId();
+            if (uid <= 0) {
+                projects.clear();
             } else {
-                projects.sort(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())).reversed());
+                List<Integer> favIds = favoriteRepo.listProjectIdsByUser(uid);
+                java.util.Map<Integer, Project> byId = new HashMap<>();
+                for (Project p : projects) {
+                    byId.put(p.getId(), p);
+                }
+                List<Project> favs = new ArrayList<>();
+                for (Integer id : favIds) {
+                    Project p = byId.get(id);
+                    if (p != null) favs.add(p);
+                }
+                projects.setAll(favs);
             }
+        } else {
+            // Always prefer favorite (important) projects first, then apply chosen sort
+            Comparator<Project> favoritesFirst = Comparator.comparing((Project p) -> p == null || !p.isFavorite());
+            if ("Titre A-Z".equalsIgnoreCase(sort)) {
+                projects.sort(favoritesFirst.thenComparing(Comparator.comparing((Project p) -> safe(p == null ? null : p.getTitle()).toLowerCase())));
+            } else if ("Deadline".equalsIgnoreCase(sort)) {
+                projects.sort(favoritesFirst.thenComparing(Comparator.comparing((Project p) -> safe(p == null ? null : p.getDeadline()))));
+            } else {
+                projects.sort(favoritesFirst.thenComparing(Comparator.comparing((Project p) -> safe(p == null ? null : p.getCreatedAt())).reversed()));
+            }
+        }
 
         if (selectedProject != null) {
             boolean stillThere = false;
@@ -719,15 +833,18 @@ public final class FrontProjectsController {
         if (project == null) {
             return;
         }
+        project = refreshProjectState(project);
         setView(viewPane);
         setTopControlsVisible(true);
         fillProjectLabels(project, viewTitleLabel, viewMetaLabel, viewDescLabel);
+        updateMeetingPanel(project);
     }
 
     private void showSubmit(Project project) {
         if (project == null) {
             return;
         }
+        project = refreshProjectState(project);
         setView(submitPane);
         setTopControlsVisible(true);
         fillProjectLabels(project, submitTitleLabel, submitMetaLabel, submitDescLabel);
@@ -735,6 +852,8 @@ public final class FrontProjectsController {
 	        if (selectedProjectLabel != null) {
 	            selectedProjectLabel.setText("Projet: " + safe(project.getTitle()));
 	        }
+
+            updateMeetingPanel(project);
 
 		        refreshSubmitInfo();
 		        updateSubmitButtonLabel();
@@ -802,7 +921,7 @@ public final class FrontProjectsController {
     @FXML
     private void editSelectedSubmission(ActionEvent event) {
         if (selectedSubmission == null) {
-            info("Soumission", "SÃ©lectionnez une soumission Ã  modifier.");
+            info("Soumission", "Sélectionnez une soumission à modifier.");
             return;
         }
         Project p = findProjectById(selectedSubmission.getProjectId());
@@ -937,6 +1056,147 @@ public final class FrontProjectsController {
         }
     }
 
+    @FXML
+    private void refreshProjectMeetingStatus(ActionEvent event) {
+        if (selectedProject == null) {
+            info("Meeting", "Selectionnez un projet.");
+            return;
+        }
+        Project refreshed = refreshProjectState(selectedProject);
+        if (viewPane != null && viewPane.isVisible()) {
+            showView(refreshed);
+        } else if (submitPane != null && submitPane.isVisible()) {
+            showSubmit(refreshed);
+        } else {
+            updateMeetingPanel(refreshed);
+        }
+    }
+
+    @FXML
+    private void joinProjectMeeting(ActionEvent event) {
+        openProjectMeeting(false);
+    }
+
+    @FXML
+    private void joinProjectMeetingMuted(ActionEvent event) {
+        openProjectMeeting(true);
+    }
+
+    @FXML
+    private void copyProjectMeetingLink(ActionEvent event) {
+        Project project = refreshProjectState(selectedProject);
+        if (project == null || !project.isMeetingActive() || safe(project.getMeetingUrl()).isBlank()) {
+            info("Meeting", "Le professeur n'a pas encore ouvert de salle pour ce projet.");
+            return;
+        }
+        ClipboardContent content = new ClipboardContent();
+        content.putString(project.getMeetingUrl());
+        Clipboard.getSystemClipboard().setContent(content);
+        updateMeetingPanel(project);
+        info("Meeting", "Lien de meeting copie.");
+    }
+
+    private void openProjectMeeting(boolean muted) {
+        Project project = refreshProjectState(selectedProject);
+        if (project == null) {
+            info("Meeting", "Selectionnez un projet.");
+            return;
+        }
+        if (!project.isMeetingActive()) {
+            updateMeetingPanel(project);
+            info("Meeting", "Le professeur n'a pas encore ouvert de salle pour ce projet.");
+            return;
+        }
+        try {
+            String joinUrl = projectMeetingService.joinUrl(project, muted);
+            String room = safe(project.getMeetingRoom());
+            String title = "EduCompus | Meeting | " + (room.isBlank() ? ("Project " + project.getId()) : room);
+            // open JCEF dialog in background thread to avoid freezing JavaFX UI
+            new Thread(() -> {
+                try {
+                    System.out.println("[MEETING] Opening in JCEF dialog...");
+                    browserService.openMeetingDialog(title, joinUrl);
+                    javafx.application.Platform.runLater(() -> updateMeetingPanel(project));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    javafx.application.Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Meeting Error");
+                        alert.setHeaderText("Impossible d'ouvrir le meeting");
+                        alert.setContentText("JCEF failed to load meeting.");
+                        alert.showAndWait();
+                    });
+                }
+            }, "jcef-opener").start();
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private Project refreshProjectState(Project project) {
+        Project refreshed = projectMeetingService.refresh(project);
+        if (refreshed != null) {
+            selectedProject = refreshed;
+            replaceProjectInCollections(refreshed);
+            return refreshed;
+        }
+        return project;
+    }
+
+    private void replaceProjectInCollections(Project updated) {
+        replaceProjectInList(allProjects, updated);
+        replaceProjectInList(projects, updated);
+    }
+
+    private static void replaceProjectInList(ObservableList<Project> list, Project updated) {
+        if (list == null || updated == null) {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Project current = list.get(i);
+            if (current != null && current.getId() == updated.getId()) {
+                list.set(i, updated);
+                return;
+            }
+        }
+    }
+
+    private void updateMeetingPanel(Project project) {
+        String status = projectMeetingService.statusText(project);
+        String link = project == null || safe(project.getMeetingUrl()).isBlank()
+                ? "Invite link will appear here when the teacher opens the room."
+                : project.getMeetingUrl();
+        boolean active = project != null && project.isMeetingActive() && !safe(project.getMeetingUrl()).isBlank();
+
+        if (viewMeetingStatusLabel != null) {
+            viewMeetingStatusLabel.setText(status);
+        }
+        if (submitMeetingStatusLabel != null) {
+            submitMeetingStatusLabel.setText(status);
+        }
+        if (viewMeetingLinkLabel != null) {
+            viewMeetingLinkLabel.setText(link);
+        }
+        if (viewMeetingOpenButton != null) {
+            viewMeetingOpenButton.setDisable(!active);
+        }
+        if (viewMeetingMutedButton != null) {
+            viewMeetingMutedButton.setDisable(!active);
+        }
+        if (viewMeetingCopyButton != null) {
+            viewMeetingCopyButton.setDisable(!active);
+        }
+        if (submitMeetingOpenButton != null) {
+            submitMeetingOpenButton.setDisable(!active);
+        }
+        if (submitMeetingMutedButton != null) {
+            submitMeetingMutedButton.setDisable(!active);
+        }
+        if (submitMeetingCopyButton != null) {
+            submitMeetingCopyButton.setDisable(!active);
+        }
+    }
+
     private void setView(VBox active) {
         setPaneVisible(cataloguePane, active == cataloguePane);
         setPaneVisible(viewPane, active == viewPane);
@@ -1059,6 +1319,12 @@ public final class FrontProjectsController {
 
         try {
             submissionRepo.create(s);
+            notificationRepo.createProjectSubmissionNotifications(
+                    selectedProject.getId(),
+                    uid,
+                    AppState.getUserEmail(),
+                    selectedProject.getTitle()
+            );
             resetSubmitFormFields();
             info("Soumission", "Votre soumission a été enregistrée.");
             refreshSubmitInfo();
@@ -1266,19 +1532,19 @@ public final class FrontProjectsController {
                 if (Desktop.isDesktopSupported()) {
                     Desktop.getDesktop().browse(URI.create(p));
                 } else {
-                    info("Telecharger", "Lien: " + p);
+                    info("Télécharger", "Lien: " + p);
                 }
                 return;
             }
 
             File src = new File(p);
             if (!src.exists() || !src.isFile()) {
-                info("Telecharger", "Fichier introuvable: " + p);
+                info("Télécharger", "Fichier introuvable: " + p);
                 return;
             }
 
             FileChooser fc = new FileChooser();
-            fc.setTitle("Telecharger " + (kind == null ? "fichier" : kind));
+            fc.setTitle("Télécharger " + (kind == null ? "fichier" : kind));
             fc.setInitialFileName(src.getName());
             String ext = ProjectRules.extensionOf(src.getName());
             if (!ext.isBlank()) {
@@ -1294,7 +1560,7 @@ public final class FrontProjectsController {
                 dest = new File(dest.getParentFile(), dest.getName() + "." + ext);
             }
             Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            info("Telecharger", "Enregistre: " + dest.getAbsolutePath());
+            info("Télécharger", "Enregistre: " + dest.getAbsolutePath());
             if (Desktop.isDesktopSupported()) {
                 try {
                     Desktop.getDesktop().open(dest);
@@ -1303,7 +1569,7 @@ public final class FrontProjectsController {
                 }
             }
         } catch (Exception e) {
-            error("Telecharger", e);
+            error("Télécharger", e);
         }
     }
 
@@ -1559,7 +1825,36 @@ public final class FrontProjectsController {
 
     private static String deadlineChipText(String deadline) {
         String d = safe(deadline);
-        return d.isBlank() ? "Sans date" : d;
+        if (d.isBlank()) return "Sans date";
+        // try multiple known patterns and return a consistent full timestamp: yyyy/MM/dd HH:mm:ss
+        String[] patterns = new String[]{
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm",
+                "yyyy/MM/dd HH:mm:ss",
+                "yyyy/MM/dd HH:mm",
+                "dd/MM/yyyy HH:mm:ss",
+                "dd/MM/yyyy HH:mm",
+                "dd/MM/yy HH:mm",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String p : patterns) {
+            try {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(p);
+                if (p.contains("H") || p.contains("m")) {
+                    LocalDateTime dt = LocalDateTime.parse(d, fmt);
+                    return dt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+                } else {
+                    LocalDate ld = LocalDate.parse(d, fmt);
+                    return ld.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+                }
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        // fallback: if string contains dashes, replace with slashes for display
+        if (d.contains("-")) {
+            return d.replace('-', '/');
+        }
+        return d;
     }
 
     private static void info(String title, String message) {
@@ -1611,26 +1906,7 @@ public final class FrontProjectsController {
     }
 
     private static void styleDialog(Dialog<?> d) {
-        if (d == null || d.getDialogPane() == null) {
-            return;
-        }
-        String css = cssUri();
-        if (!css.isBlank() && !d.getDialogPane().getStylesheets().contains(css)) {
-            d.getDialogPane().getStylesheets().add(css);
-        }
-        if (!d.getDialogPane().getStyleClass().contains("rgb-dialog")) {
-            d.getDialogPane().getStyleClass().add("rgb-dialog");
-        }
-
-        for (ButtonType bt : d.getDialogPane().getButtonTypes()) {
-            Node b = d.getDialogPane().lookupButton(bt);
-            if (b == null) continue;
-            if (bt == ButtonType.OK) {
-                b.getStyleClass().add("btn-rgb");
-            } else if (bt == ButtonType.CANCEL) {
-                b.getStyleClass().add("btn-rgb-outline");
-            }
-        }
+        try { Dialogs.style(d); } catch (Exception ignored) {}
     }
 
     private static String cssUri() {

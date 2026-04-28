@@ -6,6 +6,8 @@ import com.educompus.model.ProjectSubmissionView;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.service.FormValidator;
+import com.educompus.service.JcefBrowserService;
+import com.educompus.service.ProjectMeetingService;
 import com.educompus.service.ProjectValidationService;
 import com.educompus.service.ValidationResult;
 import com.educompus.util.Theme;
@@ -15,20 +17,29 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.Priority;
@@ -45,6 +56,9 @@ import java.io.File;
 import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
 import java.util.ArrayList;
@@ -52,16 +66,22 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public final class BackProjectsController {
     private final ProjectRepository projectRepo = new ProjectRepository();
     private final ProjectSubmissionRepository submissionRepo = new ProjectSubmissionRepository();
+    private final ProjectMeetingService projectMeetingService = new ProjectMeetingService();
+    private final JcefBrowserService browserService = JcefBrowserService.getInstance();
 
     @FXML
     private MenuButton projectsMenuButton;
 
     @FXML
-    private javafx.scene.control.MenuItem catalogueMenuItem;
+    private MenuItem catalogueMenuItem;
+
+    @FXML
+    private Button sendMailButton;
 
     @FXML
     private StackPane viewStack;
@@ -137,10 +157,15 @@ public final class BackProjectsController {
 
     @FXML
     private void initialize() {
-        boolean adminOnlyCatalogue = AppState.isAdmin();
+        boolean adminOnlyCatalogue = AppState.isAdmin() || AppState.isTeacher();
         if (catalogueMenuItem != null) {
             catalogueMenuItem.setVisible(adminOnlyCatalogue);
             catalogueMenuItem.setDisable(!adminOnlyCatalogue);
+        }
+        if (sendMailButton != null) {
+            boolean canMail = AppState.isAdmin() || AppState.isTeacher();
+            sendMailButton.setVisible(canMail);
+            sendMailButton.setManaged(canMail);
         }
         if (cataloguePane != null && !adminOnlyCatalogue) {
             cataloguePane.setVisible(false);
@@ -192,7 +217,7 @@ public final class BackProjectsController {
 
     @FXML
     private void showCatalogueView(ActionEvent event) {
-        if (!AppState.isAdmin()) {
+        if (!(AppState.isAdmin() || AppState.isTeacher())) {
             showProjectsView(null);
             return;
         }
@@ -210,6 +235,30 @@ public final class BackProjectsController {
             return;
         }
         openKanbanWindow(selectedSubmission);
+    }
+
+    @FXML
+    private void openMailingDialog(ActionEvent event) {
+        if (!(AppState.isAdmin() || AppState.isTeacher())) {
+            info("Mailing", "Acces reserve a l'administration et aux enseignants.");
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/View/back/BackProjectMailing.fxml"));
+            Parent root = loader.load();
+            Scene scene = new Scene(root, 760, 760);
+            if (sendMailButton != null && sendMailButton.getScene() != null) {
+                scene.getStylesheets().addAll(sendMailButton.getScene().getStylesheets());
+            }
+            Theme.apply(root);
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Envoyer mail");
+            stage.setScene(scene);
+            stage.showAndWait();
+        } catch (Exception e) {
+            error("Erreur ouverture mailing", e);
+        }
     }
 
     private void setView(VBox pane) {
@@ -237,7 +286,7 @@ public final class BackProjectsController {
     }
 
     private void renderAdminCards() {
-        if (!AppState.isAdmin() || adminCardsFlow == null) return;
+        if (!(AppState.isAdmin() || AppState.isTeacher()) || adminCardsFlow == null) return;
         adminCardsFlow.getChildren().clear();
         // Aim for 3 cards per row: compute card width based on available width
         double avail = 900;
@@ -262,6 +311,7 @@ public final class BackProjectsController {
     }
 
     private VBox buildAdminProjectCard(Project project) {
+        final Project currentProject = refreshProjectState(project);
         VBox card = new VBox(10);
         card.getStyleClass().add("project-card");
         card.setPadding(new javafx.geometry.Insets(14));
@@ -269,12 +319,12 @@ public final class BackProjectsController {
         card.setMinWidth(240);
 
         HBox top = new HBox(10);
-        Label title = new Label(safe(project.getTitle()));
+        Label title = new Label(safe(currentProject.getTitle()));
         title.getStyleClass().add("project-card-title");
         title.setWrapText(true);
         HBox.setHgrow(title, Priority.ALWAYS);
 
-        Label chip = new Label(safe(project.getDeadline()));
+        Label chip = new Label(safe(currentProject.getDeadline()));
         chip.getStyleClass().addAll("chip", "chip-info");
         // keep the deadline chip compact so it doesn't stretch across the card
         chip.setWrapText(false);
@@ -286,20 +336,26 @@ public final class BackProjectsController {
         top.getChildren().addAll(title, chip);
 
         // published badge: show emoji in top-right (✅ / ❌)
-        boolean published = project.isPublished();
+        boolean published = currentProject.isPublished();
         Label pubBadge = new Label(published ? "✅" : "❌");
         pubBadge.getStyleClass().addAll("pub-emoji");
         pubBadge.setStyle("-fx-font-size:18px; -fx-background-color: transparent; -fx-padding: 4 6 4 6;");
         javafx.scene.control.Tooltip.install(pubBadge, new javafx.scene.control.Tooltip(published ? "Publié" : "Non publié"));
 
         // build card content and subtitle (description)
-        String desc = safe(project.getDescription());
+        String desc = safe(currentProject.getDescription());
         Label subtitle = new Label(desc.isBlank() ? "Aucune description" : summarize(desc, 110));
         subtitle.getStyleClass().add("project-card-subtitle");
         subtitle.setWrapText(true);
 
+        Label meetingStatus = new Label(currentProject.isMeetingActive()
+                ? ("Meeting actif: " + safe(currentProject.getMeetingRoom()))
+                : "Meeting inactif");
+        meetingStatus.getStyleClass().add("page-subtitle");
+        meetingStatus.setWrapText(true);
+
         VBox content = new VBox(8);
-        content.getChildren().addAll(top, subtitle);
+        content.getChildren().addAll(top, subtitle, meetingStatus);
 
         // container stack so we can place the badge in the top-right corner
         StackPane container = new StackPane();
@@ -311,26 +367,61 @@ public final class BackProjectsController {
         Region grow = new Region();
         HBox.setHgrow(grow, Priority.ALWAYS);
 
-        // removed direct Voir/Éditer buttons from card per admin design
+        // button to view submissions for this project
+        Button btnViewSubs = new Button("Voir soumissions");
+        btnViewSubs.getStyleClass().add("btn-rgb-outline");
+        btnViewSubs.setOnAction(e -> {
+            try {
+                if (submissionsSearchField != null) {
+                    submissionsSearchField.setText(safe(currentProject.getTitle()));
+                }
+                // ensure submissions pane is visible and refreshed
+                setView(submissionsPane);
+                if (projectsMenuButton != null) projectsMenuButton.setText("Soumissions");
+                reloadSubmissions(null);
+            } catch (Exception ex) {
+                error("Erreur", ex);
+            }
+        });
+
+        MenuButton meetingMenu = null;
+        if (AppState.isTeacher()) {
+            meetingMenu = new MenuButton("Meeting");
+            meetingMenu.getStyleClass().addAll("meeting-menu-btn",
+                    currentProject.isMeetingActive() ? "meeting-menu-btn-active" : "meeting-menu-btn-idle");
+
+            MenuItem openMeetingItem = new MenuItem(currentProject.isMeetingActive() ? "Open meeting" : "Create meeting");
+            openMeetingItem.setOnAction(e -> openProjectMeeting(currentProject));
+
+            MenuItem copyMeetingItem = new MenuItem("Copy link");
+            copyMeetingItem.setDisable(!currentProject.isMeetingActive() || safe(currentProject.getMeetingUrl()).isBlank());
+            copyMeetingItem.setOnAction(e -> copyProjectMeetingLink(currentProject));
+
+            MenuItem closeMeetingItem = new MenuItem("Close meeting");
+            closeMeetingItem.setDisable(!currentProject.isMeetingActive());
+            closeMeetingItem.setOnAction(e -> closeProjectMeeting(currentProject));
+
+            meetingMenu.getItems().setAll(openMeetingItem, copyMeetingItem, closeMeetingItem);
+        }
 
         // publish/unpublish button (avoid aggressive red style; use RGB outline when published)
         Button btnPublish = new Button(published ? "Dépublier" : "Publier");
         btnPublish.getStyleClass().add(published ? "btn-rgb-outline" : "btn-rgb");
         btnPublish.setOnAction(e -> {
             // confirmation before toggling
-            String action = project.isPublished() ? "dépublier" : "publier";
+            String action = currentProject.isPublished() ? "dépublier" : "publier";
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
             confirm.setTitle("Confirmation");
-            confirm.setHeaderText((project.isPublished() ? "Dépublier" : "Publier") + " le projet ?");
-            confirm.setContentText("Projet: " + safe(project.getTitle()) + "\nVoulez-vous vraiment " + action + " ce projet ?");
+            confirm.setHeaderText((currentProject.isPublished() ? "Dépublier" : "Publier") + " le projet ?");
+            confirm.setContentText("Projet: " + safe(currentProject.getTitle()) + "\nVoulez-vous vraiment " + action + " ce projet ?");
             var res = confirm.showAndWait();
             if (res.isEmpty() || res.get() != ButtonType.OK) {
                 return;
             }
             try {
-                project.setPublished(!project.isPublished());
-                projectRepo.update(project);
-                info("Publication", project.isPublished() ? "Projet publié." : "Projet dépublié.");
+                currentProject.setPublished(!currentProject.isPublished());
+                projectRepo.update(currentProject);
+                info("Publication", currentProject.isPublished() ? "Projet publié." : "Projet dépublié.");
                 // refresh UI
                 if (projectsList != null) projectsList.refresh();
                 renderAdminCards();
@@ -339,7 +430,14 @@ public final class BackProjectsController {
             }
         });
 
-        HBox actions = new HBox(10, grow, btnPublish);
+        HBox actions = new HBox(10);
+        actions.getChildren().addAll(grow, btnViewSubs);
+        if (meetingMenu != null) {
+            actions.getChildren().add(meetingMenu);
+        }
+        if (AppState.isAdmin()) {
+            actions.getChildren().add(btnPublish);
+        }
         actions.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
         card.getChildren().addAll(container, actions);
@@ -368,9 +466,90 @@ public final class BackProjectsController {
         });
         projectsList.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
             editingProject = newV;
-            fillProjectForm(newV);
         });
         if (projectSearchField != null) projectSearchField.setOnAction(e -> reloadProjects(null));
+    }
+
+    private Project refreshProjectState(Project project) {
+        Project refreshed = projectMeetingService.refresh(project);
+        if (refreshed == null) {
+            return project;
+        }
+        replaceProjectInList(allProjects, refreshed);
+        replaceProjectInList(projects, refreshed);
+        return refreshed;
+    }
+
+    private static void replaceProjectInList(List<Project> list, Project updated) {
+        if (list == null || updated == null) {
+            return;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Project current = list.get(i);
+            if (current != null && current.getId() == updated.getId()) {
+                list.set(i, updated);
+                return;
+            }
+        }
+    }
+
+    private void openProjectMeeting(Project project) {
+        try {
+            Project updated = project.isMeetingActive() ? refreshProjectState(project) : projectMeetingService.openMeetingForProject(project);
+            String room = safe(updated.getMeetingRoom());
+            String joinUrl = projectMeetingService.joinUrl(updated, false);
+            // open JCEF dialog asynchronously to avoid blocking UI
+            new Thread(() -> {
+                try {
+                    browserService.openMeetingDialog("EduCompus | Meeting | " + room, joinUrl);
+                } catch (Exception ex) {
+                    try {
+                        if (java.awt.Desktop.isDesktopSupported()) {
+                            java.awt.Desktop.getDesktop().browse(java.net.URI.create(joinUrl));
+                            return;
+                        }
+                    } catch (Exception browseEx) {
+                        // ignore and show original error below
+                    }
+                    javafx.application.Platform.runLater(() -> error("Meeting", ex));
+                }
+            }, "jcef-opener-back-project").start();
+            replaceProjectInList(allProjects, updated);
+            replaceProjectInList(projects, updated);
+            renderAdminCards();
+            if (projectsList != null) {
+                projectsList.refresh();
+            }
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private void copyProjectMeetingLink(Project project) {
+        Project updated = refreshProjectState(project);
+        if (updated == null || safe(updated.getMeetingUrl()).isBlank()) {
+            info("Meeting", "Aucun lien actif pour ce projet.");
+            return;
+        }
+        ClipboardContent content = new ClipboardContent();
+        content.putString(updated.getMeetingUrl());
+        Clipboard.getSystemClipboard().setContent(content);
+        info("Meeting", "Lien de meeting copie.");
+    }
+
+    private void closeProjectMeeting(Project project) {
+        try {
+            Project updated = projectMeetingService.closeMeetingForProject(project);
+            replaceProjectInList(allProjects, updated);
+            replaceProjectInList(projects, updated);
+            renderAdminCards();
+            if (projectsList != null) {
+                projectsList.refresh();
+            }
+            info("Meeting", "Le meeting du projet a ete ferme.");
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
     }
 
     @FXML
@@ -497,19 +676,12 @@ public final class BackProjectsController {
             info("Modification", "Sélectionnez un projet à modifier.");
             return;
         }
-        editingProject = sel;
-        fillProjectForm(sel);
-        if (titleField != null) {
-            titleField.requestFocus();
-            titleField.selectAll();
-        }
+        openProjectDialog(sel);
     }
 
     @FXML
     private void newProject(ActionEvent event) {
-        editingProject = null;
-        if (projectsList != null) projectsList.getSelectionModel().clearSelection();
-        fillProjectForm(null);
+        openProjectDialog(null);
     }
 
     @FXML
@@ -610,10 +782,8 @@ public final class BackProjectsController {
 
         try {
             projectRepo.delete(sel.getId());
-            projects.remove(sel);
-            // update admin catalogue after deletion
-            renderAdminCards();
-            newProject(null);
+            info("Suppression", "Projet supprimé.");
+            reloadProjects(null);
         } catch (Exception e) {
             error("Erreur", e);
         }
@@ -653,6 +823,92 @@ public final class BackProjectsController {
         if (publishedCheck != null) {
             publishedCheck.setSelected(p != null && p.isPublished());
         }
+    }
+
+    private void openProjectDialog(Project source) {
+        FormResult<Project> result = showProjectForm(source);
+        if (!result.saved()) return;
+
+        try {
+            Project project = result.value();
+            if (project.getId() <= 0) {
+                project.setCreatedById(AppState.getUserId());
+                projectRepo.create(project);
+                info("Projet enregistré", "Le projet a été ajouté.");
+            } else {
+                projectRepo.update(project);
+                info("Projet enregistré", "Le projet a été mis à jour.");
+            }
+            reloadProjects(null);
+            selectProjectById(project.getId());
+        } catch (Exception e) {
+            error("Erreur", e);
+        }
+    }
+
+    private FormResult<Project> showProjectForm(Project source) {
+        TextField title = field();
+        DatePicker datePicker = new DatePicker();
+        datePicker.getStyleClass().addAll("field", "date-picker");
+        datePicker.setMaxWidth(Double.MAX_VALUE);
+
+        TextField timeField = field();
+        timeField.setPromptText("HH:mm:ss");
+        TextArea description = area();
+        CheckBox published = new CheckBox("Publié");
+
+        if (source != null) {
+            title.setText(safe(source.getTitle()));
+            description.setText(safe(source.getDescription()));
+            published.setSelected(source.isPublished());
+            fillDeadlineFields(source.getDeadline(), datePicker, timeField);
+        }
+
+        GridPane grid = formGrid();
+        Label titleErr = addFormRow(grid, 0, "Titre *", title);
+        HBox deadlineBox = new HBox(8, datePicker, timeField);
+        HBox.setHgrow(datePicker, Priority.ALWAYS);
+        HBox.setHgrow(timeField, Priority.ALWAYS);
+        Label deadlineErr = addFormRow(grid, 1, "Deadline *", deadlineBox);
+        Label descErr = addFormRow(grid, 2, "Description *", description);
+        Label publishedErr = addFormRow(grid, 3, "Publication", published);
+        publishedErr.setText("");
+
+        liveValidate(title, titleErr, () -> ProjectValidationService.validateTitreProjet(title.getText()));
+        datePicker.valueProperty().addListener((obs, o, n) -> validateDeadlineFields(datePicker, timeField, deadlineErr));
+        timeField.textProperty().addListener((obs, o, n) -> validateDeadlineFields(datePicker, timeField, deadlineErr));
+        liveValidate(description, descErr, () -> validateProjectDescription(description.getText()));
+
+        Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Créer un projet" : "Modifier un projet", grid);
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            ValidationResult titleResult = ProjectValidationService.validateTitreProjet(title.getText());
+            ValidationResult deadlineResult = ProjectValidationService.validateDeadlineStr(buildDeadline(datePicker, timeField));
+            ValidationResult descResult = validateProjectDescription(description.getText());
+
+            applyValidation(title, titleErr, titleResult);
+            applyValidation(datePicker, deadlineErr, deadlineResult);
+            if (deadlineResult.isValid()) FormValidator.clearError(timeField);
+            else FormValidator.markError(timeField, deadlineResult.firstError());
+            applyValidation(description, descErr, descResult);
+
+            if (!titleResult.isValid() || !deadlineResult.isValid() || !descResult.isValid()) {
+                ev.consume();
+            }
+        });
+
+        Optional<ButtonType> answer = dialog.showAndWait();
+        if (answer.isEmpty() || answer.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) {
+            return FormResult.cancelled();
+        }
+
+        Project project = source == null ? new Project() : source;
+        project.setTitle(text(title));
+        project.setDeadline(buildDeadline(datePicker, timeField));
+        project.setDescription(text(description));
+        project.setPublished(published.isSelected());
+        project.setDeliverables(source == null ? "" : safe(source.getDeliverables()));
+        return FormResult.saved(project);
     }
 
     @FXML
@@ -736,6 +992,131 @@ public final class BackProjectsController {
         submissions.setAll(filtered);
     }
 
+    private Dialog<ButtonType> buildFormDialog(String title, Node content) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(title);
+        dialog.setHeaderText(title);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        dialog.getDialogPane().setPrefWidth(760);
+        styleDialog(dialog);
+        return dialog;
+    }
+
+    private GridPane formGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(14);
+        grid.setVgap(4);
+        return grid;
+    }
+
+    private Label addFormRow(GridPane grid, int row, String label, Node node) {
+        Label formLabel = new Label(label);
+        formLabel.getStyleClass().add("form-label");
+        grid.add(formLabel, 0, row * 2);
+        grid.add(node, 1, row * 2);
+        if (node instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+            GridPane.setHgrow(region, Priority.ALWAYS);
+        }
+        Label err = new Label();
+        err.setStyle("-fx-text-fill: #d6293e; -fx-font-size: 11px; -fx-font-weight: 700; -fx-padding: 0 0 4 2;");
+        err.setWrapText(true);
+        err.setMaxWidth(440);
+        grid.add(err, 1, row * 2 + 1);
+        return err;
+    }
+
+    private void liveValidate(TextInputControl field, Label errLabel, java.util.function.Supplier<ValidationResult> validator) {
+        field.textProperty().addListener((obs, o, n) -> applyValidation(field, errLabel, validator.get()));
+    }
+
+    private void validateDeadlineFields(DatePicker datePicker, TextField timeField, Label errLabel) {
+        ValidationResult result = ProjectValidationService.validateDeadlineStr(buildDeadline(datePicker, timeField));
+        applyValidation(datePicker, errLabel, result);
+        if (result.isValid()) FormValidator.clearError(timeField);
+        else FormValidator.markError(timeField, result.firstError());
+    }
+
+    private void applyValidation(javafx.scene.control.Control field, Label errLabel, ValidationResult result) {
+        if (result == null || result.isValid()) {
+            errLabel.setText("");
+            FormValidator.clearError(field);
+        } else {
+            errLabel.setText("⚠ " + result.firstError());
+            FormValidator.markError(field, result.firstError());
+        }
+    }
+
+    private ValidationResult validateProjectDescription(String value) {
+        ValidationResult result = new ValidationResult();
+        String text = safe(value);
+        if (text.isBlank()) result.addError("La description est obligatoire.");
+        else if (text.length() < 10) result.addError("La description doit contenir au moins 10 caractères.");
+        else if (text.length() > 3000) result.addError("La description ne doit pas dépasser 3000 caractères.");
+        return result;
+    }
+
+    private void fillDeadlineFields(String deadline, DatePicker datePicker, TextField timeField) {
+        String value = safe(deadline);
+        if (value.isBlank()) {
+            datePicker.setValue(null);
+            timeField.setText("");
+            return;
+        }
+        String datePart = value.length() >= 10 ? value.substring(0, 10) : value;
+        try {
+            datePicker.setValue(LocalDate.parse(datePart));
+        } catch (Exception e) {
+            datePicker.setValue(null);
+        }
+        timeField.setText(value.length() > 11 ? value.substring(11) : "");
+    }
+
+    private String buildDeadline(DatePicker datePicker, TextField timeField) {
+        LocalDate date = datePicker == null ? null : datePicker.getValue();
+        if (date == null) return "";
+        String time = timeField == null ? "" : safe(timeField.getText());
+        if (time.isBlank()) time = "00:00:00";
+        return date + " " + time;
+    }
+
+    private TextField field() {
+        TextField field = new TextField();
+        field.getStyleClass().add("field");
+        return field;
+    }
+
+    private TextArea area() {
+        TextArea area = new TextArea();
+        area.getStyleClass().addAll("field", "area");
+        area.setPrefRowCount(6);
+        area.setWrapText(true);
+        return area;
+    }
+
+    private void selectProjectById(int projectId) {
+        if (projectId <= 0) return;
+        int index = -1;
+        for (int i = 0; i < allProjects.size(); i++) {
+            if (allProjects.get(i).getId() == projectId) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) return;
+        int page = (index / projectsPageSize) + 1;
+        showProjectsPage(page);
+        for (Project project : projects) {
+            if (project.getId() == projectId) {
+                projectsList.getSelectionModel().select(project);
+                projectsList.scrollTo(project);
+                editingProject = project;
+                return;
+            }
+        }
+    }
+
     private static String text(TextField tf) {
         return tf == null ? "" : String.valueOf(tf.getText()).trim();
     }
@@ -758,7 +1139,32 @@ public final class BackProjectsController {
 
     private static String deadlineChipText(String deadline) {
         String d = safe(deadline);
-        return d.isBlank() ? "Sans date" : d;
+        if (d.isBlank()) return "Sans date";
+        String[] patterns = new String[]{
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm",
+                "yyyy/MM/dd HH:mm:ss",
+                "yyyy/MM/dd HH:mm",
+                "dd/MM/yyyy HH:mm:ss",
+                "dd/MM/yyyy HH:mm",
+                "dd/MM/yy HH:mm",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String p : patterns) {
+            try {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(p);
+                if (p.contains("H") || p.contains("m")) {
+                    LocalDateTime dt = LocalDateTime.parse(d, fmt);
+                    return dt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+                } else {
+                    LocalDate ld = LocalDate.parse(d, fmt);
+                    return ld.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+                }
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        if (d.contains("-")) return d.replace('-', '/');
+        return d;
     }
 
     private static void info(String title, String message) {
@@ -790,23 +1196,7 @@ public final class BackProjectsController {
     }
 
     private static void styleDialog(javafx.scene.control.Dialog<?> d) {
-        if (d == null || d.getDialogPane() == null) return;
-        String css = cssUri();
-        if (!css.isBlank() && !d.getDialogPane().getStylesheets().contains(css)) {
-            d.getDialogPane().getStylesheets().add(css);
-        }
-        if (!d.getDialogPane().getStyleClass().contains("rgb-dialog")) {
-            d.getDialogPane().getStyleClass().add("rgb-dialog");
-        }
-        for (javafx.scene.control.ButtonType bt : d.getDialogPane().getButtonTypes()) {
-            javafx.scene.Node b = d.getDialogPane().lookupButton(bt);
-            if (b == null) continue;
-            if (bt == javafx.scene.control.ButtonType.OK) {
-                b.getStyleClass().add("btn-rgb");
-            } else if (bt == javafx.scene.control.ButtonType.CANCEL) {
-                b.getStyleClass().add("btn-rgb-outline");
-            }
-        }
+        try { com.educompus.util.Dialogs.style(d); } catch (Exception ignored) {}
     }
 
     private static String cssUri() {
@@ -825,5 +1215,10 @@ public final class BackProjectsController {
             if (Character.isDigit(c)) return true;
         }
         return false;
+    }
+
+    private record FormResult<T>(T value, boolean saved) {
+        static <T> FormResult<T> saved(T value) { return new FormResult<>(value, true); }
+        static <T> FormResult<T> cancelled() { return new FormResult<>(null, false); }
     }
 }

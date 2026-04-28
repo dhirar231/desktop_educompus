@@ -4,6 +4,9 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
+import javafx.scene.image.Image;
+import javafx.stage.Window;
+import javafx.stage.Stage;
 
 public final class Dialogs {
     private Dialogs() {}
@@ -47,12 +50,33 @@ public final class Dialogs {
         for (ButtonType bt : d.getDialogPane().getButtonTypes()) {
             Node b = d.getDialogPane().lookupButton(bt);
             if (b == null) continue;
-            if (bt == ButtonType.OK) {
+            if (bt == ButtonType.OK || bt == ButtonType.YES) {
                 b.getStyleClass().add("btn-rgb");
-            } else if (bt == ButtonType.CANCEL) {
+            } else if (bt == ButtonType.CANCEL || bt == ButtonType.NO) {
+                b.getStyleClass().add("btn-rgb-outline");
+            } else {
+                // custom buttons default to outlined variant to avoid surprising primary actions
                 b.getStyleClass().add("btn-rgb-outline");
             }
         }
+
+        // Try to set application icon on the dialog's window if possible
+        try {
+            Window w = d.getDialogPane().getScene().getWindow();
+            if (w instanceof Stage) {
+                Stage s = (Stage) w;
+                java.net.URL ico = Dialogs.class.getResource("/assets/images/app-icon.png");
+                if (ico == null) {
+                    ico = Dialogs.class.getResource("/assets/images/app-icon.ico");
+                }
+                if (ico != null) {
+                    try {
+                        Image img = new Image(ico.toExternalForm());
+                        if (!s.getIcons().contains(img)) s.getIcons().add(img);
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private static String cssUri() {
