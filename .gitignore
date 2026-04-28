@@ -16,3 +16,6 @@ Thumbs.db
 *.log
 
 target/classes/com/educompus/service/ServiceExam.class
+
+.env
+AGENTS.md

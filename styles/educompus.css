@@ -1503,6 +1503,12 @@
   -fx-text-fill: -edu-text-muted;
 }
 
+.captcha-box {
+  -fx-border-color: derive(-edu-border, -8%);
+  -fx-border-radius: 10px;
+  -fx-background-radius: 10px;
+}
+
 .auth-error {
   -fx-background-color: rgba(214, 41, 62, 0.12);
   -fx-text-fill: -edu-danger;
@@ -1519,6 +1525,47 @@
   -fx-background-radius: -edu-radius-sm;
   -fx-border-radius: -edu-radius-sm;
   -fx-border-color: rgba(6, 106, 201, 0.20);
+}
+
+.saved-accounts-wrap {
+  -fx-padding: 8 0 4 0;
+}
+
+.saved-account-card {
+  -fx-alignment: center-left;
+  -fx-padding: 10;
+  -fx-background-color: rgba(6, 106, 201, 0.06);
+  -fx-background-radius: 14px;
+  -fx-border-color: rgba(6, 106, 201, 0.18);
+  -fx-border-radius: 14px;
+  -fx-border-width: 1;
+  -fx-spacing: 10;
+}
+
+.saved-account-avatar {
+  -fx-min-width: 34px;
+  -fx-min-height: 34px;
+  -fx-max-width: 34px;
+  -fx-max-height: 34px;
+  -fx-alignment: center;
+  -fx-background-color: derive(-edu-primary, 86%);
+  -fx-background-radius: 999px;
+  -fx-text-fill: -edu-primary;
+  -fx-font-weight: 900;
+}
+
+.saved-account-email {
+  -fx-font-weight: 800;
+  -fx-text-fill: -edu-text;
+}
+
+.saved-account-hint {
+  -fx-font-size: 11px;
+  -fx-text-fill: -edu-text-muted;
+}
+
+.saved-account-login-btn {
+  -fx-padding: 8 12 8 12;
 }
 
 /* Splash */
