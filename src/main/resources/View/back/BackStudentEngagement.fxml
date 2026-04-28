@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.educompus.controller.back.BackStudentEngagementController"
+            fitToWidth="true"
+            hbarPolicy="NEVER"
+            styleClass="content-scroll">
+
+    <VBox styleClass="content" spacing="24">
+        <padding>
+            <Insets top="22" right="22" bottom="22" left="22"/>
+        </padding>
+
+        <!-- En-tête -->
+        <VBox spacing="6">
+            <Label text="🎯 Détection des Étudiants Désengagés" styleClass="page-title"/>
+            <Label text="Identifiez automatiquement les étudiants à risque et prenez des mesures proactives"
+                   styleClass="page-subtitle"/>
+        </VBox>
+
+        <!-- Sélection du cours -->
+        <HBox spacing="12" alignment="CENTER_LEFT">
+            <Label text="Cours :" style="-fx-font-size: 14px; -fx-font-weight: 700;"/>
+            <ComboBox fx:id="courseCombo" prefWidth="400" promptText="Sélectionner un cours..."/>
+            <ProgressIndicator fx:id="loadingIndicator" maxWidth="30" maxHeight="30"/>
+        </HBox>
+
+        <!-- Dashboard des statistiques -->
+        <GridPane hgap="16" vgap="16" fx:id="statsCardsBox">
+            <!-- Carte Total -->
+            <VBox styleClass="card" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <VBox spacing="8">
+                    <Label text="👥 Total Étudiants" style="-fx-font-size: 13px; -fx-text-fill: #7f8c8d;"/>
+                    <Label fx:id="lblTotalStudents" text="0" 
+                           style="-fx-font-size: 32px; -fx-font-weight: 800; -fx-text-fill: #2c3e50;"/>
+                </VBox>
+            </VBox>
+
+            <!-- Carte Actifs -->
+            <VBox styleClass="card" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <VBox spacing="8">
+                    <Label text="✅ Étudiants Actifs" style="-fx-font-size: 13px; -fx-text-fill: #27ae60;"/>
+                    <Label fx:id="lblActiveStudents" text="0 (0%)" 
+                           style="-fx-font-size: 32px; -fx-font-weight: 800; -fx-text-fill: #27ae60;"/>
+                </VBox>
+            </VBox>
+
+            <!-- Carte À Surveiller -->
+            <VBox styleClass="card" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <VBox spacing="8">
+                    <Label text="⚠️ À Surveiller" style="-fx-font-size: 13px; -fx-text-fill: #f39c12;"/>
+                    <Label fx:id="lblAtRiskStudents" text="0 (0%)" 
+                           style="-fx-font-size: 32px; -fx-font-weight: 800; -fx-text-fill: #f39c12;"/>
+                </VBox>
+            </VBox>
+
+            <!-- Carte Désengagés -->
+            <VBox styleClass="card" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <VBox spacing="8">
+                    <Label text="❌ Désengagés" style="-fx-font-size: 13px; -fx-text-fill: #e74c3c;"/>
+                    <Label fx:id="lblDisengagedStudents" text="0 (0%)" 
+                           style="-fx-font-size: 32px; -fx-font-weight: 800; -fx-text-fill: #e74c3c;"/>
+                </VBox>
+            </VBox>
+        </GridPane>
+
+        <!-- Liste des étudiants -->
+        <VBox spacing="12">
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label text="📋 Liste des Étudiants" 
+                       style="-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: -edu-primary;"/>
+            </HBox>
+
+            <Label fx:id="emptyStateLabel" text="Sélectionnez un cours pour commencer"
+                   style="-fx-text-fill: #7f8c8d; -fx-font-size: 14px; -fx-padding: 40 0 40 0;"
+                   alignment="CENTER" maxWidth="Infinity"/>
+
+            <VBox fx:id="studentsListBox" spacing="12"/>
+        </VBox>
+
+    </VBox>
+
+</ScrollPane>

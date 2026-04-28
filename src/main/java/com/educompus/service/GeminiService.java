@@ -161,36 +161,45 @@ public final class GeminiService {
      * Générateur de script de fallback (sans API).
      */
     private static String genererScriptFallback(String description, String coursTitle, String niveau, String domaine) {
+        // Créer un script plus naturel et pédagogique en fallback
+        String intro = "Bonjour et bienvenue ! Aujourd'hui, nous allons explorer ensemble un sujet vraiment intéressant.";
+        
+        String explication = description.length() > 50 
+            ? description 
+            : "Nous allons découvrir les concepts fondamentaux de ce domaine et comprendre comment ils s'appliquent dans la pratique.";
+        
+        String exemples = "Pour mieux comprendre, prenons un exemple concret. Imaginez que... Cet exemple nous montre bien comment ces concepts s'appliquent dans la réalité.";
+        
+        String resume = "Récapitulons les points essentiels que nous avons vus aujourd'hui. D'abord, nous avons compris que... Ensuite, nous avons vu que... Et enfin, l'important à retenir c'est que...";
+        
+        String conclusion = "Voilà ! Vous avez maintenant une bonne compréhension de ce sujet. Je vous encourage à continuer votre apprentissage et à explorer davantage. Merci de votre attention, et à bientôt pour de nouvelles découvertes !";
+        
         return String.format("""
-            Bonjour et bienvenue dans cette vidéo éducative !
+            %s
             
-            Aujourd'hui, nous allons explorer le sujet suivant : %s
+            Aujourd'hui, nous parlons de : %s
             
-            Ce contenu fait partie du cours "%s" et s'adresse aux étudiants de niveau %s dans le domaine %s.
-            
-            Commençons par comprendre les concepts de base :
+            Ce sujet fait partie du cours "%s" et s'adresse aux étudiants de niveau %s dans le domaine %s.
             
             %s
             
-            Ce sujet est important car il vous permettra de mieux comprendre les concepts fondamentaux de votre formation.
+            %s
             
-            Prenons maintenant un exemple concret pour illustrer ces notions.
+            %s
             
-            En résumé, nous avons vu aujourd'hui les points essentiels concernant ce sujet.
-            
-            Ces connaissances vous seront utiles pour la suite de votre apprentissage.
-            
-            Merci de votre attention et à bientôt pour de nouvelles découvertes !
+            %s
             
             [Note: Script généré en mode fallback - Gemini temporairement indisponible]
             """,
+            intro,
             description,
             coursTitle != null ? coursTitle : "Formation",
             niveau != null ? niveau : "général",
             domaine != null ? domaine : "éducation",
-            description.length() > 100 ? 
-                "Les éléments clés à retenir sont multiples et méritent une attention particulière." :
-                "Nous allons détailler chaque aspect de manière progressive et claire."
+            explication,
+            exemples,
+            resume,
+            conclusion
         );
     }
 
@@ -199,23 +208,61 @@ public final class GeminiService {
      */
     private static String construirePrompt(String description, String coursTitle, String niveau, String domaine) {
         return String.format("""
-            Crée un script de vidéo éducative de 2-3 minutes pour expliquer le concept suivant :
+            Tu es un expert en création de scripts pédagogiques pour vidéos éducatives. 
+            Crée un script de vidéo explicative de 2-3 minutes (environ 350-450 mots) pour expliquer le concept suivant :
             
-            Sujet : %s
+            ═══════════════════════════════════════════════════════════════
+            CONTEXTE PÉDAGOGIQUE
+            ═══════════════════════════════════════════════════════════════
+            Sujet à expliquer : %s
             Cours : %s
-            Niveau : %s
+            Niveau des étudiants : %s
             Domaine : %s
             
-            Le script doit :
-            - Commencer par une salutation chaleureuse
-            - Expliquer le concept de manière simple et claire
-            - Utiliser des exemples concrets
-            - Maintenir un ton conversationnel et bienveillant
-            - Se terminer par un résumé et des encouragements
-            - Faire environ 300-400 mots
-            - Être adapté à des étudiants de niveau %s
+            ═══════════════════════════════════════════════════════════════
+            INSTRUCTIONS POUR LE SCRIPT
+            ═══════════════════════════════════════════════════════════════
+            Le script DOIT :
             
-            Écris uniquement le script, sans formatage markdown.
+            1. OUVERTURE (30 secondes)
+               - Commencer par une salutation chaleureuse et engageante
+               - Présenter le sujet de manière captivante
+               - Expliquer pourquoi c'est important à apprendre
+            
+            2. EXPLICATION PRINCIPALE (1 minute 30 secondes)
+               - Expliquer les concepts clés de manière progressive
+               - Utiliser un langage simple et accessible
+               - Inclure 2-3 exemples concrets et pertinents
+               - Utiliser des analogies si nécessaire
+               - Maintenir un ton conversationnel, comme si tu parlais à un ami
+               - Éviter le jargon technique sauf si nécessaire (et l'expliquer)
+            
+            3. POINTS CLÉS À RETENIR (30 secondes)
+               - Résumer les 3-4 points essentiels
+               - Utiliser des formulations claires et mémorables
+            
+            4. CONCLUSION (30 secondes)
+               - Encourager l'étudiant à continuer son apprentissage
+               - Proposer une action suivante ou une question de réflexion
+               - Terminer de manière positive et motivante
+            
+            ═══════════════════════════════════════════════════════════════
+            CRITÈRES DE QUALITÉ
+            ═══════════════════════════════════════════════════════════════
+            - Le script doit être naturel et fluide, comme s'il était parlé
+            - Utiliser des transitions douces entre les sections
+            - Adapter le niveau de complexité au niveau %s
+            - Inclure des pauses naturelles (indiquées par "...")
+            - Être engageant et motivant
+            - Éviter les listes à puces ou le formatage markdown
+            - Écrire en français naturel et conversationnel
+            
+            ═══════════════════════════════════════════════════════════════
+            FORMAT DE SORTIE
+            ═══════════════════════════════════════════════════════════════
+            Écris UNIQUEMENT le script, sans aucun formatage markdown, sans numérotation, 
+            sans titre, sans explications supplémentaires. 
+            Le script doit être prêt à être lu directement par un narrateur.
             """, 
             description, 
             coursTitle != null ? coursTitle : "Formation générale",

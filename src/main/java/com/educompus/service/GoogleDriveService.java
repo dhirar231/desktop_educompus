@@ -153,7 +153,7 @@ public final class GoogleDriveService {
      * Obtient ou crée un dossier pour un cours spécifique.
      * Structure: Gestion Cours > Cours > [Nom du Cours]
      */
-    private String getOrCreateCoursFolder(String coursTitle) throws IOException {
+    public String getOrCreateCoursFolder(String coursTitle) throws IOException {
         // Créer d'abord le dossier "Cours" dans "Gestion Cours"
         String coursFolderId = getOrCreateSubFolder(rootFolderId, COURS_FOLDER_NAME);
         
@@ -165,7 +165,7 @@ public final class GoogleDriveService {
     /**
      * Obtient ou crée un sous-dossier dans un dossier parent.
      */
-    private String getOrCreateSubFolder(String parentFolderId, String folderName) throws IOException {
+    public String getOrCreateSubFolder(String parentFolderId, String folderName) throws IOException {
         try {
             String query = "name='" + folderName + "' and mimeType='application/vnd.google-apps.folder' and '" + parentFolderId + "' in parents and trashed=false";
             com.google.api.services.drive.model.FileList result = driveService.files().list()

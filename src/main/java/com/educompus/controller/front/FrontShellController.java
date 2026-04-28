@@ -202,8 +202,21 @@ public final class FrontShellController {
 
     @FXML
     private void navCalendar(ActionEvent event) {
-        setContent(safeLoad("View/front/FrontCalendar.fxml"));
-        setActive(navCalendarBtn);
+        // Ouvrir Google Calendar dans le navigateur externe
+        try {
+            String googleCalendarUrl = "https://calendar.google.com";
+            java.awt.Desktop.getDesktop().browse(java.net.URI.create(googleCalendarUrl));
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Afficher une alerte en cas d'erreur
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.ERROR
+            );
+            alert.setTitle("Erreur");
+            alert.setHeaderText("Impossible d'ouvrir Google Calendar");
+            alert.setContentText("Veuillez ouvrir manuellement : https://calendar.google.com");
+            alert.showAndWait();
+        }
     }
 
     @FXML

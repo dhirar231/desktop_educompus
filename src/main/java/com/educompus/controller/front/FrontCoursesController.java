@@ -24,7 +24,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.SVGPath;
 import javafx.util.Duration;
 
+import java.awt.Desktop;
 import java.io.File;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -274,5 +276,44 @@ public final class FrontCoursesController {
 
     private static String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private void openGoogleDrive(String driveLink) {
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(driveLink));
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Navigateur non disponible");
+                alert.setHeaderText("Impossible d'ouvrir le navigateur");
+                alert.setContentText("Copiez ce lien dans votre navigateur:\n" + driveLink);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Erreur");
+            alert.setHeaderText("Impossible d'ouvrir Google Drive");
+            alert.setContentText("Erreur: " + e.getMessage());
+            e.printStackTrace();
+            alert.showAndWait();
+        }
+    }
+
+    /**
+     * Ouvre Google Calendar dans le navigateur externe.
+     */
+    @FXML
+    private void onOpenCalendar() {
+        try {
+            String googleCalendarUrl = "https://calendar.google.com";
+            Desktop.getDesktop().browse(URI.create(googleCalendarUrl));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Erreur");
+            alert.setHeaderText("Impossible d'ouvrir Google Calendar");
+            alert.setContentText("Veuillez ouvrir manuellement : https://calendar.google.com");
+            alert.showAndWait();
+        }
     }
 }

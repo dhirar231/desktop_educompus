@@ -9,6 +9,7 @@ import com.educompus.repository.ChapitreProgressRepository;
 import com.educompus.repository.CourseManagementRepository;
 import com.educompus.service.CourseFavoriteService;
 import com.educompus.service.MyMemoryTranslationService;
+import com.educompus.service.ResumeChapterService;
 import com.educompus.nav.Navigator;import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -215,6 +216,7 @@ public final class FrontCourseDetailController {
                 String tVideos       = MyMemoryTranslationService.translate("Vidéos explicatives", SOURCE_LANG, toLang);
                 String tTelecharger  = MyMemoryTranslationService.translate("Télécharger", SOURCE_LANG, toLang);
                 String tRegarder     = MyMemoryTranslationService.translate("Regarder", SOURCE_LANG, toLang);
+                String tResumer      = MyMemoryTranslationService.translate("Résumer", SOURCE_LANG, toLang);
                 String tDescription  = MyMemoryTranslationService.translate("Description", SOURCE_LANG, toLang);
                 String tRetour       = MyMemoryTranslationService.translate("Retour aux cours", SOURCE_LANG, toLang);
 
@@ -247,6 +249,7 @@ public final class FrontCourseDetailController {
                 uiT.put("videos", tVideos);
                 uiT.put("telecharger", tTelecharger);
                 uiT.put("regarder", tRegarder);
+                uiT.put("resumer", tResumer);
                 uiT.put("description", tDescription);
 
                 Platform.runLater(() -> {
@@ -510,8 +513,15 @@ public final class FrontCourseDetailController {
         if (ch.getFichierC() != null && !ch.getFichierC().isBlank()) {
             Button pdfBtn = new Button("⬇ " + t.apply("telecharger", "Chapitre"));
             pdfBtn.getStyleClass().add("btn-rgb-compact");
-            pdfBtn.setOnAction(e -> downloadFile(ch.getFichierC(), "chapitre_" + ch.getOrdre() + ".pdf"));
+            pdfBtn.setOnAction(e -> downloadFile(ch.getFichierC(), "chapitre_" + ch.getOrdre() + ".pdf", ch.getId(), "CHAPTER"));
             badges.getChildren().add(pdfBtn);
+            
+            // Bouton Résumer ce chapitre
+            Button resumeBtn = new Button("📝 " + t.apply("resumer", "Résumer"));
+            resumeBtn.getStyleClass().add("btn-rgb-compact");
+            resumeBtn.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white;");
+            resumeBtn.setOnAction(e -> ouvrirDialogueResume(ch));
+            badges.getChildren().add(resumeBtn);
         }
 
         Label chevron = new Label("▸");
@@ -585,10 +595,36 @@ public final class FrontCourseDetailController {
         doneBtn.setOnAction(e -> {
             boolean nowCompleted = !completedIds.contains(ch.getId());
             progressRepo.setCompleted(AppState.getUserId(), ch.getId(), nowCompleted);
+            
+            // 🎯 TRACKING: Enregistrer l'activité pour le module Engagement
+            if (nowCompleted) {
+                com.educompus.service.ActivityTrackingService.logChapterView(AppState.getUserId(), ch.getId());
+            }
+            
             if (nowCompleted) completedIds.add(ch.getId());
             else completedIds.remove(ch.getId());
             List<Chapitre> allChapitres = repo.listChapitresByCoursId(cours.getId());
             updateProgressBar(allChapitres.size());
+            
+            // 🎯 AFFICHER LE SCORE DE PROGRESSION
+            if (nowCompleted) {
+                int totalChapitres = allChapitres.size();
+                int completedCount = completedIds.size();
+                double progressPercentage = (totalChapitres > 0) ? (completedCount * 100.0 / totalChapitres) : 0;
+                
+                // Afficher une notification avec le score
+                javafx.scene.control.Alert progressAlert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                progressAlert.setTitle("✅ Chapitre terminé !");
+                progressAlert.setHeaderText("Bravo ! Vous progressez bien 🎉");
+                progressAlert.setContentText(String.format(
+                    "Chapitre marqué comme lu !\n\n" +
+                    "📊 Votre progression : %d/%d chapitres (%d%%)\n\n" +
+                    "Continuez comme ça ! 💪",
+                    completedCount, totalChapitres, (int) progressPercentage
+                ));
+                progressAlert.show();
+            }
+            
             if (nowCompleted) {
                 card.setStyle("-fx-border-color: #29b6d8; -fx-border-width: 2;");
                 num.setText("✓");
@@ -646,7 +682,7 @@ public final class FrontCourseDetailController {
         openBtn.getStyleClass().add("btn-rgb-compact");
         boolean hasFile = td.getFichier() != null && !td.getFichier().isBlank();
         openBtn.setDisable(!hasFile);
-        if (hasFile) openBtn.setOnAction(e -> downloadFile(td.getFichier(), "td_" + safe(td.getTitre()).replaceAll("[^a-zA-Z0-9]", "_") + ".pdf"));
+        if (hasFile) openBtn.setOnAction(e -> downloadFile(td.getFichier(), "td_" + safe(td.getTitre()).replaceAll("[^a-zA-Z0-9]", "_") + ".pdf", td.getChapitreId(), "TD"));
         row.getChildren().addAll(icon, info, openBtn);
         return row;
     }
@@ -882,6 +918,11 @@ public final class FrontCourseDetailController {
 
     /** Ouvre le fichier avec l'application par défaut (lecture/téléchargement). */
     private void downloadFile(String path, String suggestedName) {
+        downloadFile(path, suggestedName, null, null);
+    }
+    
+    /** Ouvre le fichier avec l'application par défaut et enregistre le téléchargement. */
+    private void downloadFile(String path, String suggestedName, Integer chapterId, String pdfType) {
         if (path == null || path.isBlank()) return;
         File file = new File(path);
         if (!file.exists()) {
@@ -892,6 +933,17 @@ public final class FrontCourseDetailController {
             alert.showAndWait();
             return;
         }
+        
+        // 🎯 TRACKING: Enregistrer le téléchargement pour le module Engagement
+        if (chapterId != null && pdfType != null && cours != null) {
+            com.educompus.service.ActivityTrackingService.logPdfDownload(
+                AppState.getUserId(), 
+                cours.getId(), 
+                chapterId, 
+                pdfType
+            );
+        }
+        
         try {
             // Ouvrir avec l'application par défaut (PDF viewer, etc.)
             Desktop.getDesktop().open(file);
@@ -1292,4 +1344,473 @@ public final class FrontCourseDetailController {
             }
         }
     }
+
+    /**
+     * Ouvre le dialogue de résumé de chapitre.
+     */
+    private void ouvrirDialogueResume(Chapitre chapitre) {
+        javafx.stage.Stage dialog = new javafx.stage.Stage();
+        dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+        dialog.setTitle("Résumer le chapitre - " + safe(chapitre.getTitre()));
+        dialog.setWidth(900);
+        dialog.setHeight(700);
+
+        VBox root = new VBox(20);
+        root.setPadding(new Insets(24));
+        root.setStyle("-fx-background-color: -edu-bg;");
+
+        // En-tête
+        Label titre = new Label("📝 Résumé intelligent du chapitre");
+        titre.setStyle("-fx-font-size: 22px; -fx-font-weight: 800; -fx-text-fill: -edu-primary;");
+
+        Label sousTitre = new Label(safe(chapitre.getTitre()));
+        sousTitre.setStyle("-fx-font-size: 14px; -fx-text-fill: -edu-text-secondary;");
+
+        // Options de résumé
+        HBox optionsBox = new HBox(16);
+        optionsBox.setAlignment(Pos.CENTER_LEFT);
+
+        Label lblType = new Label("Type:");
+        lblType.setStyle("-fx-font-weight: 700;");
+
+        ComboBox<ResumeChapterService.TypeResume> typeCombo = new ComboBox<>();
+        typeCombo.getItems().addAll(ResumeChapterService.TypeResume.values());
+        typeCombo.setValue(ResumeChapterService.TypeResume.COURT);
+        typeCombo.setStyle("-fx-pref-width: 200px;");
+
+        Label lblLangue = new Label("Langue:");
+        lblLangue.setStyle("-fx-font-weight: 700;");
+
+        ComboBox<ResumeChapterService.LangueResume> langueCombo = new ComboBox<>();
+        langueCombo.getItems().addAll(ResumeChapterService.LangueResume.values());
+        langueCombo.setValue(ResumeChapterService.LangueResume.FR);
+        langueCombo.setStyle("-fx-pref-width: 150px;");
+
+        Button genererBtn = new Button("✨ Générer le résumé");
+        genererBtn.getStyleClass().add("btn-rgb");
+        genererBtn.setStyle("-fx-font-size: 13px; -fx-padding: 10 20 10 20;");
+
+        optionsBox.getChildren().addAll(lblType, typeCombo, lblLangue, langueCombo, genererBtn);
+
+        // Zone de résumé avec WebView pour affichage HTML coloré
+        javafx.scene.web.WebView webView = new javafx.scene.web.WebView();
+        webView.setPrefHeight(400);
+        VBox.setVgrow(webView, Priority.ALWAYS);
+        
+        // Charger le HTML initial
+        String htmlInitial = genererHTMLResume("Le résumé apparaîtra ici...", false);
+        webView.getEngine().loadContent(htmlInitial);
+
+        // Indicateur de chargement
+        ProgressIndicator spinner = new ProgressIndicator();
+        spinner.setVisible(false);
+        spinner.setMaxSize(50, 50);
+
+        Label statusLabel = new Label();
+        statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: -edu-text-secondary;");
+        statusLabel.setVisible(false);
+
+        VBox spinnerBox = new VBox(10, spinner, statusLabel);
+        spinnerBox.setAlignment(Pos.CENTER);
+        spinnerBox.setVisible(false);
+
+        // Boutons d'action
+        HBox actionsBox = new HBox(12);
+        actionsBox.setAlignment(Pos.CENTER_RIGHT);
+
+        Button copierBtn = new Button("📋 Copier");
+        copierBtn.getStyleClass().add("btn-rgb-outline");
+        copierBtn.setDisable(true);
+
+        Button telechargerBtn = new Button("💾 Télécharger");
+        telechargerBtn.getStyleClass().add("btn-rgb-outline");
+        telechargerBtn.setDisable(true);
+
+        Button fermerBtn = new Button("Fermer");
+        fermerBtn.getStyleClass().add("btn-rgb-outline");
+        fermerBtn.setOnAction(e -> dialog.close());
+
+        actionsBox.getChildren().addAll(copierBtn, telechargerBtn, fermerBtn);
+
+        // Assemblage
+        root.getChildren().addAll(titre, sousTitre, optionsBox, spinnerBox, webView, actionsBox);
+
+        // Variable pour stocker le texte brut du résumé
+        final String[] resumeTexteBrut = {""};
+
+        // Action de génération
+        genererBtn.setOnAction(e -> {
+            String cheminPDF = chapitre.getFichierC();
+            if (cheminPDF == null || cheminPDF.isBlank()) {
+                String htmlErreur = genererHTMLResume("❌ Aucun fichier PDF disponible pour ce chapitre.", true);
+                webView.getEngine().loadContent(htmlErreur);
+                return;
+            }
+
+            ResumeChapterService.TypeResume type = typeCombo.getValue();
+            ResumeChapterService.LangueResume langue = langueCombo.getValue();
+
+            // Afficher le chargement
+            spinnerBox.setVisible(true);
+            spinner.setVisible(true);
+            statusLabel.setVisible(true);
+            statusLabel.setText("Analyse du PDF et génération du résumé...");
+            webView.getEngine().loadContent(genererHTMLResume("", false));
+            genererBtn.setDisable(true);
+            copierBtn.setDisable(true);
+            telechargerBtn.setDisable(true);
+
+            // Générer le résumé dans un thread séparé
+            Task<ResumeChapterService.ResultatResume> task = new Task<>() {
+                @Override
+                protected ResumeChapterService.ResultatResume call() {
+                    return ResumeChapterService.genererResume(cheminPDF, type, langue);
+                }
+            };
+
+            task.setOnSucceeded(event -> {
+                ResumeChapterService.ResultatResume resultat = task.getValue();
+                spinnerBox.setVisible(false);
+                genererBtn.setDisable(false);
+
+                if (resultat.succes) {
+                    resumeTexteBrut[0] = resultat.texte;
+                    String htmlResume = genererHTMLResume(resultat.texte, false);
+                    webView.getEngine().loadContent(htmlResume);
+                    copierBtn.setDisable(false);
+                    telechargerBtn.setDisable(false);
+                } else {
+                    String htmlErreur = genererHTMLResume("❌ Erreur: " + resultat.erreur, true);
+                    webView.getEngine().loadContent(htmlErreur);
+                }
+            });
+
+            task.setOnFailed(event -> {
+                spinnerBox.setVisible(false);
+                genererBtn.setDisable(false);
+                String htmlErreur = genererHTMLResume("❌ Erreur lors de la génération du résumé.", true);
+                webView.getEngine().loadContent(htmlErreur);
+            });
+
+            Thread thread = new Thread(task);
+            thread.setDaemon(true);
+            thread.start();
+        });
+
+        // Action copier
+        copierBtn.setOnAction(e -> {
+            javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+            javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+            content.putString(resumeTexteBrut[0]);
+            clipboard.setContent(content);
+
+            String originalText = copierBtn.getText();
+            copierBtn.setText("✅ Copié!");
+            javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(2));
+            pause.setOnFinished(ev -> copierBtn.setText(originalText));
+            pause.play();
+        });
+
+        // Action télécharger
+        telechargerBtn.setOnAction(e -> {
+            javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+            fileChooser.setTitle("Enregistrer le résumé");
+            fileChooser.setInitialFileName("resume_chapitre_" + chapitre.getOrdre() + ".txt");
+            fileChooser.getExtensionFilters().add(
+                new javafx.stage.FileChooser.ExtensionFilter("Fichier texte", "*.txt")
+            );
+
+            java.io.File file = fileChooser.showSaveDialog(dialog);
+            if (file != null) {
+                try {
+                    java.nio.file.Files.writeString(file.toPath(), resumeTexteBrut[0]);
+                    
+                    String originalText = telechargerBtn.getText();
+                    telechargerBtn.setText("✅ Enregistré!");
+                    javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(2));
+                    pause.setOnFinished(ev -> telechargerBtn.setText(originalText));
+                    pause.play();
+                } catch (Exception ex) {
+                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                    alert.setTitle("Erreur");
+                    alert.setContentText("Impossible d'enregistrer le fichier: " + ex.getMessage());
+                    alert.showAndWait();
+                }
+            }
+        });
+
+        javafx.scene.Scene scene = new javafx.scene.Scene(root);
+        dialog.setScene(scene);
+        dialog.show();
+    }
+
+    /**
+     * Génère le HTML coloré pour afficher le résumé.
+     */
+    private String genererHTMLResume(String texte, boolean isErreur) {
+        if (texte == null || texte.isBlank()) {
+            texte = "Le résumé apparaîtra ici...";
+        }
+
+        // Échapper le HTML
+        String texteEchappe = texte
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;");
+
+        // Détecter et colorer les éléments
+        String texteColore = colorerResume(texteEchappe);
+
+        String couleurFond = isErreur ? "#fff5f5" : "#ffffff";
+        String couleurBordure = isErreur ? "#ff6b6b" : "#e0e0e0";
+
+        return String.format("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 14px;
+                        line-height: 1.8;
+                        color: #2c3e50;
+                        background-color: %s;
+                        padding: 20px;
+                        margin: 0;
+                        border: 1px solid %s;
+                        border-radius: 8px;
+                    }
+                    
+                    .titre-principal {
+                        color: #2980b9;
+                        font-size: 18px;
+                        font-weight: 700;
+                        margin-bottom: 16px;
+                        padding-bottom: 8px;
+                        border-bottom: 2px solid #3498db;
+                    }
+                    
+                    .paragraphe {
+                        margin-bottom: 16px;
+                        text-align: justify;
+                    }
+                    
+                    .point-cle {
+                        background: linear-gradient(to right, #e8f4fd, transparent);
+                        padding: 12px 16px;
+                        margin: 8px 0;
+                        border-left: 4px solid #3498db;
+                        border-radius: 4px;
+                    }
+                    
+                    .numero {
+                        color: #3498db;
+                        font-weight: 700;
+                        font-size: 16px;
+                        margin-right: 8px;
+                    }
+                    
+                    .mot-cle {
+                        color: #e74c3c;
+                        font-weight: 600;
+                    }
+                    
+                    .concept {
+                        color: #9b59b6;
+                        font-weight: 600;
+                    }
+                    
+                    .exemple {
+                        color: #27ae60;
+                        font-style: italic;
+                    }
+                    
+                    .important {
+                        background-color: #fff3cd;
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        color: #856404;
+                        font-weight: 600;
+                    }
+                    
+                    .note {
+                        background-color: #d1ecf1;
+                        border-left: 4px solid #17a2b8;
+                        padding: 12px;
+                        margin: 16px 0;
+                        border-radius: 4px;
+                        color: #0c5460;
+                        font-size: 13px;
+                    }
+                    
+                    .erreur {
+                        color: #e74c3c;
+                        font-weight: 600;
+                    }
+                    
+                    .placeholder {
+                        color: #95a5a6;
+                        font-style: italic;
+                        text-align: center;
+                        padding: 40px 20px;
+                    }
+                    
+                    ul {
+                        list-style-type: none;
+                        padding-left: 0;
+                    }
+                    
+                    li {
+                        margin-bottom: 12px;
+                    }
+                </style>
+            </head>
+            <body>
+                %s
+            </body>
+            </html>
+            """, couleurFond, couleurBordure, texteColore);
+    }
+
+    /**
+     * Colore le texte du résumé en détectant les patterns.
+     */
+    private String colorerResume(String texte) {
+        if (texte == null || texte.isBlank() || texte.contains("apparaîtra ici")) {
+            return "<div class='placeholder'>" + (texte != null ? texte : "Le résumé apparaîtra ici...") + "</div>";
+        }
+
+        if (texte.startsWith("❌")) {
+            return "<div class='erreur'>" + texte + "</div>";
+        }
+
+        // Détecter si c'est une liste numérotée (points clés)
+        // Vérifier que les numéros sont au début des lignes et suivis d'un point
+        String[] lignes = texte.split("\n");
+        int compteurLignesNumerotees = 0;
+        for (String ligne : lignes) {
+            ligne = ligne.trim();
+            if (ligne.matches("^\\d+\\.\\s+.+")) {
+                compteurLignesNumerotees++;
+            }
+        }
+        
+        // Si au moins 3 lignes commencent par un numéro, c'est une liste
+        if (compteurLignesNumerotees >= 3) {
+            return colorerPointsCles(texte);
+        }
+
+        // Sinon, c'est un résumé en paragraphes
+        return colorerParagraphes(texte);
+    }
+
+    /**
+     * Colore les points clés (liste numérotée).
+     */
+    private String colorerPointsCles(String texte) {
+        StringBuilder html = new StringBuilder();
+        html.append("<div class='titre-principal'>&#128204; Points clés essentiels</div>");
+        html.append("<ul>");
+
+        String[] lignes = texte.split("\n");
+        for (String ligne : lignes) {
+            ligne = ligne.trim();
+            if (ligne.isEmpty()) continue;
+
+            // Détecter les lignes numérotées
+            if (ligne.matches("^\\d+\\.\\s+.*")) {
+                String numero = ligne.substring(0, ligne.indexOf('.') + 1);
+                String contenu = ligne.substring(ligne.indexOf('.') + 1).trim();
+                
+                // Colorer les mots-clés dans le contenu
+                contenu = colorerMotsCles(contenu);
+                
+                html.append("<li class='point-cle'>");
+                html.append("<span class='numero'>").append(numero).append("</span>");
+                html.append(contenu);
+                html.append("</li>");
+            } else if (ligne.startsWith("[Note:")) {
+                html.append("</ul><div class='note'>").append(ligne).append("</div>");
+            }
+        }
+
+        html.append("</ul>");
+        return html.toString();
+    }
+
+    /**
+     * Colore les paragraphes du résumé.
+     */
+    private String colorerParagraphes(String texte) {
+        StringBuilder html = new StringBuilder();
+        html.append("<div class='titre-principal'>&#128221; Résumé du chapitre</div>");
+        
+        // Diviser par double saut de ligne OU par simple saut de ligne si pas de double
+        String[] paragraphes;
+        if (texte.contains("\n\n")) {
+            paragraphes = texte.split("\n\n");
+        } else {
+            // Si pas de double saut de ligne, diviser par phrase longue
+            paragraphes = texte.split("(?<=\\.)\\s+(?=[A-Z])");
+        }
+
+        for (String paragraphe : paragraphes) {
+            paragraphe = paragraphe.trim();
+            if (paragraphe.isEmpty()) continue;
+
+            if (paragraphe.startsWith("[Note:")) {
+                html.append("<div class='note'>").append(paragraphe).append("</div>");
+            } else {
+                // Colorer les mots-clés dans le paragraphe
+                String paragrapheColore = colorerMotsCles(paragraphe);
+                html.append("<div class='paragraphe'>").append(paragrapheColore).append("</div>");
+            }
+        }
+
+        return html.toString();
+    }
+
+    /**
+     * Colore les mots-clés importants dans le texte.
+     */
+    private String colorerMotsCles(String texte) {
+        // Mots-clés à mettre en évidence
+        String[] motsClesImportants = {
+            "important", "essentiel", "fondamental", "crucial", "primordial",
+            "attention", "noter", "rappel", "remarque"
+        };
+
+        String[] concepts = {
+            "concept", "notion", "principe", "théorie", "méthode",
+            "technique", "approche", "stratégie", "algorithme"
+        };
+
+        String[] exemples = {
+            "exemple", "par exemple", "comme", "tel que", "notamment",
+            "illustration", "cas pratique"
+        };
+
+        // Colorer les mots importants
+        for (String mot : motsClesImportants) {
+            texte = texte.replaceAll("(?i)\\b(" + mot + "s?)\\b", 
+                "<span class='important'>$1</span>");
+        }
+
+        // Colorer les concepts
+        for (String concept : concepts) {
+            texte = texte.replaceAll("(?i)\\b(" + concept + "s?)\\b", 
+                "<span class='concept'>$1</span>");
+        }
+
+        // Colorer les exemples
+        for (String exemple : exemples) {
+            texte = texte.replaceAll("(?i)\\b(" + exemple + ")\\b", 
+                "<span class='exemple'>$1</span>");
+        }
+
+        return texte;
+    }
 }
+
