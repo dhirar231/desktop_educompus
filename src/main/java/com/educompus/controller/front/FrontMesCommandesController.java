@@ -269,22 +269,71 @@ public class FrontMesCommandesController {
         btn.setText("⏳");
         new Thread(() -> {
             try {
+                // 1. Générer le PNG
                 GarantiePNGService svc = new GarantiePNGService();
                 File png = svc.generer(cmd, lc, produit);
+
+                // 2. Upload Cloudinary
+                String urlCloud = null;
+                String errCloud = null;
+                try {
+                    CloudinaryService cloudinary = new CloudinaryService();
+                    urlCloud = cloudinary.uploader(png, "garanties");
+                    System.out.println("[Cloudinary] Garantie uploadée : " + urlCloud);
+                } catch (Exception ex) {
+                    errCloud = ex.getMessage();
+                    System.err.println("[Cloudinary] Upload garantie échoué : " + ex.getMessage());
+                }
+
+                final String urlFinale = urlCloud;
+                final String errFinale = errCloud;
+
                 Platform.runLater(() -> {
                     btn.setDisable(false);
                     btn.setText("🛡 Garantie");
+
+                    // Ouvrir localement
                     try {
                         if (java.awt.Desktop.isDesktopSupported())
                             java.awt.Desktop.getDesktop().open(png);
                     } catch (Exception ignored) {}
-                    Alert info = new Alert(Alert.AlertType.INFORMATION);
-                    info.setTitle("Certificat de garantie");
-                    info.setHeaderText(null);
-                    info.setContentText("Certificat généré :\n" + png.getAbsolutePath());
+
+                    // Dialog avec lien Cloudinary
+                    Dialog<Void> dialog = new Dialog<>();
+                    dialog.setTitle("Certificat de garantie");
+                    dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+                    VBox content = new VBox(10);
+                    content.setPadding(new Insets(10));
+
+                    Label lblLocal = new Label("📁 Fichier local :\n" + png.getAbsolutePath());
+                    lblLocal.setWrapText(true);
+                    lblLocal.getStyleClass().add("page-subtitle");
+                    content.getChildren().add(lblLocal);
+
+                    if (urlFinale != null) {
+                        Label lblCloud = new Label("☁ Disponible en ligne :");
+                        lblCloud.getStyleClass().add("stat-title");
+                        Hyperlink lien = new Hyperlink(urlFinale);
+                        lien.setWrapText(true);
+                        lien.setMaxWidth(420);
+                        lien.setStyle("-fx-text-fill: -edu-primary; -fx-font-size: 11px;");
+                        lien.setOnAction(ev -> {
+                            try { java.awt.Desktop.getDesktop().browse(new java.net.URI(urlFinale)); }
+                            catch (Exception ignored) {}
+                        });
+                        content.getChildren().addAll(lblCloud, lien);
+                    } else if (errFinale != null) {
+                        Label lblErr = new Label("⚠ Upload échoué : " + errFinale);
+                        lblErr.getStyleClass().add("field-error");
+                        lblErr.setWrapText(true);
+                        content.getChildren().add(lblErr);
+                    }
+
+                    dialog.getDialogPane().setContent(content);
                     if (commandesBox.getScene() != null)
-                        info.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
-                    info.showAndWait();
+                        dialog.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    dialog.showAndWait();
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
