@@ -440,27 +440,8 @@ public final class BackExamQuestionsController {
     }
 
     private static void styleDialog(javafx.scene.control.Dialog<?> dialog) {
-        if (dialog == null || dialog.getDialogPane() == null) {
-            return;
-        }
-        String css = cssUri();
-        if (!css.isBlank() && !dialog.getDialogPane().getStylesheets().contains(css)) {
-            dialog.getDialogPane().getStylesheets().add(css);
-        }
-        if (!dialog.getDialogPane().getStyleClass().contains("rgb-dialog")) {
-            dialog.getDialogPane().getStyleClass().add("rgb-dialog");
-        }
-        for (ButtonType buttonType : dialog.getDialogPane().getButtonTypes()) {
-            Node button = dialog.getDialogPane().lookupButton(buttonType);
-            if (button == null) {
-                continue;
-            }
-            if (buttonType == ButtonType.OK) {
-                button.getStyleClass().add("btn-rgb");
-            } else if (buttonType == ButtonType.CANCEL) {
-                button.getStyleClass().add("btn-rgb-outline");
-            }
-        }
+        // Delegate to centralized styling utility (also sets icon)
+        try { com.educompus.util.Dialogs.style(dialog); } catch (Exception ignored) {}
     }
 
     private static String cssUri() {

@@ -14,6 +14,8 @@ public class Project {
     private boolean meetingActive;
     private int meetingStartedById;
     private String meetingStartedAt;
+    // transient flag set by controllers to indicate current user's favorite state
+    private boolean favorite;
 
     public int getId() {
         return id;
@@ -117,6 +119,14 @@ public class Project {
 
     public void setMeetingStartedAt(String meetingStartedAt) {
         this.meetingStartedAt = meetingStartedAt;
+    }
+
+    public boolean isFavorite() {
+        return favorite;
+    }
+
+    public void setFavorite(boolean favorite) {
+        this.favorite = favorite;
     }
 }
 

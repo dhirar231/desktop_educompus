@@ -6,4 +6,23 @@ tokens_calendar/
 *.class
 .idea/
 *.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+target/classes/com/educompus/service/ServiceExam.class
+
 .env
+AGENTS.md
+# Maven cache
+.m2/
+
+# Binaries
+*.jar
+
+# JCEF cache
+var/

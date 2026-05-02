@@ -4,18 +4,19 @@ import com.educompus.app.AppState;
 import com.educompus.model.AuthUser;
 import com.educompus.nav.Navigator;
 import com.educompus.service.AuthUserService;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
@@ -29,11 +30,11 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -66,17 +67,7 @@ public class BackUsersController {
     private Label statAvatar;
 
     @FXML
-    private TableView<AuthUser> tableUsers;
-    @FXML
-    private TableColumn<AuthUser, Number> colId;
-    @FXML
-    private TableColumn<AuthUser, String> colDisplayName;
-    @FXML
-    private TableColumn<AuthUser, String> colEmail;
-    @FXML
-    private TableColumn<AuthUser, String> colRole;
-    @FXML
-    private TableColumn<AuthUser, String> colActions;
+    private ListView<AuthUser> userList;
 
     private final AuthUserService service = new AuthUserService();
     private final ObservableList<AuthUser> data = FXCollections.observableArrayList();
@@ -85,91 +76,38 @@ public class BackUsersController {
 
     @FXML
     private void initialize() {
-        colId.setCellValueFactory(c -> new SimpleIntegerProperty(c.getValue().id()));
-        colDisplayName.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().displayName()));
-        colEmail.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().email()));
-        colRole.setCellValueFactory(c -> new SimpleStringProperty(roleLabel(c.getValue())));
-
-        colDisplayName.setCellFactory(col -> new TableCell<>() {
+        userList.setCellFactory(list -> new ListCell<>() {
             private final ImageView avatarView = new ImageView();
             private final Label nameLabel = new Label();
-            private final HBox container = new HBox(12, avatarView, nameLabel);
+            private final Label emailLabel = new Label();
+            private final VBox identityBox = new VBox(2, nameLabel, emailLabel);
+            private final Label roleChip = new Label();
+            private final Button btnEdit = new Button();
+            private final Button btnDelete = new Button();
+            private final HBox actionsBox = new HBox(6, btnEdit, btnDelete);
+            private final Region spacer = new Region();
+            private final HBox container = new HBox(12, avatarView, identityBox, roleChip, spacer, actionsBox);
 
             {
                 container.setAlignment(Pos.CENTER_LEFT);
+                container.setPadding(new Insets(8, 10, 8, 10));
                 avatarView.setFitWidth(32);
                 avatarView.setFitHeight(32);
                 avatarView.setPreserveRatio(true);
                 Circle clip = new Circle(16, 16, 16);
                 avatarView.setClip(clip);
-            }
 
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || getIndex() < 0) {
-                    setGraphic(null);
-                    return;
-                }
-                AuthUser user = getTableView().getItems().get(getIndex());
-                nameLabel.setText(user.displayName());
                 nameLabel.setStyle("-fx-font-weight: 700; -fx-text-fill: -edu-text;");
+                emailLabel.getStyleClass().add("page-subtitle");
 
-                String url = user.imageUrl() != null && !user.imageUrl().isBlank() ? user.imageUrl() : null;
-                try {
-                    if (url != null) {
-                        avatarView.setImage(new Image(url, true));
-                    } else {
-                        // Fallback generic user icon or letter
-                        avatarView.setImage(null);
-                    }
-                } catch (Exception e) {
-                    avatarView.setImage(null);
-                }
-                setGraphic(container);
-            }
-        });
+                roleChip.getStyleClass().add("chip");
+                roleChip.setPadding(new Insets(4, 10, 4, 10));
 
-        colRole.setCellFactory(col -> new TableCell<>() {
-            private final Label chip = new Label();
-
-            {
-                chip.getStyleClass().add("chip");
-                chip.setPadding(new javafx.geometry.Insets(4, 10, 4, 10));
-                setAlignment(Pos.CENTER_LEFT);
-            }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                    return;
-                }
-                chip.setText(item);
-                chip.getStyleClass().removeAll("chip-success", "chip-warning", "chip-info");
-
-                AuthUser user = getTableView().getItems().get(getIndex());
-                if (user.admin() && user.teacher()) {
-                    chip.getStyleClass().add("chip-warning");
-                } else if (user.admin()) {
-                    chip.getStyleClass().add("chip-info");
-                } else if (user.teacher()) {
-                    chip.getStyleClass().add("chip-success");
-                }
-                setGraphic(chip);
-            }
-        });
-
-        colActions.setCellFactory(col -> new TableCell<>() {
-            private final Button btnEdit = new Button();
-            private final Button btnDelete = new Button();
-            private final HBox box = new HBox(6, btnEdit, btnDelete);
-
-            {
                 btnEdit.getStyleClass().add("btn-icon");
                 btnDelete.getStyleClass().add("btn-icon");
-                box.setAlignment(Pos.CENTER);
+                actionsBox.setAlignment(Pos.CENTER);
+
+                HBox.setHgrow(spacer, Priority.ALWAYS);
 
                 SVGPath editIcon = new SVGPath();
                 editIcon.setContent(
@@ -187,15 +125,43 @@ public class BackUsersController {
                 deleteIcon.setFill(Color.web("#e11d48"));
                 btnDelete.setGraphic(deleteIcon);
                 btnDelete.setTooltip(new Tooltip("Supprimer l'utilisateur"));
-
-                btnEdit.setOnAction(e -> openEditDialog(getTableView().getItems().get(getIndex())));
-                btnDelete.setOnAction(e -> deleteUser(getTableView().getItems().get(getIndex())));
             }
 
             @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : box);
+            protected void updateItem(AuthUser user, boolean empty) {
+                super.updateItem(user, empty);
+                if (empty || user == null) {
+                    setGraphic(null);
+                    return;
+                }
+                nameLabel.setText(user.displayName());
+                emailLabel.setText(user.email());
+
+                roleChip.setText(roleLabel(user));
+                roleChip.getStyleClass().removeAll("chip-success", "chip-warning", "chip-info");
+                if (user.admin() && user.teacher()) {
+                    roleChip.getStyleClass().add("chip-warning");
+                } else if (user.admin()) {
+                    roleChip.getStyleClass().add("chip-info");
+                } else if (user.teacher()) {
+                    roleChip.getStyleClass().add("chip-success");
+                }
+
+                btnEdit.setOnAction(e -> openEditDialog(user));
+                btnDelete.setOnAction(e -> deleteUser(user));
+
+                String url = user.imageUrl() != null && !user.imageUrl().isBlank() ? user.imageUrl() : null;
+                try {
+                    if (url != null) {
+                        avatarView.setImage(new Image(url, true));
+                    } else {
+                        // Fallback generic user icon or letter
+                        avatarView.setImage(null);
+                    }
+                } catch (Exception e) {
+                    avatarView.setImage(null);
+                }
+                setGraphic(container);
             }
         });
 
@@ -208,13 +174,13 @@ public class BackUsersController {
                 "Nom (Z-A)",
                 "Email (A-Z)",
                 "Role (admin -> user)",
-                "Plus recent (id desc)",
-                "Plus ancien (id asc)");
-        sortBy.getSelectionModel().select("Plus recent (id desc)");
+                "Plus recent",
+                "Plus ancien");
+        sortBy.getSelectionModel().select("Plus recent");
 
         filtered = new FilteredList<>(data, u -> true);
         sorted = new SortedList<>(filtered);
-        tableUsers.setItems(sorted);
+        userList.setItems(sorted);
 
         loadUsers();
     }
@@ -225,7 +191,7 @@ public class BackUsersController {
         fileChooser.setTitle("Sélectionner le fichier CSV des utilisateurs");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier CSV", "*.csv"));
 
-        File file = fileChooser.showOpenDialog(tableUsers.getScene().getWindow());
+        File file = fileChooser.showOpenDialog(userList.getScene().getWindow());
         if (file == null) {
             return;
         }
@@ -241,8 +207,8 @@ public class BackUsersController {
             stage.setTitle("Aperçu de l'importation");
             stage.initModality(Modality.APPLICATION_MODAL);
             Scene scene = new Scene(root);
-            if (tableUsers.getScene() != null) {
-                scene.getStylesheets().addAll(tableUsers.getScene().getStylesheets());
+            if (userList.getScene() != null) {
+                scene.getStylesheets().addAll(userList.getScene().getStylesheets());
             }
             stage.setScene(scene);
             stage.setMinWidth(920);
@@ -265,7 +231,7 @@ public class BackUsersController {
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier CSV", "*.csv"));
         fileChooser.setInitialFileName("utilisateurs_educampus.csv");
 
-        File file = fileChooser.showSaveDialog(tableUsers.getScene().getWindow());
+        File file = fileChooser.showSaveDialog(userList.getScene().getWindow());
         if (file == null) {
             return;
         }
@@ -309,7 +275,7 @@ public class BackUsersController {
     private void onResetFilters() {
         searchField.clear();
         roleFilter.getSelectionModel().selectFirst();
-        sortBy.getSelectionModel().select("Plus recent (id desc)");
+        sortBy.getSelectionModel().select("Plus recent");
         applyFilters();
         applySort();
     }
@@ -327,8 +293,8 @@ public class BackUsersController {
             stage.setTitle("Ajouter un utilisateur");
             stage.initModality(Modality.APPLICATION_MODAL);
             Scene scene = new Scene(root);
-            if (tableUsers.getScene() != null) {
-                scene.getStylesheets().addAll(tableUsers.getScene().getStylesheets());
+            if (userList.getScene() != null) {
+                scene.getStylesheets().addAll(userList.getScene().getStylesheets());
             }
             stage.setScene(scene);
             stage.setMinWidth(620);
@@ -351,8 +317,8 @@ public class BackUsersController {
             stage.setTitle("Modifier un utilisateur");
             stage.initModality(Modality.APPLICATION_MODAL);
             Scene scene = new Scene(root);
-            if (tableUsers.getScene() != null) {
-                scene.getStylesheets().addAll(tableUsers.getScene().getStylesheets());
+            if (userList.getScene() != null) {
+                scene.getStylesheets().addAll(userList.getScene().getStylesheets());
             }
             stage.setScene(scene);
             stage.setMinWidth(620);
@@ -425,8 +391,7 @@ public class BackUsersController {
             boolean textMatch = term.isBlank()
                     || user.displayName().toLowerCase().contains(term)
                     || user.email().toLowerCase().contains(term)
-                    || roleLabel(user).toLowerCase().contains(term)
-                    || String.valueOf(user.id()).contains(term);
+                    || roleLabel(user).toLowerCase().contains(term);
 
             boolean roleMatch = switch (selectedRole) {
                 case "Administrateurs" -> user.admin() && !user.teacher();
@@ -443,7 +408,7 @@ public class BackUsersController {
     }
 
     private void applySort() {
-        String selected = sortBy.getValue() == null ? "Plus recent (id desc)" : sortBy.getValue();
+        String selected = sortBy.getValue() == null ? "Plus recent" : sortBy.getValue();
         Comparator<AuthUser> comparator = switch (selected) {
             case "Nom (A-Z)" -> Comparator.comparing(u -> safe(u.displayName()).toLowerCase());
             case "Nom (Z-A)" -> Comparator.comparing((AuthUser u) -> safe(u.displayName()).toLowerCase()).reversed();
@@ -451,11 +416,10 @@ public class BackUsersController {
             case "Role (admin -> user)" -> Comparator
                     .comparingInt(this::roleRank)
                     .thenComparing(u -> safe(u.displayName()).toLowerCase());
-            case "Plus ancien (id asc)" -> Comparator.comparingInt(AuthUser::id);
+            case "Plus ancien" -> Comparator.comparingInt(AuthUser::id);
             default -> Comparator.comparingInt(AuthUser::id).reversed();
         };
 
-        tableUsers.getSortOrder().clear();
         sorted.setComparator(comparator);
     }
 
@@ -507,8 +471,8 @@ public class BackUsersController {
     }
 
     private void styleAlert(Alert alert) {
-        if (tableUsers.getScene() != null) {
-            alert.getDialogPane().getStylesheets().addAll(tableUsers.getScene().getStylesheets());
+        if (userList.getScene() != null) {
+            alert.getDialogPane().getStylesheets().addAll(userList.getScene().getStylesheets());
         }
     }
 }
