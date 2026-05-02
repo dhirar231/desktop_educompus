@@ -1,0 +1,11 @@
+﻿public final class FrontExamsController {
+    @FXML
+    
+            fallback.setVisible(true);
+            fallback.setManaged(true);
+            quizTimerLabel = fallback;
+            try {
+                if (quizProgressLabel != null && quizProgressLabel.getParent() instanceof HBox hb) {
+                    hb.getChildren().add(fallback);
+                    HBox.setHgrow(fallback, Priority.NEVER);
+                }

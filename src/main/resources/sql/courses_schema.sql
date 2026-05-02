@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS cours (
     image VARCHAR(255),
     date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     nom_formateur VARCHAR(255),
-    duree_totale_heures INT NOT NULL DEFAULT 0
+    duree_totale_heures INT NOT NULL DEFAULT 0,
+    drive_folder_id VARCHAR(128)
 );
 
 CREATE TABLE IF NOT EXISTS chapitre (

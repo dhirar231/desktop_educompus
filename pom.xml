@@ -13,8 +13,18 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <javafx.version>17.0.10</javafx.version>
+        <commons-io.version>2.16.1</commons-io.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -56,14 +66,12 @@
             <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
-        <!-- In-memory DB for repository unit tests -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>2.2.222</version>
             <scope>test</scope>
         </dependency>
-        <!-- Mockito for mocking collaborators in unit tests -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -76,19 +84,89 @@
             <version>5.6.0</version>
             <scope>test</scope>
         </dependency>
-        <!-- AssertJ fluent assertions -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.24.2</version>
             <scope>test</scope>
         </dependency>
-        <!-- H2 in-memory DB for unit tests (removed) -->
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
+            <version>1.8.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Apache POI - Excel support -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+
         <!-- PDF generation for certificates -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>2.0.29</version>
+        </dependency>
+
+        <!-- Google API Client + Calendar + Drive -->
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.oauth-client</groupId>
+            <artifactId>google-oauth-client-jetty</artifactId>
+            <version>1.36.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-calendar</artifactId>
+            <version>v3-rev20240111-2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-drive</artifactId>
+            <version>v3-rev20240123-2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.http-client</groupId>
+            <artifactId>google-http-client-gson</artifactId>
+            <version>1.44.1</version>
+        </dependency>
+
+        <!-- Gson JSON serialization -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+        <!-- JavaFX Swing interop (SwingFXUtils) -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- ZXing QR code generation -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.3</version>
         </dependency>
 
         <!-- Stripe payments (server-side API calls; keep secret key out of client code) -->
@@ -114,6 +192,11 @@
                 <version>3.2.5</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <environmentVariables>
+                        <TEST_USE_LOCAL_MYSQL>1</TEST_USE_LOCAL_MYSQL>
+                        <TEST_DB_USER>root</TEST_DB_USER>
+                        <TEST_DB_PASS></TEST_DB_PASS>
+                    </environmentVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -124,17 +207,14 @@
                     <mainClass>com.educompus.app.PreviewApp</mainClass>
                 </configuration>
             </plugin>
-
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
                 <configuration>
-                    <environmentVariables>
-                        <TEST_USE_LOCAL_MYSQL>1</TEST_USE_LOCAL_MYSQL>
-                        <TEST_DB_USER>root</TEST_DB_USER>
-                        <TEST_DB_PASS></TEST_DB_PASS>
-                    </environmentVariables>
+                    <mainClass>com.educompus.app.PreviewLauncher</mainClass>
+                    <classpathScope>runtime</classpathScope>
+                    <fork>true</fork>
                 </configuration>
             </plugin>
         </plugins>

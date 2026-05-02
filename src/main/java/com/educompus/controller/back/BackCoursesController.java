@@ -4,13 +4,22 @@ import com.educompus.model.Chapitre;
 import com.educompus.model.Cours;
 import com.educompus.model.Td;
 import com.educompus.model.VideoExplicative;
+import com.educompus.model.SessionLive;
+import com.educompus.model.SessionStatut;
 import com.educompus.repository.CourseManagementRepository;
+import com.educompus.repository.SessionLiveRepository;
 import com.educompus.service.CoursValidationService;
 import com.educompus.service.FormValidator;
+import com.educompus.service.SessionLiveMetierService;
+import com.educompus.service.SessionLiveValidationService;
+import com.educompus.service.GoogleCalendarService;
+import com.educompus.service.SessionNotificationService;
 import com.educompus.service.ValidationResult;
+import com.educompus.service.AIVideoGenerationService;
 import com.educompus.util.Dialogs;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -19,8 +28,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Hyperlink;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TabPane;
-import javafx.scene.control.Control;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -34,11 +49,14 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import java.awt.Desktop;
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -102,6 +120,23 @@ public final class BackCoursesController {
             });
         }
         refreshAll();
+        setupListViews();
+        setupSessionFilters();
+        setupCalendar();
+        setupAutoStatusCallback();
+    }
+
+    private void setupSessionFilters() {
+    }
+
+    private void setupCalendar() {
+    }
+
+    private void setupAutoStatusCallback() {
+    }
+
+    @FXML
+    private void openGoogleDriveManager() {
     }
 
     private void setupListViews() {
@@ -110,29 +145,90 @@ public final class BackCoursesController {
             coursListView.setCellFactory(lv -> new ListCell<>() {
                 private final Label titleLbl = new Label();
                 private final Label metaLbl = new Label();
+                private final Label driveLbl = new Label(); // Nouveau : indicateur Google Drive
                 private final Button editBtn = new Button("✏️");
                 private final Button delBtn = new Button("🗑️");
+                private final Button driveBtn = new Button("☁️"); // Nouveau : bouton Drive
                 private final HBox row;
                 {
                     titleLbl.getStyleClass().add("project-card-title");
                     metaLbl.getStyleClass().add("page-subtitle");
                     metaLbl.setStyle("-fx-font-size: 11px;");
+                    driveLbl.getStyleClass().add("chip");
+                    driveLbl.setStyle("-fx-font-size: 10px; -fx-font-weight: 700;");
                     editBtn.getStyleClass().add("btn-rgb-outline");
                     delBtn.getStyleClass().add("btn-danger");
+                    driveBtn.getStyleClass().add("btn-rgb-compact");
+                    driveBtn.setTooltip(new javafx.scene.control.Tooltip("Ouvrir dans Google Drive"));
+
                     VBox info = new VBox(2, titleLbl, metaLbl);
                     HBox.setHgrow(info, Priority.ALWAYS);
-                    row = new HBox(10, info, editBtn, delBtn);
+                    row = new HBox(10, info, driveLbl, driveBtn, editBtn, delBtn);
                     row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                     row.setPadding(new javafx.geometry.Insets(8, 12, 8, 12));
                     editBtn.setOnAction(e -> { if (getItem() != null) editCours(getItem()); });
                     delBtn.setOnAction(e -> { if (getItem() != null) deleteCours(getItem()); });
+                    driveBtn.setOnAction(e -> {
+                        Cours cours = getItem();
+                        if (cours != null) {
+                            // Si déjà sur Drive, ouvrir le lien
+                            if (cours.getDriveLink() != null && !cours.getDriveLink().isBlank()) {
+                                try {
+                                    java.awt.Desktop.getDesktop().browse(java.net.URI.create(cours.getDriveLink()));
+                                } catch (Exception ex) {
+                                    error("Erreur ouverture Drive", ex);
+                                }
+                            }
+                            // Si en attente, afficher le statut
+                            else if (cours.getDriveFolderId() != null && cours.getDriveFolderId().equals("EN_ATTENTE")) {
+                                info("En attente", "Ce cours est en attente d'ajout dans Google Drive. Veuillez patienter...");
+                            }
+                            // Sinon, proposer d'ajouter dans Google Drive
+                            else {
+                                showGoogleDriveMenu(cours);
+                            }
+                        }
+                    });
                 }
                 @Override protected void updateItem(Cours c, boolean empty) {
                     super.updateItem(c, empty);
                     if (empty || c == null) { setGraphic(null); return; }
                     titleLbl.setText(safe(c.getTitre()));
                     metaLbl.setText(safe(c.getDomaine()) + "  •  " + safe(c.getNiveau()) + "  •  " + safe(c.getNomFormateur()) + "  •  " + c.getDureeTotaleHeures() + "h  •  " + c.getChapitreCount() + " chap.");
+
+                    // Affichage du statut Google Drive
+                    if (c.getDriveLink() != null && !c.getDriveLink().isBlank()) {
+                        driveLbl.setText("☁️ Sur Drive");
+                        driveLbl.getStyleClass().removeAll("chip-warning", "chip-danger");
+                        driveLbl.getStyleClass().add("chip-success");
+                        driveBtn.setDisable(false);
+                        driveBtn.setText("🌐");
+                    } else if (c.getDriveFolderId() != null && c.getDriveFolderId().equals("EN_ATTENTE")) {
+                        driveLbl.setText("⏳ En attente");
+                        driveLbl.getStyleClass().removeAll("chip-success", "chip-danger");
+                        driveLbl.getStyleClass().add("chip-warning");
+                        driveBtn.setDisable(true);
+                        driveBtn.setText("⏳");
+                    } else {
+                        driveLbl.setText("📱 Local");
+                        driveLbl.getStyleClass().removeAll("chip-success", "chip-warning");
+                        driveLbl.getStyleClass().add("chip-info");
+                        driveBtn.setDisable(true);
+                        driveBtn.setText("☁️");
+                    }
+
                     setGraphic(row);
+                }
+            });
+            // Double-click to add chapter
+            coursListView.setOnMouseClicked(e -> {
+                if (e.getClickCount() == 2 && coursListView.getSelectionModel().getSelectedItem() != null) {
+                    Cours selectedCours = coursListView.getSelectionModel().getSelectedItem();
+                    FormResult<Chapitre> result = showChapitreForm(null, selectedCours);
+                    if (!result.saved()) return;
+                    repository.createChapitre(result.value());
+                    refreshAll();
+                    info("Succès", "Chapitre créé avec succès");
                 }
             });
         }
@@ -167,6 +263,13 @@ public final class BackCoursesController {
                     titleLbl.setText(safe(ch.getTitre()));
                     metaLbl.setText(safe(ch.getCoursTitre()) + "  •  " + safe(ch.getDomaine()) + "  •  " + ch.getTdCount() + " TD  •  " + ch.getVideoCount() + " vidéos");
                     setGraphic(row);
+                }
+            });
+            // Double-click to add TD or Video
+            chapitreListView.setOnMouseClicked(e -> {
+                if (e.getClickCount() == 2 && chapitreListView.getSelectionModel().getSelectedItem() != null) {
+                    Chapitre selectedChapitre = chapitreListView.getSelectionModel().getSelectedItem();
+                    showChapitreActionMenu(selectedChapitre, e);
                 }
             });
         }
@@ -214,6 +317,7 @@ public final class BackCoursesController {
             videoListView.setCellFactory(lv -> new ListCell<>() {
                 private final Label titleLbl = new Label();
                 private final Label metaLbl = new Label();
+                private final Label statusLbl = new Label(); // Nouveau : statut AI
                 private final Button playBtn = new Button("▶");
                 private final Button editBtn = new Button("✏️");
                 private final Button delBtn = new Button("🗑️");
@@ -222,12 +326,14 @@ public final class BackCoursesController {
                     titleLbl.getStyleClass().add("project-card-title");
                     metaLbl.getStyleClass().add("page-subtitle");
                     metaLbl.setStyle("-fx-font-size: 11px;");
+                    statusLbl.getStyleClass().add("chip");
+                    statusLbl.setStyle("-fx-font-size: 10px; -fx-font-weight: 700;");
                     playBtn.getStyleClass().add("btn-rgb-compact");
                     editBtn.getStyleClass().add("btn-rgb-outline");
                     delBtn.getStyleClass().add("btn-danger");
                     VBox info = new VBox(2, titleLbl, metaLbl);
                     HBox.setHgrow(info, Priority.ALWAYS);
-                    row = new HBox(10, info, playBtn, editBtn, delBtn);
+                    row = new HBox(10, info, statusLbl, playBtn, editBtn, delBtn);
                     row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                     row.setPadding(new javafx.geometry.Insets(8, 12, 8, 12));
                     playBtn.setOnAction(e -> {
@@ -243,7 +349,55 @@ public final class BackCoursesController {
                     if (empty || v == null) { setGraphic(null); return; }
                     titleLbl.setText(safe(v.getTitre()));
                     metaLbl.setText(safe(v.getCoursTitre()) + "  •  " + safe(v.getChapitreTitre()) + "  •  " + safe(v.getDomaine()));
-                    playBtn.setDisable(v.getUrlVideo() == null || v.getUrlVideo().isBlank());
+
+                    // Affichage du statut selon le type de vidéo
+                    if (v.isAIGenerated()) {
+                        String status = safe(v.getGenerationStatus());
+                        switch (status) {
+                            case "PENDING" -> {
+                                statusLbl.setText("🤖 En attente");
+                                statusLbl.getStyleClass().removeAll("chip-success", "chip-danger", "chip-warning");
+                                statusLbl.getStyleClass().add("chip-warning");
+                                playBtn.setDisable(true);
+                                playBtn.setText("⏳");
+                            }
+                            case "PROCESSING" -> {
+                                statusLbl.setText("🤖 Génération...");
+                                statusLbl.getStyleClass().removeAll("chip-success", "chip-danger", "chip-warning");
+                                statusLbl.getStyleClass().add("chip-info");
+                                playBtn.setDisable(true);
+                                playBtn.setText("⚙️");
+                            }
+                            case "COMPLETED" -> {
+                                statusLbl.setText("🤖 AI Générée");
+                                statusLbl.getStyleClass().removeAll("chip-success", "chip-danger", "chip-warning", "chip-info");
+                                statusLbl.getStyleClass().add("chip-success");
+                                playBtn.setDisable(v.getUrlVideo() == null || v.getUrlVideo().isBlank());
+                                playBtn.setText("▶");
+                            }
+                            case "ERROR" -> {
+                                statusLbl.setText("❌ Erreur AI");
+                                statusLbl.getStyleClass().removeAll("chip-success", "chip-warning", "chip-info");
+                                statusLbl.getStyleClass().add("chip-danger");
+                                playBtn.setDisable(true);
+                                playBtn.setText("❌");
+                            }
+                            default -> {
+                                statusLbl.setText("🤖 AI");
+                                statusLbl.getStyleClass().removeAll("chip-success", "chip-danger", "chip-warning", "chip-info");
+                                statusLbl.getStyleClass().add("chip-info");
+                                playBtn.setDisable(v.getUrlVideo() == null || v.getUrlVideo().isBlank());
+                                playBtn.setText("▶");
+                            }
+                        }
+                    } else {
+                        statusLbl.setText("🎬 Manuelle");
+                        statusLbl.getStyleClass().removeAll("chip-success", "chip-danger", "chip-warning", "chip-info");
+                        statusLbl.getStyleClass().add("chip-info");
+                        playBtn.setDisable(v.getUrlVideo() == null || v.getUrlVideo().isBlank());
+                        playBtn.setText("▶");
+                    }
+
                     setGraphic(row);
                 }
             });
@@ -256,6 +410,7 @@ public final class BackCoursesController {
         reloadChapitres();
         reloadTds();
         reloadVideos();
+        reloadSessions();
     }
 
     private void reloadCours() {
@@ -284,6 +439,9 @@ public final class BackCoursesController {
         applyVideoSort();
         if (videoListView != null) { videoListView.setItems(videoItems); videoListView.refresh(); }
         if (statsVideoLabel != null) statsVideoLabel.setText(String.valueOf(videoItems.size()));
+    }
+
+    private void reloadSessions() {
     }
 
     private void setupSorts() {
@@ -421,6 +579,16 @@ public final class BackCoursesController {
         if (!result.saved()) return;
         try {
             repository.updateCours(result.value());
+
+            // Logique Métier Avancé : Google Drive
+            if (result.flag() && result.value().getImage() != null && !result.value().getImage().startsWith("auto:")) {
+                if (result.value().getDriveFolderId() == null) {
+                    result.value().setDriveFolderId("EN_ATTENTE");
+                }
+            } else {
+                result.value().setDriveFolderId(null);
+            }
+
             info("✅ Cours modifié", "Le cours « " + safe(result.value().getTitre()) + " » a été modifié avec succès.");
             refreshAll();
         } catch (Exception e) { error("Erreur modification cours", e); }
@@ -437,6 +605,384 @@ public final class BackCoursesController {
         } catch (Exception e) {
             error("Erreur — Modification chapitre", e);
         }
+    }
+
+    private void showGoogleDriveMenu(Cours cours) {
+        ContextMenu menu = new ContextMenu();
+
+        MenuItem addToDriveItem = new MenuItem("☁️ Ajouter dans Google Drive");
+        addToDriveItem.setOnAction(e -> {
+            if (!confirm("Ajouter dans Google Drive",
+                    "Voulez-vous ajouter le cours « " + safe(cours.getTitre()) + " » dans Google Drive ?\n\n" +
+                    "Cela créera un dossier pour ce cours et y ajoutera tous les chapitres, TDs et vidéos.")) {
+                return;
+            }
+
+            try {
+                // Marquer le cours comme en attente d'ajout dans Google Drive
+                cours.setDriveFolderId("EN_ATTENTE");
+                repository.updateCours(cours);
+
+                info("✅ Ajout en cours", "Le cours « " + safe(cours.getTitre()) + " » a été marqué pour ajout dans Google Drive.\n\n" +
+                        "Cela peut prendre quelques minutes. Veuillez rafraîchir la liste pour voir le statut.");
+
+                // Lancer la synchronisation en arrière-plan
+                lancerSynchronisationGoogleDrive(cours);
+
+                refreshAll();
+            } catch (Exception ex) {
+                error("Erreur — Ajout Google Drive", ex);
+            }
+        });
+
+        MenuItem selectFolderItem = new MenuItem("📁 Sélectionner un dossier Google Drive");
+        selectFolderItem.setOnAction(e -> {
+            // Ouvrir un dialogue pour sélectionner un dossier
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Sélectionner un dossier Google Drive");
+            dialog.setHeaderText("Entrez l'ID ou le lien du dossier Google Drive");
+            dialog.setContentText("ID du dossier ou lien complet :");
+
+            var result = dialog.showAndWait();
+            if (result.isPresent() && !result.get().isBlank()) {
+                String folderId = extractFolderIdFromLink(result.get());
+
+                try {
+                    cours.setDriveFolderId(folderId);
+                    repository.updateCours(cours);
+
+                    info("✅ Dossier sélectionné", "Le dossier Google Drive a été associé au cours « " + safe(cours.getTitre()) + " ».");
+                    refreshAll();
+                } catch (Exception ex) {
+                    error("Erreur — Sélection dossier", ex);
+                }
+            }
+        });
+
+        MenuItem viewDriveItem = new MenuItem("🌐 Ouvrir Google Drive");
+        viewDriveItem.setOnAction(e -> {
+            try {
+                // Ouvrir la page principale de Google Drive
+                java.awt.Desktop.getDesktop().browse(java.net.URI.create("https://drive.google.com/drive/my-drive"));
+            } catch (Exception ex) {
+                error("Erreur ouverture Drive", ex);
+            }
+        });
+
+        menu.getItems().addAll(addToDriveItem, new SeparatorMenuItem(), selectFolderItem, viewDriveItem);
+        menu.show(coursListView, 100, 100);
+    }
+
+    private void lancerSynchronisationGoogleDrive(Cours cours) {
+        javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    System.out.println("📤 Synchronisation Google Drive pour: " + cours.getTitre());
+                    updateMessage("Initialisation de Google Drive...");
+
+                    // Créer le service Google Drive
+                    com.educompus.service.GoogleDriveService driveService =
+                        new com.educompus.service.GoogleDriveService();
+
+                    updateMessage("Création du dossier pour le cours...");
+
+                    // Créer un dossier pour le cours sur Google Drive
+                    String coursFolderId = driveService.getOrCreateCoursFolder(cours.getTitre());
+
+                    updateMessage("Récupération des chapitres...");
+
+                    // Récupérer tous les chapitres du cours
+                    java.util.List<Chapitre> chapitres = repository.listChapitresByCoursId(cours.getId());
+
+                    int totalItems = chapitres.size();
+                    int processedItems = 0;
+
+                    // Pour chaque chapitre, créer un sous-dossier
+                    for (Chapitre chapitre : chapitres) {
+                        updateMessage("Traitement du chapitre: " + chapitre.getTitre() +
+                                    " (" + (processedItems + 1) + "/" + totalItems + ")");
+
+                        // Créer le sous-dossier du chapitre
+                        String chapitreFolderId = driveService.getOrCreateSubFolder(
+                            coursFolderId,
+                            sanitizeFolderName(chapitre.getTitre())
+                        );
+
+                        // Uploader le fichier PDF du chapitre si disponible
+                        if (chapitre.getFichierC() != null && !chapitre.getFichierC().isBlank()) {
+                            java.io.File fichier = new java.io.File(chapitre.getFichierC());
+                            if (fichier.exists()) {
+                                updateMessage("Upload du chapitre: " + chapitre.getTitre());
+                                driveService.uploadChapitreFile(
+                                    chapitre.getFichierC(),
+                                    fichier.getName(),
+                                    cours.getTitre(),
+                                    chapitre.getTitre()
+                                );
+                            }
+                        }
+
+                        // Uploader les TDs du chapitre
+                        java.util.List<Td> allTds = repository.listTds("");
+                        for (Td td : allTds) {
+                            if (td.getChapitreId() == chapitre.getId()) {
+                                if (td.getFichier() != null && !td.getFichier().isBlank()) {
+                                    java.io.File fichier = new java.io.File(td.getFichier());
+                                    if (fichier.exists()) {
+                                        updateMessage("Upload du TD: " + td.getTitre());
+                                        driveService.uploadTdFile(
+                                            td.getFichier(),
+                                            fichier.getName(),
+                                            cours.getTitre(),
+                                            chapitre.getTitre()
+                                        );
+                                    }
+                                }
+                            }
+                        }
+
+                        processedItems++;
+                        updateProgress(processedItems, totalItems);
+                    }
+
+                    updateMessage("Finalisation...");
+
+                    // Générer le lien vers le dossier du cours
+                    String driveLink = "https://drive.google.com/drive/folders/" + coursFolderId;
+
+                    // Mettre à jour le cours avec le lien Google Drive
+                    cours.setDriveFolderId(coursFolderId);
+                    cours.setDriveLink(driveLink);
+                    repository.updateCours(cours);
+
+                    System.out.println("✅ Synchronisation terminée pour: " + cours.getTitre());
+                    System.out.println("📁 Lien Drive: " + driveLink);
+
+                    javafx.application.Platform.runLater(() -> {
+                        info("✅ Synchronisation terminée",
+                             "Le cours « " + safe(cours.getTitre()) + " » a été ajouté à Google Drive avec succès!\n\n" +
+                             "Dossier créé avec " + chapitres.size() + " chapitre(s).\n\n" +
+                             "Cliquez sur le bouton ☁️ du cours pour ouvrir le dossier Google Drive.");
+                        refreshAll();
+                    });
+                } catch (Exception e) {
+                    System.err.println("❌ Erreur synchronisation: " + e.getMessage());
+                    e.printStackTrace();
+
+                    // En cas d'erreur, réinitialiser le statut
+                    cours.setDriveFolderId(null);
+                    try {
+                        repository.updateCours(cours);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+                    javafx.application.Platform.runLater(() -> {
+                        String errorMsg = e.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("credentials") || errorMsg.contains("FileNotFoundException"))) {
+                            // Créer un dialogue personnalisé pour l'erreur de credentials
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Erreur d'authentification");
+                            alert.setHeaderText("Configuration Google Drive requise");
+
+                            VBox content = new VBox(10);
+                            content.setPadding(new javafx.geometry.Insets(10));
+
+                            Label msg1 = new Label("Veuillez configurer le fichier credentials.json pour Google Drive.");
+                            msg1.setWrapText(true);
+                            msg1.setStyle("-fx-font-size: 13px;");
+
+                            Label msg2 = new Label("📁 Emplacement requis : src/main/resources/credentials.json");
+                            msg2.setWrapText(true);
+                            msg2.setStyle("-fx-font-size: 12px; -fx-text-fill: #666; -fx-font-family: monospace;");
+
+                            Label msg3 = new Label("📚 Guide rapide (5 minutes) :");
+                            msg3.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
+
+                            javafx.scene.control.Hyperlink link1 = new javafx.scene.control.Hyperlink("GOOGLE_DRIVE_QUICK_SETUP.md");
+                            link1.setOnAction(ev -> {
+                                try {
+                                    java.awt.Desktop.getDesktop().open(new java.io.File("GOOGLE_DRIVE_QUICK_SETUP.md"));
+                                } catch (Exception ex) {
+                                    System.err.println("Impossible d'ouvrir le fichier: " + ex.getMessage());
+                                }
+                            });
+
+                            Label msg4 = new Label("📖 Documentation complète :");
+                            msg4.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
+
+                            javafx.scene.control.Hyperlink link2 = new javafx.scene.control.Hyperlink("docs/GOOGLE_DRIVE_SETUP.md");
+                            link2.setOnAction(ev -> {
+                                try {
+                                    java.awt.Desktop.getDesktop().open(new java.io.File("docs/GOOGLE_DRIVE_SETUP.md"));
+                                } catch (Exception ex) {
+                                    System.err.println("Impossible d'ouvrir le fichier: " + ex.getMessage());
+                                }
+                            });
+
+                            Label msg5 = new Label("🌐 Console Google Cloud :");
+                            msg5.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
+
+                            javafx.scene.control.Hyperlink link3 = new javafx.scene.control.Hyperlink("https://console.cloud.google.com/");
+                            link3.setOnAction(ev -> {
+                                try {
+                                    java.awt.Desktop.getDesktop().browse(java.net.URI.create("https://console.cloud.google.com/"));
+                                } catch (Exception ex) {
+                                    System.err.println("Impossible d'ouvrir le lien: " + ex.getMessage());
+                                }
+                            });
+
+                            content.getChildren().addAll(msg1, msg2, new javafx.scene.control.Separator(),
+                                                        msg3, link1, msg4, link2, msg5, link3);
+
+                            alert.getDialogPane().setContent(content);
+                            alert.getDialogPane().setPrefWidth(500);
+                            Dialogs.style(alert);
+                            alert.showAndWait();
+                        } else {
+                            error("Erreur synchronisation", e);
+                        }
+                        refreshAll();
+                    });
+                }
+                return null;
+            }
+        };
+
+        new Thread(task).setDaemon(true);
+        new Thread(task).start();
+    }
+
+    private String sanitizeFolderName(String name) {
+        if (name == null) return "Sans_titre";
+        // Remplacer les caractères invalides pour les noms de dossiers
+        return name.replaceAll("[/\\\\:*?\"<>|]", "_").trim();
+    }
+
+    private String extractFolderIdFromLink(String input) {
+        // Extraire l'ID du dossier à partir d'un lien Google Drive
+        // Format: https://drive.google.com/drive/folders/FOLDER_ID
+        if (input.contains("/folders/")) {
+            String[] parts = input.split("/folders/");
+            if (parts.length > 1) {
+                return parts[1].split("[?#]")[0]; // Enlever les paramètres
+            }
+        }
+        // Si c'est déjà un ID, le retourner tel quel
+        return input.trim();
+    }
+
+    private void showChapitreActionMenu(Chapitre chapitre, javafx.scene.input.MouseEvent event) {
+        ContextMenu menu = new ContextMenu();
+
+        MenuItem addTdItem = new MenuItem("➕ Ajouter un TD");
+        addTdItem.setOnAction(e -> {
+            FormResult<Td> result = showTdForm(null, chapitre);
+            if (!result.saved()) return;
+            try {
+                repository.createTd(result.value());
+                info("✅ TD créé", "Le TD a été créé avec succès");
+                refreshAll();
+            } catch (Exception ex) {
+                error("Erreur — Création TD", ex);
+            }
+        });
+
+        MenuItem addVideoItem = new MenuItem("➕ Ajouter une vidéo explicative");
+        addVideoItem.setOnAction(e -> {
+            FormResult<VideoExplicative> result = showVideoForm(null, chapitre);
+            if (!result.saved()) return;
+            try {
+                int videoId = repository.createVideoExplicative(result.value());
+
+                // Si c'est une vidéo AI, déclencher la génération
+                if (result.flag()) {
+                    info("✅ Vidéo créée", "La vidéo explicative a été créée avec succès.\nGénération AI en cours...");
+
+                    // Récupérer la vidéo créée
+                    VideoExplicative video = repository.getVideoExplicativeById(videoId);
+                    if (video != null) {
+                        // Déclencher la génération asynchrone
+                        lancerGenerationVideoAI(video);
+                    }
+                } else {
+                    info("✅ Vidéo créée", "La vidéo explicative a été créée avec succès");
+                }
+
+                refreshAll();
+            } catch (Exception ex) {
+                error("Erreur — Création vidéo", ex);
+            }
+        });
+
+        menu.getItems().addAll(addTdItem, addVideoItem);
+        menu.show(chapitreListView, event.getScreenX(), event.getScreenY());
+    }
+
+    private void lancerGenerationVideoAI(VideoExplicative video) {
+        javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    System.out.println("🎬 Démarrage génération vidéo AI: " + video.getTitre());
+
+                    // Utiliser le service de génération AI
+                    var result = AIVideoGenerationService.generateVideo(
+                        video.getDescription(),
+                        video.getCoursTitre(),
+                        video.getNiveau(),
+                        video.getDomaine()
+                    ).get(); // Attendre le résultat
+
+                    if (result.isSuccess()) {
+                        // Mettre à jour la vidéo avec l'URL générée
+                        video.setUrlVideo(result.getVideoUrl());
+                        video.setGenerationStatus("COMPLETED");
+                        video.setAiScript(result.getScript());
+                        repository.updateVideoExplicative(video);
+
+                        System.out.println("✅ Vidéo générée avec succès: " + result.getVideoUrl());
+
+                        javafx.application.Platform.runLater(() -> {
+                            info("✅ Génération terminée", "La vidéo AI a été générée avec succès!");
+                            refreshAll();
+                        });
+                    } else {
+                        // Erreur de génération
+                        video.setGenerationStatus("ERROR");
+                        repository.updateVideoExplicative(video);
+
+                        System.err.println("❌ Erreur génération: " + result.getErrorMessage());
+
+                        javafx.application.Platform.runLater(() -> {
+                            error("Erreur génération", new Exception(result.getErrorMessage()));
+                            refreshAll();
+                        });
+                    }
+                } catch (Exception e) {
+                    System.err.println("❌ Exception génération: " + e.getMessage());
+                    e.printStackTrace();
+
+                    video.setGenerationStatus("ERROR");
+                    try {
+                        repository.updateVideoExplicative(video);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+                    javafx.application.Platform.runLater(() -> {
+                        error("Erreur génération vidéo", e);
+                        refreshAll();
+                    });
+                }
+                return null;
+            }
+        };
+
+        // Lancer la tâche en arrière-plan
+        new Thread(task).setDaemon(true);
+        new Thread(task).start();
     }
 
     private void editTd(Td td) {
@@ -538,6 +1084,12 @@ public final class BackCoursesController {
         Label errFormateur = addRow(grid, 4, "Nom du formateur *", formateurField);
         Label errDuree = addRow(grid, 5, "Duree totale (heures) *", dureeField);
         Label errImage = addRow(grid, 6, "Image (png/jpg)", imageBox);
+
+        javafx.scene.control.CheckBox importantCheck = new javafx.scene.control.CheckBox("Cours Important (Sauvegarder dans Google Drive une fois validé)");
+        if (source != null && source.getDriveFolderId() != null) importantCheck.setSelected(true);
+        importantCheck.setStyle("-fx-text-fill: #3b82f6; -fx-font-weight: bold;");
+        Label errDrive = addRow(grid, 7, "Google Drive", importantCheck);
+
         niveauCombo.valueProperty().addListener((obs, o, n) -> { if (n == null) { niveauCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errNiveau.setText("⚠ Veuillez selectionner un niveau."); } else { niveauCombo.setStyle(""); errNiveau.setText(""); } });
         domaineCombo.valueProperty().addListener((obs, o, n) -> { if (n == null) { domaineCombo.setStyle("-fx-border-color: #d6293e; -fx-border-width: 2; -fx-border-radius: 8px;"); errDomaine.setText("⚠ Veuillez selectionner un domaine."); } else { domaineCombo.setStyle(""); errDomaine.setText(""); } });
         liveValidate(imageField, errImage, () -> { ValidationResult r = new ValidationResult(); String v = imageField.getText().trim(); if (!v.isBlank()) { String vl = v.toLowerCase(); if (!vl.endsWith(".png") && !vl.endsWith(".jpg") && !vl.endsWith(".jpeg")) r.addError("Doit etre .png ou .jpg"); } return r; });
@@ -571,7 +1123,7 @@ public final class BackCoursesController {
         cours.setDureeTotaleHeures(parseDuree(text(dureeField)));
         String imgVal = text(imageField);
         cours.setImage(imgVal.isBlank() ? "auto:" + safe(domaineCombo.getValue()).toLowerCase() : imgVal);
-        return FormResult.saved(cours);
+        return FormResult.saved(cours, importantCheck.isSelected());
     }
 
     private FormResult<Chapitre> showChapitreForm(Chapitre source) { return showChapitreForm(source, null); }
@@ -745,6 +1297,21 @@ public final class BackCoursesController {
         ComboBox<String> niveauCombo = comboStrings(NIVEAUX);
         ComboBox<String> domaineCombo = comboStrings(DOMAINES);
 
+        // Nouvelle option : Générer avec AI
+        javafx.scene.control.CheckBox aiGenerateCheck = new javafx.scene.control.CheckBox("🤖 Générer vidéo AI depuis la description");
+        aiGenerateCheck.setStyle("-fx-text-fill: #9333ea; -fx-font-weight: bold; -fx-font-size: 12px;");
+
+        // Quand AI est activé, désactiver le champ URL
+        aiGenerateCheck.selectedProperty().addListener((obs, old, newVal) -> {
+            urlField.setDisable(newVal);
+            if (newVal) {
+                urlField.setText(""); // Vider l'URL
+                urlField.setPromptText("URL générée automatiquement par l'AI");
+            } else {
+                urlField.setPromptText("https://youtube.com/watch?v=...");
+            }
+        });
+
         if (selectedChapitre != null) {
             selectCours(coursCombo, selectedChapitre.getCoursId());
             chapitreCombo.setItems(filteredChapitres(selectedChapitre.getCoursId()));
@@ -767,6 +1334,11 @@ public final class BackCoursesController {
             descriptionArea.setText(safe(source.getDescription()));
             niveauCombo.setValue(safe(source.getNiveau()));
             domaineCombo.setValue(safe(source.getDomaine()));
+            // Si c'est une vidéo AI existante, cocher la case
+            if (source.isAIGenerated()) {
+                aiGenerateCheck.setSelected(true);
+                urlField.setDisable(true);
+            }
         }
 
         GridPane grid = formGrid();
@@ -801,11 +1373,22 @@ public final class BackCoursesController {
         video.setCoursId(coursCombo.getValue().getId());
         video.setChapitreId(chapitreCombo.getValue().getId());
         video.setTitre(text(titreField));
-        video.setUrlVideo(text(urlField));
         video.setDescription(text(descriptionArea));
         video.setNiveau(safe(niveauCombo.getValue()));
         video.setDomaine(safe(domaineCombo.getValue()));
-        return FormResult.saved(video);
+
+        // Configuration selon le mode choisi
+        if (aiGenerateCheck.isSelected()) {
+            video.setAIGenerated(true);
+            video.setGenerationStatus("PENDING");
+            video.setUrlVideo(""); // Sera rempli après génération
+        } else {
+            video.setUrlVideo(text(urlField));
+            video.setAIGenerated(false);
+            video.setGenerationStatus("COMPLETED");
+        }
+
+        return FormResult.saved(video, aiGenerateCheck.isSelected()); // Le flag indique si c'est une génération AI
     }
 
 
@@ -924,6 +1507,24 @@ public final class BackCoursesController {
     }
 
     private void error(String title, Exception e) {
+        if (e != null) e.printStackTrace();
+        // Construire le message complet en remontant la chaîne des causes
+        String msg;
+        if (e == null) {
+            msg = "Erreur inconnue";
+        } else {
+            StringBuilder sb = new StringBuilder();
+            Throwable t = e;
+            while (t != null) {
+                String m = t.getMessage();
+                if (m != null && !m.isBlank()) {
+                    if (sb.length() > 0) sb.append("\nCause : ");
+                    sb.append(m);
+                }
+                t = t.getCause();
+            }
+            msg = sb.length() > 0 ? sb.toString() : e.getClass().getSimpleName();
+        }
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title); alert.setHeaderText(title);
         alert.setContentText(e == null ? "Erreur" : safe(e.getMessage()));
@@ -935,8 +1536,9 @@ public final class BackCoursesController {
     private static String text(TextField f) { return f == null ? "" : safe(f.getText()); }
     private static String text(TextArea a) { return a == null ? "" : safe(a.getText()); }
 
-    private record FormResult<T>(T value, boolean saved) {
-        static <T> FormResult<T> saved(T v) { return new FormResult<>(v, true); }
-        static <T> FormResult<T> cancelled() { return new FormResult<>(null, false); }
+    private record FormResult<T>(T value, boolean saved, boolean flag) {
+        static <T> FormResult<T> saved(T v) { return new FormResult<>(v, true, false); }
+        static <T> FormResult<T> saved(T v, boolean flag) { return new FormResult<>(v, true, flag); }
+        static <T> FormResult<T> cancelled() { return new FormResult<>(null, false, false); }
     }
-} 
+}

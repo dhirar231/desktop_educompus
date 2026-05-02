@@ -12,6 +12,10 @@ public final class Td {
     private int chapitreId;
     private String chapitreTitre;
     private String domaine;
+    
+    // Nouveaux champs pour la gestion de contenu
+    private boolean important = false;
+    private String driveLink;
 
     public int getId() {
         return id;
@@ -99,5 +103,21 @@ public final class Td {
 
     public void setDomaine(String domaine) {
         this.domaine = domaine;
+    }
+
+    public boolean isImportant() {
+        return important;
+    }
+
+    public void setImportant(boolean important) {
+        this.important = important;
+    }
+
+    public String getDriveLink() {
+        return driveLink;
+    }
+
+    public void setDriveLink(String driveLink) {
+        this.driveLink = driveLink;
     }
 }

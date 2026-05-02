@@ -72,4 +72,15 @@ public final class AppState {
     public static void setUserImageUrl(String imageUrl) {
         userImageUrl = imageUrl == null ? "" : String.valueOf(imageUrl).trim();
     }
+
+    // Base URL for the web server (used by QR links and deep links)
+    private static String serverBaseUrl = "http://localhost:8000";
+
+    public static String getServerBaseUrl() {
+        return serverBaseUrl;
+    }
+
+    public static void setServerBaseUrl(String url) {
+        serverBaseUrl = url == null ? "" : String.valueOf(url).trim();
+    }
 }

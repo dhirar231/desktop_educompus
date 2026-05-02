@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackValidationController"
+      spacing="16" styleClass="content"
+      style="-fx-padding: 20;">
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <Label text="Validation des cours" styleClass="page-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="compteurEnAttenteLabel" text="0 cours en attente"
+               style="-fx-text-fill: #f97316; -fx-font-weight: bold;"/>
+        <Button text="🔄 Rafraîchir" onAction="#onRefresh" styleClass="btn-ghost"/>
+    </HBox>
+
+    <!-- Empty state -->
+    <VBox fx:id="emptyStatePane" alignment="CENTER" spacing="8"
+          style="-fx-padding: 40;" visible="false" managed="false">
+        <Label text="Aucun cours à traiter" styleClass="empty-title"/>
+        <Label text="Tous les cours ont été traités." styleClass="empty-subtitle"/>
+    </VBox>
+
+    <!-- Three-column layout -->
+    <HBox spacing="16" VBox.vgrow="ALWAYS">
+
+        <!-- EN ATTENTE -->
+        <VBox spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="⏳ En attente" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #f97316;"/>
+            <ListView fx:id="enAttenteListView" VBox.vgrow="ALWAYS"/>
+            <HBox spacing="8">
+                <Button text="✅ Approuver" onAction="#onApprouver" styleClass="btn-primary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                <Button text="❌ Refuser" onAction="#onRefuser" styleClass="btn-danger" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            </HBox>
+        </VBox>
+
+        <!-- APPROUVE -->
+        <VBox spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="✅ Approuvés" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #22c55e;"/>
+            <ListView fx:id="approuveListView" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+        <!-- REFUSE -->
+        <VBox spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="❌ Refusés" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #ef4444;"/>
+            <ListView fx:id="refuseListView" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+    </HBox>
+
+</VBox>
