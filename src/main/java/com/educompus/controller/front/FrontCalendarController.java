@@ -341,7 +341,6 @@ public final class FrontCalendarController {
         card.setPadding(new Insets(16));
         card.setStyle("-fx-cursor: hand;");
 
-<<<<<<< HEAD
         // En-tête avec statut
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -429,35 +428,6 @@ public final class FrontCalendarController {
             alert.setContentText("Lien : " + session.getLien() + "\n\nErreur : " + e.getMessage());
             alert.showAndWait();
         }
-=======
-    private void loadBrowser(String url) {
-        String meetingUrl = safe(url);
-        System.out.println("[Meeting] Loading Jitsi URL in student view: " + meetingUrl);
-        new Thread(() -> {
-            try {
-                if (browserHandle == null || !browserHandle.isShowing()) {
-                    browserHandle = browserService.openMeetingDialog("Salle Jitsi etudiant", meetingUrl);
-                } else {
-                    browserHandle.show();
-                }
-                browserHandle.load(meetingUrl);
-                if (helperLabel != null) {
-                    javafx.application.Platform.runLater(() -> helperLabel.setText("Salle ouverte dans une fenetre separee: " + meetingUrl));
-                }
-            } catch (Exception ex) {
-                try {
-                    if (java.awt.Desktop.isDesktopSupported()) {
-                        java.awt.Desktop.getDesktop().browse(java.net.URI.create(meetingUrl));
-                        javafx.application.Platform.runLater(() -> helperLabel.setText("Salle ouverte dans le navigateur: " + meetingUrl));
-                        return;
-                    }
-                } catch (Exception browseEx) {
-                    // ignore and show original error below
-                }
-                javafx.application.Platform.runLater(() -> Dialogs.error("Meeting", "Initialisation JCEF impossible: " + safe(ex.getMessage())));
-            }
-        }, "jcef-opener-calendar").start();
->>>>>>> 14aa2d58c1feaad4ab08ea2b447445ad422c0703
     }
 
     /**
