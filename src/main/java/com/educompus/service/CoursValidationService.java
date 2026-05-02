@@ -27,7 +27,7 @@ public final class CoursValidationService {
 
     private CoursValidationService() {}
 
-    // Cours
+    //  Cours 
 
     public static ValidationResult validateCours(Cours cours) {
         ValidationResult r = new ValidationResult();
@@ -46,7 +46,7 @@ public final class CoursValidationService {
         return r;
     }
 
-    //  Chapitre
+    //  Chapitre 
 
     public static ValidationResult validateChapitreTitre(String titre) {
         ValidationResult r = new ValidationResult();
@@ -68,7 +68,7 @@ public final class CoursValidationService {
         return r;
     }
 
-    //  TD
+    // TD 
 
     public static ValidationResult validateTdTitre(String titre) {
         ValidationResult r = new ValidationResult();
@@ -84,8 +84,7 @@ public final class CoursValidationService {
         return r;
     }
 
-    //  Vidéo
-
+    //  Vidéo 
     public static ValidationResult validateVideoTitre(String titre) {
         ValidationResult r = new ValidationResult();
         validateTitre(titre, "Titre de la vidéo", r);
@@ -152,9 +151,6 @@ public final class CoursValidationService {
         }
         if (d.length() > DESC_MAX) {
             r.addError("La description ne doit pas dépasser " + DESC_MAX + " caractères.");
-        }
-        if (d.chars().anyMatch(Character::isDigit)) {
-            r.addError("La description ne doit pas contenir de chiffres.");
         }
     }
 
@@ -237,7 +233,7 @@ public final class CoursValidationService {
         }
     }
 
-    //  Helpers
+    // Helpers
 
     private static boolean isAllDigits(String s) {
         return s.chars().allMatch(Character::isDigit);

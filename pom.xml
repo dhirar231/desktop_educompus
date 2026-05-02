@@ -38,6 +38,11 @@
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
             <artifactId>javafx-web</artifactId>
             <version>${javafx.version}</version>
         </dependency>
@@ -45,11 +50,6 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-swing</artifactId>
             <version>${javafx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>me.friwi</groupId>
-            <artifactId>jcefmaven</artifactId>
-            <version>141.0.10</version>
         </dependency>
 
         <!-- Auth: verify Symfony hashed passwords + connect to MySQL -->
@@ -76,14 +76,12 @@
             <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
-        <!-- In-memory DB for repository unit tests -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>2.2.222</version>
             <scope>test</scope>
         </dependency>
-        <!-- Mockito for mocking collaborators in unit tests -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -96,39 +94,61 @@
             <version>5.6.0</version>
             <scope>test</scope>
         </dependency>
-        <!-- AssertJ fluent assertions -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.24.2</version>
             <scope>test</scope>
         </dependency>
-        <!-- H2 in-memory DB for unit tests (removed) -->
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
+            <version>1.8.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- PDF generation for certificates -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>2.0.29</version>
         </dependency>
-        <!-- JSON library for OpenAI responses -->
+
+        <!-- Google Drive API Dependencies -->
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.11.0</version>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.2.0</version>
         </dependency>
-        <!-- MAIL -->
         <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>jakarta.mail</artifactId>
-            <version>2.0.1</version>
+            <groupId>com.google.oauth-client</groupId>
+            <artifactId>google-oauth-client-jetty</artifactId>
+            <version>1.34.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-drive</artifactId>
+            <version>v3-rev20220815-2.0.0</version>
+        </dependency>
+        <!-- Google Calendar API -->
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-calendar</artifactId>
+            <version>v3-rev20220715-2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.9</version>
         </dependency>
 
-        <!-- NOTIFICATIONS -->
+        <!-- Jackson pour le parsing JSON -->
         <dependency>
-            <groupId>org.controlsfx</groupId>
-            <artifactId>controlsfx</artifactId>
-            <version>11.2.1</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.15.2</version>
         </dependency>
+
         <!-- QR code generation -->
         <dependency>
             <groupId>com.google.zxing</groupId>
@@ -140,19 +160,18 @@
             <artifactId>javase</artifactId>
             <version>3.5.1</version>
         </dependency>
-        <!-- Embedded HTTP server to serve mobile exam pages when backend is absent -->
+        <!-- Embedded HTTP server -->
         <dependency>
             <groupId>org.nanohttpd</groupId>
             <artifactId>nanohttpd</artifactId>
             <version>2.3.1</version>
         </dependency>
-        <!-- Commons IO required by Apache POI for some stream utilities -->
+        <!-- Commons IO -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${commons-io.version}</version>
         </dependency>
-        <!-- (OpenAI SDK not used; using HTTP + Gson implementation) -->
         <!-- Excel import (Apache POI) -->
         <dependency>
             <groupId>org.apache.poi</groupId>
@@ -165,10 +184,10 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
                 <configuration>
-                    <release>${maven.compiler.release}</release>
+                    <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
             <plugin>
@@ -176,15 +195,13 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>com.educompus.app.PreviewLauncher</mainClass>
-                    <runtimePathOption>CLASSPATH</runtimePathOption>
-                    <includePathExceptionsInClasspath>true</includePathExceptionsInClasspath>
+                    <mainClass>com.educompus.app.PreviewApp</mainClass>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.1.0</version>
                 <configuration>
                     <mainClass>com.educompus.app.PreviewLauncher</mainClass>
                     <classpathScope>runtime</classpathScope>
@@ -196,7 +213,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <useModulePath>false</useModulePath>
                     <environmentVariables>
                         <TEST_USE_LOCAL_MYSQL>1</TEST_USE_LOCAL_MYSQL>
                         <TEST_DB_USER>root</TEST_DB_USER>

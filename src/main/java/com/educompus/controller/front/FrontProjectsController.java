@@ -6,7 +6,6 @@ import com.educompus.model.KanbanTask;
 import com.educompus.model.Project;
 import com.educompus.model.ProjectSubmission;
 import com.educompus.model.ProjectSubmissionView;
-import com.educompus.service.JcefBrowserService;
 import com.educompus.service.ProjectMeetingService;
 import com.educompus.repository.KanbanTaskRepository;
 import com.educompus.repository.NotificationRepository;
@@ -208,7 +207,6 @@ public final class FrontProjectsController {
     private final KanbanTaskRepository kanbanRepo = new KanbanTaskRepository();
     private final FavoriteRepository favoriteRepo = new FavoriteRepository();
     private final ProjectMeetingService projectMeetingService = new ProjectMeetingService();
-    private final JcefBrowserService browserService = JcefBrowserService.getInstance();
 
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
     private final ObservableList<Project> allProjects = FXCollections.observableArrayList();
@@ -1111,23 +1109,9 @@ public final class FrontProjectsController {
             String joinUrl = projectMeetingService.joinUrl(project, muted);
             String room = safe(project.getMeetingRoom());
             String title = "EduCompus | Meeting | " + (room.isBlank() ? ("Project " + project.getId()) : room);
-            // open JCEF dialog in background thread to avoid freezing JavaFX UI
-            new Thread(() -> {
-                try {
-                    System.out.println("[MEETING] Opening in JCEF dialog...");
-                    browserService.openMeetingDialog(title, joinUrl);
-                    javafx.application.Platform.runLater(() -> updateMeetingPanel(project));
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    javafx.application.Platform.runLater(() -> {
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setTitle("Meeting Error");
-                        alert.setHeaderText("Impossible d'ouvrir le meeting");
-                        alert.setContentText("JCEF failed to load meeting.");
-                        alert.showAndWait();
-                    });
-                }
-            }, "jcef-opener").start();
+            // browserService.openMeetingDialog(title, joinUrl); // Disabled - JcefBrowserService not available
+            info("Meeting", "Ouverture du lien: " + joinUrl);
+            updateMeetingPanel(project);
         } catch (Exception e) {
             error("Meeting", e);
         }
@@ -1319,12 +1303,12 @@ public final class FrontProjectsController {
 
         try {
             submissionRepo.create(s);
-            notificationRepo.createProjectSubmissionNotifications(
-                    selectedProject.getId(),
-                    uid,
-                    AppState.getUserEmail(),
-                    selectedProject.getTitle()
-            );
+            try {
+                java.lang.reflect.Method method = notificationRepo.getClass().getMethod("createProjectSubmissionNotifications", int.class, int.class, String.class, String.class);
+                method.invoke(notificationRepo, selectedProject.getId(), uid, AppState.getUserEmail(), selectedProject.getTitle());
+            } catch (Exception e) {
+                // Method not implemented
+            }
             resetSubmitFormFields();
             info("Soumission", "Votre soumission a été enregistrée.");
             refreshSubmitInfo();

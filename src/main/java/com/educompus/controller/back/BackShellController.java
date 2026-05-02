@@ -91,6 +91,9 @@ public final class BackShellController {
     private Button navCoursesBtn;
 
     @FXML
+    private Button navValidationBtn;
+
+    @FXML
     private Button navCategoriesBtn;
 
     @FXML
@@ -110,6 +113,9 @@ public final class BackShellController {
 
     @FXML
     private Button navMarketplaceBtn;
+
+    @FXML
+    private Button navEngagementBtn;
 
     @FXML
     private Button navPaymentsBtn;
@@ -165,6 +171,7 @@ public final class BackShellController {
         navButtons.add(navDashboardBtn);
         navButtons.add(navUsersBtn);
         navButtons.add(navCoursesBtn);
+        navButtons.add(navValidationBtn);
         navButtons.add(navCategoriesBtn);
         if (navSessionsBtn != null && navSessionsBtn.isManaged()) {
             navButtons.add(navSessionsBtn);
@@ -174,10 +181,17 @@ public final class BackShellController {
         navButtons.add(navClubsBtn);
         navButtons.add(navEventsBtn);
         navButtons.add(navMarketplaceBtn);
+        navButtons.add(navEngagementBtn);
         navButtons.add(navPaymentsBtn);
         navButtons.add(navSupportBtn);
         navButtons.add(navReportsBtn);
         navButtons.add(navSettingsBtn);
+
+        if (navValidationBtn != null) {
+            boolean showValidation = AppState.isAdmin();
+            navValidationBtn.setVisible(showValidation);
+            navValidationBtn.setManaged(showValidation);
+        }
 
         Theme.apply(shell);
         setContent(safeLoad("View/back/BackDashboard.fxml"));
@@ -202,6 +216,12 @@ public final class BackShellController {
     private void navCourses(ActionEvent event) {
         setContent(safeLoad("View/back/BackCourses.fxml"));
         setActive(navCoursesBtn);
+    }
+
+    @FXML
+    private void navValidation(ActionEvent event) {
+        setContent(safeLoad("View/back/BackValidation.fxml"));
+        setActive(navValidationBtn);
     }
 
     @FXML
@@ -244,6 +264,12 @@ public final class BackShellController {
     private void navMarketplace(ActionEvent event) {
         setContent(safeLoad("View/back/BackMarketplace.fxml"));
         setActive(navMarketplaceBtn);
+    }
+
+    @FXML
+    private void navEngagement(ActionEvent event) {
+        setContent(safeLoad("View/back/BackStudentEngagement.fxml"));
+        setActive(navEngagementBtn);
     }
 
     @FXML
@@ -563,9 +589,12 @@ public final class BackShellController {
     }
 
     private void refreshNotifications() {
-        int unread;
+        int unread = 0;
         try {
-            unread = notificationRepository.countUnreadForUser(AppState.getUserId());
+            if (notificationRepository != null) {
+                java.lang.reflect.Method method = notificationRepository.getClass().getMethod("countUnreadForUser", int.class);
+                unread = (int) method.invoke(notificationRepository, AppState.getUserId());
+            }
         } catch (Exception e) {
             unread = 0;
         }
@@ -581,7 +610,10 @@ public final class BackShellController {
 
     private void markNotificationsAsRead() {
         try {
-            notificationRepository.markAllAsRead(AppState.getUserId());
+            if (notificationRepository != null) {
+                java.lang.reflect.Method method = notificationRepository.getClass().getMethod("markAllAsRead", int.class);
+                method.invoke(notificationRepository, AppState.getUserId());
+            }
         } catch (Exception ignored) {
         }
         refreshNotifications();
@@ -589,10 +621,14 @@ public final class BackShellController {
 
     private List<AppNotification> safeNotifications() {
         try {
-            return notificationRepository.listRecentForUser(AppState.getUserId(), 8);
+            if (notificationRepository != null) {
+                java.lang.reflect.Method method = notificationRepository.getClass().getMethod("listRecentForUser", int.class, int.class);
+                return (List<AppNotification>) method.invoke(notificationRepository, AppState.getUserId(), 8);
+            }
         } catch (Exception e) {
             return List.of();
         }
+        return List.of();
     }
 
     private void startNotificationsPolling() {

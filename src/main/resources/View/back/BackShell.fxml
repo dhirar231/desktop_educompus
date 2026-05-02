@@ -76,6 +76,17 @@
                             </StackPane>
                         </graphic>
                     </Button>
+                    <Button fx:id="navValidationBtn" text="Validation" onAction="#navValidation" maxWidth="1.7976931348623157E308">
+                        <styleClass>
+                            <String fx:value="nav-btn"/>
+                            <String fx:value="side-menu-btn"/>
+                        </styleClass>
+                        <graphic>
+                            <StackPane styleClass="side-icon">
+                                <SVGPath styleClass="side-svg" content="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59Z"/>
+                            </StackPane>
+                        </graphic>
+                    </Button>
                     <!--<Button fx:id="navCategoriesBtn" text="Catégories" onAction="#navCategories" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>
@@ -86,8 +97,8 @@
                                 <SVGPath styleClass="side-svg" content="M10 4H4C2.9 4 2 4.9 2 6V20C2 21.1 2.9 22 4 22H18C19.1 22 20 21.1 20 20V12H14C11.79 12 10 10.21 10 8V4ZM14 4H20V8H16C14.9 8 14 7.1 14 6V4ZM12 4V8C12 9.1 12.9 10 14 10H20V20H4V6H10V6.5C10 5.12 11.12 4 12.5 4H12Z"/>
                             </StackPane>
                         </graphic>
-                    </Button>-->
-                     <!--<Button fx:id="navSessionsBtn" text="Sessions" onAction="#navSessions" maxWidth="1.7976931348623157E308">
+                    </Button>
+                    <Button fx:id="navSessionsBtn" text="Sessions" onAction="#navSessions" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>
                             <String fx:value="side-menu-btn"/>
@@ -159,6 +170,17 @@
                     </Button>
 
                     <Label text="OPÉRATIONS" styleClass="nav-section"/>
+                    <Button fx:id="navEngagementBtn" text="Engagement" onAction="#navEngagement" maxWidth="1.7976931348623157E308">
+                        <styleClass>
+                            <String fx:value="nav-btn"/>
+                            <String fx:value="side-menu-btn"/>
+                        </styleClass>
+                        <graphic>
+                            <StackPane styleClass="side-icon">
+                                <SVGPath styleClass="side-svg" content="M16 11C17.66 11 19 9.66 19 8S17.66 5 16 5 13 6.34 13 8 14.34 11 16 11ZM8 11C9.66 11 11 9.66 11 8S9.66 5 8 5 5 6.34 5 8 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V19H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15 13.05C16.16 13.89 17 15.03 17 16.5V19H23V16.5C23 14.17 18.33 13 16 13Z"/>
+                            </StackPane>
+                        </graphic>
+                    </Button>
                     <Button fx:id="navPaymentsBtn" text="Paiements" onAction="#navPayments" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>
@@ -232,14 +254,11 @@
                         <Label fx:id="topbarBrandLabel" text="EduCampus Administration" styleClass="topbar-brand-text"/>
 	                </HBox>
 	                <Region HBox.hgrow="ALWAYS"/>
-	                <StackPane>
-	                    <Button fx:id="notificationsBtn" onAction="#toggleNotificationsMenu" styleClass="btn-icon" accessibleText="Notifications">
-	                        <graphic>
-	                            <SVGPath styleClass="topbar-svg" content="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.36 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5S10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z"/>
-	                        </graphic>
-	                    </Button>
-	                    <Label fx:id="notificationsBadgeLabel" text="0" managed="false" visible="false" styleClass="notifications-badge" StackPane.alignment="TOP_RIGHT"/>
-	                </StackPane>
+	                <Button fx:id="notificationsBtn" styleClass="btn-icon" accessibleText="Notifications">
+	                    <graphic>
+	                        <SVGPath styleClass="topbar-svg" content="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.36 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5S10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z"/>
+	                    </graphic>
+	                </Button>
 	                <Button fx:id="userMenuBtn" onAction="#toggleUserMenu" styleClass="user-menu">
 	                    <graphic>
 	                        <HBox spacing="10" alignment="CENTER_LEFT">

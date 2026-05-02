@@ -2,6 +2,7 @@ package com.educompus.repository;
 
 import com.educompus.model.Chapitre;
 import com.educompus.model.Cours;
+import com.educompus.model.CoursStatut;
 import com.educompus.model.Td;
 import com.educompus.model.VideoExplicative;
 
@@ -21,12 +22,16 @@ public final class CourseManagementRepository {
         String q = safe(query);
         String sql = """
                 SELECT c.id, c.titre, c.description, c.niveau, c.domaine, c.image, c.date_creation,
-                       c.nom_formateur, c.duree_totale_heures, COUNT(ch.id) AS chapitre_count
+                       c.nom_formateur, c.duree_totale_heures,
+                       c.statut, c.commentaire_admin, c.created_by_id, c.drive_folder_id,
+                       c.important, c.drive_link,
+                       COUNT(ch.id) AS chapitre_count
                 FROM cours c
                 LEFT JOIN chapitre ch ON ch.cours_id = c.id
                 %s
                 GROUP BY c.id, c.titre, c.description, c.niveau, c.domaine, c.image, c.date_creation,
-                         c.nom_formateur, c.duree_totale_heures
+                         c.nom_formateur, c.duree_totale_heures, c.statut, c.commentaire_admin, c.created_by_id, c.drive_folder_id,
+                         c.important, c.drive_link
                 ORDER BY c.date_creation DESC, c.id DESC
                 """.formatted(q.isBlank() ? "" : """
                         WHERE c.titre LIKE ? OR c.description LIKE ? OR c.niveau LIKE ? OR c.domaine LIKE ?
@@ -59,7 +64,7 @@ public final class CourseManagementRepository {
         String q = safe(query);
         String sql = """
                 SELECT ch.id, ch.titre, ch.ordre, ch.description, ch.fichier_c, ch.date_creation, ch.cours_id,
-                       ch.niveau, ch.domaine, c.titre AS cours_titre,
+                       ch.niveau, ch.domaine, ch.important, ch.drive_link, c.titre AS cours_titre,
                        (SELECT COUNT(*) FROM td t WHERE t.chapitre_id = ch.id) AS td_count,
                        (SELECT COUNT(*) FROM video_explicative v WHERE v.chapitre_id = ch.id) AS video_count
                 FROM chapitre ch
@@ -93,7 +98,7 @@ public final class CourseManagementRepository {
     public List<Chapitre> listChapitresByCoursId(int coursId) {
         String sql = """
                 SELECT ch.id, ch.titre, ch.ordre, ch.description, ch.fichier_c, ch.date_creation, ch.cours_id,
-                       ch.niveau, ch.domaine, c.titre AS cours_titre,
+                       ch.niveau, ch.domaine, ch.important, ch.drive_link, c.titre AS cours_titre,
                        (SELECT COUNT(*) FROM td t WHERE t.chapitre_id = ch.id) AS td_count,
                        (SELECT COUNT(*) FROM video_explicative v WHERE v.chapitre_id = ch.id) AS video_count
                 FROM chapitre ch
@@ -120,7 +125,7 @@ public final class CourseManagementRepository {
         String q = safe(query);
         String sql = """
                 SELECT t.id, t.titre, t.description, t.fichier, t.date_creation, t.niveau, t.cours_id, t.chapitre_id,
-                       t.domaine, c.titre AS cours_titre, ch.titre AS chapitre_titre
+                       t.domaine, t.important, t.drive_link, c.titre AS cours_titre, ch.titre AS chapitre_titre
                 FROM td t
                 INNER JOIN cours c ON c.id = t.cours_id
                 INNER JOIN chapitre ch ON ch.id = t.chapitre_id
@@ -154,7 +159,7 @@ public final class CourseManagementRepository {
     public List<Td> listTdsByCoursId(int coursId) {
         String sql = """
                 SELECT t.id, t.titre, t.description, t.fichier, t.date_creation, t.niveau, t.cours_id, t.chapitre_id,
-                       t.domaine, c.titre AS cours_titre, ch.titre AS chapitre_titre
+                       t.domaine, t.important, t.drive_link, c.titre AS cours_titre, ch.titre AS chapitre_titre
                 FROM td t
                 INNER JOIN cours c ON c.id = t.cours_id
                 INNER JOIN chapitre ch ON ch.id = t.chapitre_id
@@ -180,7 +185,7 @@ public final class CourseManagementRepository {
         String q = safe(query);
         String sql = """
                 SELECT v.id, v.titre, v.url_video, v.description, v.date_creation, v.niveau,
-                       v.cours_id, v.chapitre_id, v.domaine,
+                       v.cours_id, v.chapitre_id, v.domaine, v.important, v.drive_link,
                        c.titre AS cours_titre, ch.titre AS chapitre_titre
                 FROM video_explicative v
                 INNER JOIN cours c ON c.id = v.cours_id
@@ -215,7 +220,7 @@ public final class CourseManagementRepository {
     public List<VideoExplicative> listVideosByCoursId(int coursId) {
         String sql = """
                 SELECT v.id, v.titre, v.url_video, v.description, v.date_creation, v.niveau,
-                       v.cours_id, v.chapitre_id, v.domaine,
+                       v.cours_id, v.chapitre_id, v.domaine, v.important, v.drive_link,
                        c.titre AS cours_titre, ch.titre AS chapitre_titre
                 FROM video_explicative v
                 INNER JOIN cours c ON c.id = v.cours_id
@@ -240,8 +245,12 @@ public final class CourseManagementRepository {
 
     public void createCours(Cours cours) {
         String sql = """
-                INSERT INTO cours (titre, description, niveau, domaine, image, date_creation, nom_formateur, duree_totale_heures)
-                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
+                INSERT INTO cours (
+                    titre, description, niveau, domaine, image, date_creation,
+                    nom_formateur, duree_totale_heures, statut, commentaire_admin, created_by_id, drive_folder_id,
+                    important, drive_link
+                )
+                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -252,6 +261,12 @@ public final class CourseManagementRepository {
             ps.setString(5, emptyToNull(cours.getImage()));
             ps.setString(6, cours.getNomFormateur());
             ps.setInt(7, cours.getDureeTotaleHeures());
+            ps.setString(8, cours.getStatut().name());
+            ps.setString(9, emptyToNull(cours.getCommentaireAdmin()));
+            ps.setInt(10, Math.max(0, cours.getCreatedById()));
+            ps.setString(11, emptyToNull(cours.getDriveFolderId()));
+            ps.setBoolean(12, cours.isImportant());
+            ps.setString(13, emptyToNull(cours.getDriveLink()));
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -266,7 +281,9 @@ public final class CourseManagementRepository {
     public void updateCours(Cours cours) {
         String sql = """
                 UPDATE cours
-                SET titre = ?, description = ?, niveau = ?, domaine = ?, image = ?, nom_formateur = ?, duree_totale_heures = ?
+                SET titre = ?, description = ?, niveau = ?, domaine = ?, image = ?, nom_formateur = ?, duree_totale_heures = ?,
+                    statut = ?, commentaire_admin = ?, created_by_id = ?, drive_folder_id = ?,
+                    important = ?, drive_link = ?
                 WHERE id = ?
                 """;
         try (Connection conn = EducompusDB.getConnection();
@@ -278,7 +295,13 @@ public final class CourseManagementRepository {
             ps.setString(5, emptyToNull(cours.getImage()));
             ps.setString(6, cours.getNomFormateur());
             ps.setInt(7, cours.getDureeTotaleHeures());
-            ps.setInt(8, cours.getId());
+            ps.setString(8, cours.getStatut().name());
+            ps.setString(9, emptyToNull(cours.getCommentaireAdmin()));
+            ps.setInt(10, Math.max(0, cours.getCreatedById()));
+            ps.setString(11, emptyToNull(cours.getDriveFolderId()));
+            ps.setBoolean(12, cours.isImportant());
+            ps.setString(13, emptyToNull(cours.getDriveLink()));
+            ps.setInt(14, cours.getId());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new IllegalStateException("Impossible de modifier le cours: " + safeMsg(e), e);
@@ -291,8 +314,8 @@ public final class CourseManagementRepository {
 
     public void createChapitre(Chapitre chapitre) {
         String sql = """
-                INSERT INTO chapitre (titre, ordre, description, fichier_c, date_creation, cours_id, niveau, domaine)
-                VALUES (?, ?, ?, ?, NOW(), ?, ?, ?)
+                INSERT INTO chapitre (titre, ordre, description, fichier_c, date_creation, cours_id, niveau, domaine, important, drive_link)
+                VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -303,6 +326,8 @@ public final class CourseManagementRepository {
             ps.setInt(5, chapitre.getCoursId());
             ps.setString(6, emptyToNull(chapitre.getNiveau()));
             ps.setString(7, emptyToNull(chapitre.getDomaine()));
+            ps.setBoolean(8, chapitre.isImportant());
+            ps.setString(9, emptyToNull(chapitre.getDriveLink()));
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -317,7 +342,7 @@ public final class CourseManagementRepository {
     public void updateChapitre(Chapitre chapitre) {
         String sql = """
                 UPDATE chapitre
-                SET titre = ?, ordre = ?, description = ?, fichier_c = ?, cours_id = ?, niveau = ?, domaine = ?
+                SET titre = ?, ordre = ?, description = ?, fichier_c = ?, cours_id = ?, niveau = ?, domaine = ?, important = ?, drive_link = ?
                 WHERE id = ?
                 """;
         try (Connection conn = EducompusDB.getConnection();
@@ -329,7 +354,9 @@ public final class CourseManagementRepository {
             ps.setInt(5, chapitre.getCoursId());
             ps.setString(6, emptyToNull(chapitre.getNiveau()));
             ps.setString(7, emptyToNull(chapitre.getDomaine()));
-            ps.setInt(8, chapitre.getId());
+            ps.setBoolean(8, chapitre.isImportant());
+            ps.setString(9, emptyToNull(chapitre.getDriveLink()));
+            ps.setInt(10, chapitre.getId());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new IllegalStateException("Impossible de modifier le chapitre: " + safeMsg(e), e);
@@ -342,8 +369,8 @@ public final class CourseManagementRepository {
 
     public void createTd(Td td) {
         String sql = """
-                INSERT INTO td (titre, description, fichier, date_creation, niveau, cours_id, chapitre_id, domaine)
-                VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
+                INSERT INTO td (titre, description, fichier, date_creation, niveau, cours_id, chapitre_id, domaine, important, drive_link)
+                VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -354,6 +381,8 @@ public final class CourseManagementRepository {
             ps.setInt(5, td.getCoursId());
             ps.setInt(6, td.getChapitreId());
             ps.setString(7, emptyToNull(td.getDomaine()));
+            ps.setBoolean(8, td.isImportant());
+            ps.setString(9, emptyToNull(td.getDriveLink()));
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -368,7 +397,7 @@ public final class CourseManagementRepository {
     public void updateTd(Td td) {
         String sql = """
                 UPDATE td
-                SET titre = ?, description = ?, fichier = ?, niveau = ?, cours_id = ?, chapitre_id = ?, domaine = ?
+                SET titre = ?, description = ?, fichier = ?, niveau = ?, cours_id = ?, chapitre_id = ?, domaine = ?, important = ?, drive_link = ?
                 WHERE id = ?
                 """;
         try (Connection conn = EducompusDB.getConnection();
@@ -380,7 +409,9 @@ public final class CourseManagementRepository {
             ps.setInt(5, td.getCoursId());
             ps.setInt(6, td.getChapitreId());
             ps.setString(7, emptyToNull(td.getDomaine()));
-            ps.setInt(8, td.getId());
+            ps.setBoolean(8, td.isImportant());
+            ps.setString(9, emptyToNull(td.getDriveLink()));
+            ps.setInt(10, td.getId());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new IllegalStateException("Impossible de modifier le TD: " + safeMsg(e), e);
@@ -394,8 +425,8 @@ public final class CourseManagementRepository {
     public void createVideo(VideoExplicative video) {
         String sql = """
                 INSERT INTO video_explicative (titre, url_video, description, date_creation, niveau,
-                                               cours_id, chapitre_id, domaine)
-                VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
+                                               cours_id, chapitre_id, domaine, important, drive_link)
+                VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = EducompusDB.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -406,6 +437,8 @@ public final class CourseManagementRepository {
             ps.setInt(5, video.getCoursId());
             ps.setInt(6, video.getChapitreId());
             ps.setString(7, emptyToNull(video.getDomaine()));
+            ps.setBoolean(8, video.isImportant());
+            ps.setString(9, emptyToNull(video.getDriveLink()));
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -421,7 +454,7 @@ public final class CourseManagementRepository {
         String sql = """
                 UPDATE video_explicative
                 SET titre = ?, url_video = ?, description = ?, niveau = ?,
-                    cours_id = ?, chapitre_id = ?, domaine = ?
+                    cours_id = ?, chapitre_id = ?, domaine = ?, important = ?, drive_link = ?
                 WHERE id = ?
                 """;
         try (Connection conn = EducompusDB.getConnection();
@@ -433,7 +466,9 @@ public final class CourseManagementRepository {
             ps.setInt(5, video.getCoursId());
             ps.setInt(6, video.getChapitreId());
             ps.setString(7, emptyToNull(video.getDomaine()));
-            ps.setInt(8, video.getId());
+            ps.setBoolean(8, video.isImportant());
+            ps.setString(9, emptyToNull(video.getDriveLink()));
+            ps.setInt(10, video.getId());
             ps.executeUpdate();
         } catch (Exception e) {
             throw new IllegalStateException("Impossible de modifier la video: " + safeMsg(e), e);
@@ -442,6 +477,129 @@ public final class CourseManagementRepository {
 
     public void deleteVideo(int videoId) {
         executeDelete("DELETE FROM video_explicative WHERE id = ?", videoId, "Impossible de supprimer la video");
+    }
+
+    // Nouvelles méthodes pour les vidéos IA
+    public List<VideoExplicative> listVideosExplicatives(String query) {
+        return listVideos(query);
+    }
+
+    public List<VideoExplicative> listVideosByChapitreId(int chapitreId) {
+        String sql = """
+                SELECT v.id, v.titre, v.url_video, v.description, v.date_creation, v.niveau,
+                       v.cours_id, v.chapitre_id, v.domaine,
+                       c.titre AS cours_titre, ch.titre AS chapitre_titre,
+                       v.is_ai_generated, v.ai_script, v.generation_status, v.did_video_id
+                FROM video_explicative v
+                INNER JOIN cours c ON c.id = v.cours_id
+                INNER JOIN chapitre ch ON ch.id = v.chapitre_id
+                WHERE v.chapitre_id = ?
+                ORDER BY v.date_creation DESC
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, chapitreId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<VideoExplicative> out = new ArrayList<>();
+                while (rs.next()) {
+                    out.add(mapVideoComplete(rs));
+                }
+                return out;
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossible de charger les videos du chapitre: " + safeMsg(e), e);
+        }
+    }
+
+    public VideoExplicative getVideoExplicativeById(int videoId) {
+        String sql = """
+                SELECT v.id, v.titre, v.url_video, v.description, v.date_creation, v.niveau,
+                       v.cours_id, v.chapitre_id, v.domaine,
+                       c.titre AS cours_titre, ch.titre AS chapitre_titre,
+                       v.is_ai_generated, v.ai_script, v.generation_status, v.did_video_id
+                FROM video_explicative v
+                INNER JOIN cours c ON c.id = v.cours_id
+                INNER JOIN chapitre ch ON ch.id = v.chapitre_id
+                WHERE v.id = ?
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, videoId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapVideoComplete(rs);
+                }
+                return null;
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossible de charger la video: " + safeMsg(e), e);
+        }
+    }
+
+    public int createVideoExplicative(VideoExplicative video) {
+        String sql = """
+                INSERT INTO video_explicative (titre, url_video, description, date_creation, niveau,
+                                               cours_id, chapitre_id, domaine, is_ai_generated, 
+                                               ai_script, generation_status, did_video_id)
+                VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, video.getTitre());
+            ps.setString(2, emptyToNull(video.getUrlVideo()));
+            ps.setString(3, video.getDescription());
+            ps.setString(4, emptyToNull(video.getNiveau()));
+            ps.setInt(5, video.getCoursId());
+            ps.setInt(6, video.getChapitreId());
+            ps.setString(7, emptyToNull(video.getDomaine()));
+            ps.setBoolean(8, video.isAIGenerated());
+            ps.setString(9, emptyToNull(video.getAiScript()));
+            ps.setString(10, emptyToNull(video.getGenerationStatus()));
+            ps.setString(11, emptyToNull(video.getDidVideoId()));
+
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getInt(1);
+                }
+            }
+            return 0;
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossible d'ajouter la video: " + safeMsg(e), e);
+        }
+    }
+
+    public void updateVideoExplicative(VideoExplicative video) {
+        String sql = """
+                UPDATE video_explicative
+                SET titre = ?, url_video = ?, description = ?, niveau = ?,
+                    cours_id = ?, chapitre_id = ?, domaine = ?,
+                    is_ai_generated = ?, ai_script = ?, generation_status = ?, did_video_id = ?
+                WHERE id = ?
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, video.getTitre());
+            ps.setString(2, emptyToNull(video.getUrlVideo()));
+            ps.setString(3, video.getDescription());
+            ps.setString(4, emptyToNull(video.getNiveau()));
+            ps.setInt(5, video.getCoursId());
+            ps.setInt(6, video.getChapitreId());
+            ps.setString(7, emptyToNull(video.getDomaine()));
+            ps.setBoolean(8, video.isAIGenerated());
+            ps.setString(9, emptyToNull(video.getAiScript()));
+            ps.setString(10, emptyToNull(video.getGenerationStatus()));
+            ps.setString(11, emptyToNull(video.getDidVideoId()));
+            ps.setInt(12, video.getId());
+
+            ps.executeUpdate();
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossible de modifier la video: " + safeMsg(e), e);
+        }
+    }
+
+    public void deleteVideoExplicative(int videoId) {
+        deleteVideo(videoId);
     }
 
     private void ensureCoursSchema() {
@@ -513,6 +671,18 @@ public final class CourseManagementRepository {
             if (!columnExists(conn, "cours", "image")) {
                 executeIgnore(conn, "ALTER TABLE cours ADD COLUMN image VARCHAR(255) NULL");
             }
+            if (!columnExists(conn, "cours", "statut")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN statut VARCHAR(32) NOT NULL DEFAULT 'EN_ATTENTE'");
+            }
+            if (!columnExists(conn, "cours", "commentaire_admin")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN commentaire_admin TEXT NULL");
+            }
+            if (!columnExists(conn, "cours", "created_by_id")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN created_by_id INT NOT NULL DEFAULT 0");
+            }
+            if (!columnExists(conn, "cours", "drive_folder_id")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN drive_folder_id VARCHAR(128) NULL");
+            }
             if (!columnExists(conn, "chapitre", "niveau")) {
                 executeIgnore(conn, "ALTER TABLE chapitre ADD COLUMN niveau VARCHAR(32) NULL");
             }
@@ -536,6 +706,45 @@ public final class CourseManagementRepository {
             }
             if (!columnExists(conn, "video_explicative", "domaine")) {
                 executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN domaine VARCHAR(64) NULL");
+            }
+            // Nouvelles colonnes pour l'IA
+            if (!columnExists(conn, "video_explicative", "is_ai_generated")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN is_ai_generated BOOLEAN NOT NULL DEFAULT FALSE");
+            }
+            if (!columnExists(conn, "video_explicative", "ai_script")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN ai_script TEXT NULL");
+            }
+            if (!columnExists(conn, "video_explicative", "generation_status")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN generation_status VARCHAR(32) NULL");
+            }
+            if (!columnExists(conn, "video_explicative", "did_video_id")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN did_video_id VARCHAR(128) NULL");
+            }
+            
+            // Nouvelles colonnes pour la gestion de contenu avec Google Drive
+            if (!columnExists(conn, "cours", "important")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN important BOOLEAN NOT NULL DEFAULT FALSE");
+            }
+            if (!columnExists(conn, "cours", "drive_link")) {
+                executeIgnore(conn, "ALTER TABLE cours ADD COLUMN drive_link TEXT NULL");
+            }
+            if (!columnExists(conn, "chapitre", "important")) {
+                executeIgnore(conn, "ALTER TABLE chapitre ADD COLUMN important BOOLEAN NOT NULL DEFAULT FALSE");
+            }
+            if (!columnExists(conn, "chapitre", "drive_link")) {
+                executeIgnore(conn, "ALTER TABLE chapitre ADD COLUMN drive_link TEXT NULL");
+            }
+            if (!columnExists(conn, "td", "important")) {
+                executeIgnore(conn, "ALTER TABLE td ADD COLUMN important BOOLEAN NOT NULL DEFAULT FALSE");
+            }
+            if (!columnExists(conn, "td", "drive_link")) {
+                executeIgnore(conn, "ALTER TABLE td ADD COLUMN drive_link TEXT NULL");
+            }
+            if (!columnExists(conn, "video_explicative", "important")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN important BOOLEAN NOT NULL DEFAULT FALSE");
+            }
+            if (!columnExists(conn, "video_explicative", "drive_link")) {
+                executeIgnore(conn, "ALTER TABLE video_explicative ADD COLUMN drive_link TEXT NULL");
             }
         } catch (Exception ignored) {
             // Keep app usable even if schema migration cannot be performed.
@@ -584,6 +793,17 @@ public final class CourseManagementRepository {
         cours.setNomFormateur(rs.getString("nom_formateur"));
         cours.setDureeTotaleHeures(rs.getInt("duree_totale_heures"));
         cours.setChapitreCount(rs.getInt("chapitre_count"));
+        cours.setStatut(CoursStatut.fromString(rs.getString("statut")));
+        cours.setCommentaireAdmin(rs.getString("commentaire_admin"));
+        cours.setCreatedById(rs.getInt("created_by_id"));
+        cours.setDriveFolderId(rs.getString("drive_folder_id"));
+        // Nouveaux champs pour la gestion de contenu
+        try {
+            cours.setImportant(rs.getBoolean("important"));
+            cours.setDriveLink(rs.getString("drive_link"));
+        } catch (Exception e) {
+            // Colonnes pas encore créées, ignorer
+        }
         return cours;
     }
 
@@ -601,6 +821,13 @@ public final class CourseManagementRepository {
         chapitre.setDomaine(rs.getString("domaine"));
         chapitre.setTdCount(rs.getInt("td_count"));
         chapitre.setVideoCount(rs.getInt("video_count"));
+        // Nouveaux champs pour la gestion de contenu
+        try {
+            chapitre.setImportant(rs.getBoolean("important"));
+            chapitre.setDriveLink(rs.getString("drive_link"));
+        } catch (Exception e) {
+            // Colonnes pas encore créées, ignorer
+        }
         return chapitre;
     }
 
@@ -617,6 +844,13 @@ public final class CourseManagementRepository {
         td.setChapitreId(rs.getInt("chapitre_id"));
         td.setChapitreTitre(rs.getString("chapitre_titre"));
         td.setDomaine(rs.getString("domaine"));
+        // Nouveaux champs pour la gestion de contenu
+        try {
+            td.setImportant(rs.getBoolean("important"));
+            td.setDriveLink(rs.getString("drive_link"));
+        } catch (Exception e) {
+            // Colonnes pas encore créées, ignorer
+        }
         return td;
     }
 
@@ -633,6 +867,27 @@ public final class CourseManagementRepository {
         video.setChapitreId(rs.getInt("chapitre_id"));
         video.setChapitreTitre(rs.getString("chapitre_titre"));
         video.setDomaine(rs.getString("domaine"));
+        // Nouveaux champs pour la gestion de contenu
+        try {
+            video.setImportant(rs.getBoolean("important"));
+            video.setDriveLink(rs.getString("drive_link"));
+        } catch (Exception e) {
+            // Colonnes pas encore créées, ignorer
+        }
+        return video;
+    }
+
+    private static VideoExplicative mapVideoComplete(ResultSet rs) throws Exception {
+        VideoExplicative video = mapVideo(rs);
+        // Ajouter les champs IA s'ils existent
+        try {
+            video.setAIGenerated(rs.getBoolean("is_ai_generated"));
+            video.setAiScript(rs.getString("ai_script"));
+            video.setGenerationStatus(rs.getString("generation_status"));
+            video.setDidVideoId(rs.getString("did_video_id"));
+        } catch (Exception e) {
+            // Colonnes IA pas encore créées, ignorer
+        }
         return video;
     }
 

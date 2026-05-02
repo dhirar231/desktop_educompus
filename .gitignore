@@ -1,11 +1,10 @@
-# Maven build output
-/target/
-
-# Compiled Java classes
+﻿target/
+.m2/
+credentials.json
+tokens/
+tokens_calendar/
 *.class
-
-# IDE files
-/.idea/
+.idea/
 *.iml
 
 # OS files
@@ -27,4 +26,3 @@ AGENTS.md
 
 # JCEF cache
 var/
-.env

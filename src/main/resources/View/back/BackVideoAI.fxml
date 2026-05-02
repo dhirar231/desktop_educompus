@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.educompus.controller.back.BackVideoAIController">
+   <top>
+      <VBox spacing="10.0">
+         <children>
+            <Label text="Génération de Vidéos IA">
+               <font>
+                  <Font name="System Bold" size="24.0" />
+               </font>
+            </Label>
+            <Separator />
+         </children>
+         <padding>
+            <Insets bottom="10.0" left="20.0" right="20.0" top="20.0" />
+         </padding>
+      </VBox>
+   </top>
+   <center>
+      <SplitPane dividerPositions="0.4" orientation="VERTICAL">
+         <items>
+            <!-- Formulaire de génération -->
+            <VBox spacing="15.0">
+               <children>
+                  <Label text="Nouvelle Génération IA">
+                     <font>
+                        <Font name="System Bold" size="16.0" />
+                     </font>
+                  </Label>
+                  
+                  <GridPane hgap="10.0" vgap="10.0">
+                     <columnConstraints>
+                        <ColumnConstraints hgrow="NEVER" minWidth="120.0" />
+                        <ColumnConstraints hgrow="ALWAYS" />
+                        <ColumnConstraints hgrow="NEVER" minWidth="120.0" />
+                        <ColumnConstraints hgrow="ALWAYS" />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                     </rowConstraints>
+                     
+                     <Label text="Chapitre :" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                     <ComboBox fx:id="comboChapitres" maxWidth="1.7976931348623157E308" promptText="Sélectionner un chapitre..." GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                     
+                     <Label text="Durée (min) :" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                     <Spinner fx:id="spinnerDuree" maxWidth="100.0" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                     
+                     <Label text="Titre :" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                     <TextField fx:id="txtTitre" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                     
+                     <Label text="Langue :" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                     <ComboBox fx:id="comboLangue" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                     
+                     <Label text="Description :" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                     <TextArea fx:id="txtDescription" maxHeight="60.0" prefRowCount="3" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                     
+                     <Label text="Qualité :" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                     <ComboBox fx:id="comboQualite" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                     
+                     <Label text="Type de voix :" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                     <ComboBox fx:id="comboVoix" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                     
+                     <Label text="Style :" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                     <ComboBox fx:id="comboStyle" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                  </GridPane>
+                  
+                  <HBox alignment="CENTER_LEFT" spacing="10.0">
+                     <children>
+                        <Button fx:id="btnGenerer" mnemonicParsing="false" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="Générer Vidéo IA" />
+                        <Button fx:id="btnAnnuler" mnemonicParsing="false" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Annuler" />
+                        <ProgressBar fx:id="progressGeneration" prefWidth="200.0" />
+                        <Label fx:id="lblStatut" text="Prêt" />
+                     </children>
+                  </HBox>
+                  
+                  <Separator />
+                  
+                  <!-- Script généré -->
+                  <VBox spacing="5.0">
+                     <children>
+                        <Label text="Script généré :">
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                        <TextArea fx:id="txtScript" editable="false" prefRowCount="6" promptText="Le script généré apparaîtra ici..." />
+                     </children>
+                  </VBox>
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
+               </padding>
+            </VBox>
+            
+            <!-- Liste des vidéos -->
+            <VBox spacing="10.0">
+               <children>
+                  <HBox alignment="CENTER_LEFT" spacing="10.0">
+                     <children>
+                        <Label text="Vidéos Explicatives">
+                           <font>
+                              <Font name="System Bold" size="16.0" />
+                           </font>
+                        </Label>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="txtRecherche" promptText="Rechercher..." />
+                        <Button fx:id="btnRafraichir" mnemonicParsing="false" text="Rafraîchir" />
+                     </children>
+                  </HBox>
+                  
+                  <TableView fx:id="tableVideos" VBox.vgrow="ALWAYS">
+                     <columns>
+                        <TableColumn fx:id="colId" maxWidth="60.0" minWidth="60.0" prefWidth="60.0" text="ID" />
+                        <TableColumn fx:id="colTitre" minWidth="200.0" prefWidth="250.0" text="Titre" />
+                        <TableColumn fx:id="colChapitre" minWidth="150.0" prefWidth="180.0" text="Chapitre" />
+                        <TableColumn fx:id="colStatut" maxWidth="100.0" minWidth="100.0" prefWidth="100.0" text="Statut" />
+                        <TableColumn fx:id="colIA" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" text="Type" />
+                        <TableColumn fx:id="colDateCreation" minWidth="120.0" prefWidth="140.0" text="Date création" />
+                     </columns>
+                  </TableView>
+                  
+                  <HBox alignment="CENTER_LEFT" spacing="10.0">
+                     <children>
+                        <Button fx:id="btnVoir" mnemonicParsing="false" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="Voir Vidéo" />
+                        <Button fx:id="btnSupprimer" mnemonicParsing="false" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Supprimer" />
+                     </children>
+                  </HBox>
+               </children>
+               <padding>
+                  <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />
+               </padding>
+            </VBox>
+         </items>
+      </SplitPane>
+   </center>
+</BorderPane>

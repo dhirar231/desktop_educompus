@@ -12,6 +12,16 @@ public final class VideoExplicative {
     private int chapitreId;
     private String chapitreTitre;
     private String domaine;
+    
+    // Nouveaux champs pour les vidéos AI
+    private boolean isAIGenerated;
+    private String aiScript;
+    private String generationStatus; // "PENDING", "PROCESSING", "COMPLETED", "ERROR"
+    private String didVideoId; // ID de la vidéo D-ID pour le suivi
+    
+    // Nouveaux champs pour la gestion de contenu
+    private boolean important = false;
+    private String driveLink;
 
     public int getId() {
         return id;
@@ -99,5 +109,54 @@ public final class VideoExplicative {
 
     public void setDomaine(String domaine) {
         this.domaine = domaine;
+    }
+
+    // Getters/Setters pour les champs AI
+    public boolean isAIGenerated() {
+        return isAIGenerated;
+    }
+
+    public void setAIGenerated(boolean AIGenerated) {
+        isAIGenerated = AIGenerated;
+    }
+
+    public String getAiScript() {
+        return aiScript;
+    }
+
+    public void setAiScript(String aiScript) {
+        this.aiScript = aiScript;
+    }
+
+    public String getGenerationStatus() {
+        return generationStatus;
+    }
+
+    public void setGenerationStatus(String generationStatus) {
+        this.generationStatus = generationStatus;
+    }
+
+    public String getDidVideoId() {
+        return didVideoId;
+    }
+
+    public void setDidVideoId(String didVideoId) {
+        this.didVideoId = didVideoId;
+    }
+
+    public boolean isImportant() {
+        return important;
+    }
+
+    public void setImportant(boolean important) {
+        this.important = important;
+    }
+
+    public String getDriveLink() {
+        return driveLink;
+    }
+
+    public void setDriveLink(String driveLink) {
+        this.driveLink = driveLink;
     }
 }

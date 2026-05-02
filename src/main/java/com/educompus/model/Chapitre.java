@@ -13,6 +13,10 @@ public final class Chapitre {
     private String domaine;
     private int tdCount;
     private int videoCount;
+    
+    // Nouveaux champs pour la gestion de contenu
+    private boolean important = false;
+    private String driveLink;
 
     public int getId() {
         return id;
@@ -108,6 +112,22 @@ public final class Chapitre {
 
     public void setVideoCount(int videoCount) {
         this.videoCount = videoCount;
+    }
+
+    public boolean isImportant() {
+        return important;
+    }
+
+    public void setImportant(boolean important) {
+        this.important = important;
+    }
+
+    public String getDriveLink() {
+        return driveLink;
+    }
+
+    public void setDriveLink(String driveLink) {
+        this.driveLink = driveLink;
     }
 
     @Override
