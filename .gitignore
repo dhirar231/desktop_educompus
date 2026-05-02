@@ -37,3 +37,19 @@ src/main/resources/groq/groq.properties
 
 # Configuration Marketplace (toutes les clés API)
 src/main/resources/configMarketplace.properties
+
+
+# Maven
+target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Fichiers compilés
+*.jar
+*.war
+*.ear
