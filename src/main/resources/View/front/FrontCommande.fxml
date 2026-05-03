@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.web.WebView?>
 
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.educompus.controller.front.FrontCommandeController"
@@ -16,7 +17,7 @@
         <Label text="Finaliser la commande" styleClass="page-title" style="-fx-font-size: 16px;"/>
     </HBox>
 
-    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+    <ScrollPane fx:id="mainScrollPane" fitToWidth="true" VBox.vgrow="ALWAYS"
                 hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                 styleClass="catalog-scroll">
         <content>
@@ -80,6 +81,15 @@
                                managed="false" visible="false"/>
                     </VBox>
                 </VBox>
+
+                <!-- Paiement (Stripe intégré) -->
+                <VBox fx:id="paymentSection" styleClass="card" spacing="10" visible="false" managed="false">
+                    <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
+                    <Label text="Paiement" styleClass="page-title" style="-fx-font-size: 15px;"/>
+                    <Label fx:id="lblPaymentInfo" text="" styleClass="stat-title"/>
+                    <WebView fx:id="stripeWebView" prefHeight="420" />
+                    <Label fx:id="errPayment" text="" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
             </VBox>
         </content>
     </ScrollPane>
@@ -88,6 +98,6 @@
     <HBox styleClass="detail-topbar" alignment="CENTER_RIGHT" spacing="12">
         <padding><Insets top="14" right="28" bottom="14" left="28"/></padding>
         <Button text="Annuler" styleClass="btn-ghost" onAction="#onRetour"/>
-        <Button text="✔  Confirmer la commande" styleClass="btn-primary" onAction="#onConfirmer"/>
+        <Button fx:id="btnConfirmer" text="✔  Confirmer la commande" styleClass="btn-primary" onAction="#onConfirmer"/>
     </HBox>
 </VBox>

@@ -515,7 +515,6 @@ public final class FrontExamsController {
         }
         int total = activeQuestions.size();
         int percent = total == 0 ? 0 : (int) Math.round((score * 100.0) / total);
-        try { stopActivityTracking(selectedItem == null ? 0 : selectedItem.getExamId(), percent); } catch (Exception ignored) {}
         quizResultLabel.setText("Résultat: %d/%d bonnes réponses (%d%%).".formatted(score, total, percent));
         nextQuestionButton.setDisable(true);
         submitQuizButton.setDisable(true);
@@ -548,7 +547,6 @@ public final class FrontExamsController {
                     javafx.scene.control.ButtonType download = new javafx.scene.control.ButtonType("Télécharger");
                     javafx.scene.control.ButtonType close = javafx.scene.control.ButtonType.OK;
                     done.getButtonTypes().setAll(download, close);
-                    com.educompus.util.Dialogs.style(done);
                     java.util.Optional<javafx.scene.control.ButtonType> res = done.showAndWait();
                     if (res.isPresent() && res.get() == download) {
                         try {

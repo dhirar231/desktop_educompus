@@ -17,42 +17,63 @@
             <Label text="Marketplace" styleClass="page-title"/>
             <Label text="Découvrez notre catalogue de produits éducatifs." styleClass="page-subtitle"/>
         </VBox>
-        <Button text="📋  Mes commandes" styleClass="btn-ghost"
-                onAction="#onVoirMesCommandes"/>
-        <Button fx:id="btnPanier" text="🛒  Mon panier" styleClass="btn-rgb-outline"
-                onAction="#onOuvrirPanier"/>
+        <Button text="Mes commandes" styleClass="btn-rgb-outline" onAction="#onVoirMesCommandes"/>
+        <Button fx:id="btnPanier" text="Mon panier" styleClass="btn-rgb" onAction="#onOuvrirPanier"/>
     </HBox>
 
-    <!-- Barre de recherche -->
+    <!-- Barre de recherche + filtres -->
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="searchField"
-                   promptText="🔍  Rechercher un produit par nom…"
+                   promptText="Rechercher un produit par nom..."
                    styleClass="field"
                    HBox.hgrow="ALWAYS"
                    onKeyReleased="#onSearch"/>
-        <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
+        <Button text="Réinitialiser" styleClass="btn-rgb-outline" onAction="#onReset"/>
         <Label fx:id="lblCount" text="" styleClass="page-subtitle"/>
     </HBox>
 
-    <!-- Grille de cartes dans un ScrollPane -->
+    <!-- Section recommandations IA — barre compacte -->
+    <VBox fx:id="sectionReco" spacing="6" managed="false" visible="false"
+          style="-fx-background-color: rgba(6,106,201,0.04);
+                 -fx-background-radius: 12px;
+                 -fx-border-color: rgba(6,106,201,0.12);
+                 -fx-border-radius: 12px;
+                 -fx-border-width: 1;
+                 -fx-padding: 8 14 8 14;">
+        <VBox.margin><Insets bottom="2"/></VBox.margin>
+
+        <HBox alignment="CENTER_LEFT" spacing="8">
+            <Label text="Recommande pour vous"
+                   style="-fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: -edu-primary;"/>
+            <Label text=" Groq AI "
+                   style="-fx-background-color: linear-gradient(to right, #7c3aed, #2563eb);
+                          -fx-text-fill: white; -fx-background-radius: 999px;
+                          -fx-padding: 1 6 1 6; -fx-font-size: 8px; -fx-font-weight: 800;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lblRecoStatus" text="" styleClass="page-subtitle"
+                   style="-fx-font-size: 9px; -fx-font-style: italic;"/>
+        </HBox>
+
+        <HBox fx:id="recoPane" spacing="8" alignment="CENTER_LEFT"/>
+    </VBox>
+
+    <!-- Grille de cartes -->
     <ScrollPane fx:id="scrollPane" fitToWidth="true" VBox.vgrow="ALWAYS"
                 hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                 styleClass="catalog-scroll">
         <content>
             <VBox spacing="0">
-                <FlowPane fx:id="cardsPane"
-                          hgap="18" vgap="18"
-                          styleClass="project-catalog"
-                          style="-fx-padding: 4;"/>
+                <FlowPane fx:id="cardsPane" hgap="18" vgap="18"
+                          styleClass="project-catalog" style="-fx-padding: 4;"/>
             </VBox>
         </content>
     </ScrollPane>
 
-    <!-- État vide -->
+    <!-- Etat vide -->
     <VBox fx:id="emptyState" alignment="CENTER" spacing="10"
           managed="false" visible="false" VBox.vgrow="ALWAYS">
-        <Label text="Aucun produit trouvé" styleClass="empty-title"/>
-        <Label text="Essayez un autre mot-clé ou revenez plus tard."
+        <Label text="Aucun produit trouve" styleClass="empty-title"/>
+        <Label text="Essayez un autre mot-cle ou revenez plus tard."
                styleClass="empty-subtitle" wrapText="true" textAlignment="CENTER"/>
     </VBox>
 </VBox>

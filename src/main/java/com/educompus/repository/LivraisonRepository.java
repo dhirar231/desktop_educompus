@@ -9,8 +9,14 @@ import java.util.ArrayList;
 public class LivraisonRepository {
 
     public void insert(Livraison l) throws SQLException {
-        String sql = "INSERT INTO livraison (adresse, ville, date_livraison, status_livraison, commande_id, tracking_number, created_at, updated_at, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         Connection conn = EducompusDB.getConnection();
+        try { insert(conn, l); }
+        finally { conn.close(); }
+    }
+
+    /** Version transactionnelle */
+    public void insert(Connection conn, Livraison l) throws SQLException {
+        String sql = "INSERT INTO livraison (adresse, ville, date_livraison, status_livraison, commande_id, tracking_number, created_at, updated_at, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql);
         try {
             ps.setString(1, l.getAdresse());
@@ -24,7 +30,7 @@ public class LivraisonRepository {
             ps.setTimestamp(8, Timestamp.valueOf(l.getUpdatedAt()));
             ps.setString(9, l.getPhoneNumber());
             ps.executeUpdate();
-        } finally { ps.close(); conn.close(); }
+        } finally { ps.close(); }
     }
 
     public void update(Livraison l) throws SQLException {

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.back.BackCalendrierCommandesController"
+      styleClass="content" spacing="16">
+    <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
+
+    <!-- Header navigation mois -->
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Calendrier des commandes" styleClass="page-title"/>
+            <Label text="Visualisation temporelle des commandes par jour." styleClass="page-subtitle"/>
+        </VBox>
+        <Button text="◀" styleClass="btn-ghost" onAction="#onMoisPrecedent"
+                style="-fx-font-size: 16px; -fx-min-width: 36px;"/>
+        <Label fx:id="lblMoisAnnee" text=""
+               style="-fx-font-size: 15px; -fx-font-weight: 800; -fx-text-fill: -edu-text;
+                      -fx-min-width: 160px; -fx-alignment: CENTER;"/>
+        <Button text="▶" styleClass="btn-ghost" onAction="#onMoisSuivant"
+                style="-fx-font-size: 16px; -fx-min-width: 36px;"/>
+        <Button text="Aujourd'hui" styleClass="btn-ghost" onAction="#onAujourdhui"/>
+        <Button text="↻" styleClass="btn-ghost" onAction="#onActualiser"/>
+    </HBox>
+
+    <!-- Légende -->
+    <HBox spacing="16" alignment="CENTER_LEFT">
+        <Label text="● En attente"  style="-fx-text-fill: #f59e0b; -fx-font-weight: 700; -fx-font-size: 11px;"/>
+        <Label text="● Expédiée"    style="-fx-text-fill: #3b82f6; -fx-font-weight: 700; -fx-font-size: 11px;"/>
+        <Label text="● Livrée"      style="-fx-text-fill: #10b981; -fx-font-weight: 700; -fx-font-size: 11px;"/>
+        <Label text="● Annulée"     style="-fx-text-fill: #ef4444; -fx-font-weight: 700; -fx-font-size: 11px;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="lblTotalMois" text="" styleClass="page-subtitle" style="-fx-font-size: 11px;"/>
+    </HBox>
+
+    <!-- Tout dans un ScrollPane pour permettre le scroll vers le détail -->
+    <ScrollPane fx:id="mainScroll" fitToWidth="true" VBox.vgrow="ALWAYS"
+                hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                styleClass="catalog-scroll">
+        <content>
+            <VBox spacing="14">
+                <padding><Insets top="2" right="2" bottom="10" left="2"/></padding>
+
+                <!-- Calendrier -->
+                <VBox styleClass="card" spacing="0">
+                    <padding><Insets top="0" right="0" bottom="0" left="0"/></padding>
+
+                    <!-- Jours de la semaine -->
+                    <GridPane fx:id="headerJours"
+                              style="-fx-background-color: -edu-surface; -fx-padding: 8 0 8 0;"/>
+
+                    <!-- Grille des jours -->
+                    <GridPane fx:id="grilleCalendrier"/>
+                </VBox>
+
+                <!-- Panneau détail — dans le même scroll -->
+                <VBox fx:id="panneauDetail" styleClass="card" spacing="10"
+                      managed="false" visible="false">
+                    <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label fx:id="lblDetailDate" text="" styleClass="stat-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="✕  Fermer" styleClass="btn-ghost"
+                                onAction="#onFermerDetail"/>
+                    </HBox>
+                    <ListView fx:id="listeDetailCommandes" prefHeight="180"
+                              style="-fx-background-color: transparent; -fx-border-color: transparent;"/>
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>

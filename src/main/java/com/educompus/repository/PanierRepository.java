@@ -21,27 +21,30 @@ public class PanierRepository {
     }
 
     public void updateQuantite(Panier p) throws SQLException {
-        String sql = "UPDATE panier SET quantite=? WHERE id=?";
         Connection conn = EducompusDB.getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql);
+        PreparedStatement ps = conn.prepareStatement("UPDATE panier SET quantite=? WHERE id=?");
         try { ps.setInt(1, p.getQuantite()); ps.setInt(2, p.getId()); ps.executeUpdate(); }
         finally { ps.close(); conn.close(); }
     }
 
     public void delete(int id) throws SQLException {
-        String sql = "DELETE FROM panier WHERE id=?";
         Connection conn = EducompusDB.getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql);
+        PreparedStatement ps = conn.prepareStatement("DELETE FROM panier WHERE id=?");
         try { ps.setInt(1, id); ps.executeUpdate(); }
         finally { ps.close(); conn.close(); }
     }
 
     public void deleteByUser(int userId) throws SQLException {
-        String sql = "DELETE FROM panier WHERE user_id=?";
         Connection conn = EducompusDB.getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql);
+        try { deleteByUser(conn, userId); }
+        finally { conn.close(); }
+    }
+
+    /** Version transactionnelle */
+    public void deleteByUser(Connection conn, int userId) throws SQLException {
+        PreparedStatement ps = conn.prepareStatement("DELETE FROM panier WHERE user_id=?");
         try { ps.setInt(1, userId); ps.executeUpdate(); }
-        finally { ps.close(); conn.close(); }
+        finally { ps.close(); }
     }
 
     public ArrayList<Panier> findAll() throws SQLException {
@@ -58,9 +61,8 @@ public class PanierRepository {
 
     public ArrayList<Panier> findByUser(int userId) throws SQLException {
         ArrayList<Panier> liste = new ArrayList<>();
-        String sql = "SELECT * FROM panier WHERE user_id=?";
         Connection conn = EducompusDB.getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql);
+        PreparedStatement ps = conn.prepareStatement("SELECT * FROM panier WHERE user_id=?");
         try {
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
