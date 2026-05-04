@@ -17,8 +17,6 @@ Thumbs.db
 
 target/classes/com/educompus/service/ServiceExam.class
 
-.env
-AGENTS.md
 # Maven cache
 .m2/
 
@@ -27,4 +25,3 @@ AGENTS.md
 
 # JCEF cache
 var/
-.env

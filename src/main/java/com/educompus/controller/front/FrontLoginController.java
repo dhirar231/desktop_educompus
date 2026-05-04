@@ -379,7 +379,7 @@ public final class FrontLoginController {
         hintLabel.getStyleClass().add("saved-account-hint");
         meta.getChildren().addAll(emailLabel, hintLabel);
 
-        Button loginButton = new Button("Login with saved account");
+        Button loginButton = new Button("Login");
         loginButton.getStyleClass().addAll("btn-primary", "auth-primary-btn", "saved-account-login-btn");
         loginButton.setOnAction(e -> quickLogin(account.email()));
 
