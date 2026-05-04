@@ -16,6 +16,8 @@ Thumbs.db
 
 target/classes/com/educompus/service/ServiceExam.class
 
+# Maven cache
+.m2/
 # Clés Stripe — ne jamais commiter
 src/main/resources/stripe/stripe.properties
 
@@ -52,3 +54,5 @@ target/
 *.jar
 *.war
 *.ear
+
+/var/jcef-bundle
