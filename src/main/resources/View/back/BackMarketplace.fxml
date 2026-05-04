@@ -12,26 +12,30 @@
     </padding>
 
     <!-- Header -->
-    <HBox alignment="CENTER_LEFT" spacing="12">
-        <VBox spacing="4" HBox.hgrow="ALWAYS">
-            <Label text="Gestion Marketplace" styleClass="page-title"/>
-            <Label text="Catalogue des produits éducatifs — ajout, modification, suppression."
-                   styleClass="page-subtitle"/>
-        </VBox>
-        <Button text="📊  Statistiques"      styleClass="btn-ghost"   onAction="#onVoirStatistiques"/>
-        <Button text="📋  Voir les commandes" styleClass="btn-ghost"   onAction="#onVoirCommandes"/>
-        <Button fx:id="btnAjouter" text="＋  Ajouter un produit" styleClass="btn-primary" onAction="#onAjouter"/>
+    <VBox spacing="4">
+        <Label text="Gestion Marketplace" styleClass="page-title"/>
+        <Label text="Catalogue des produits éducatifs — ajout, modification, suppression."
+               styleClass="page-subtitle"/>
+    </VBox>
+
+    <!-- Barre d'actions (style page projet) -->
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="Rechercher (nom, type, catégorie...)"
+                   styleClass="field" HBox.hgrow="ALWAYS" onKeyReleased="#onSearch"/>
+        <ComboBox fx:id="sortCombo" prefWidth="160" styleClass="combo-rgb" onAction="#onSort"/>
+        <Button text="＋  Ajouter" onAction="#onAjouter" styleClass="btn-rgb"/>
+        <Button text="📊  Stats"   onAction="#onVoirStatistiques" styleClass="btn-rgb-outline"/>
+        <Button text="📅  Calendrier" onAction="#onVoirCalendrier" styleClass="btn-rgb-outline"/>
+        <Button text="📋  Commandes"  onAction="#onVoirCommandes"  styleClass="btn-rgb-outline"/>
     </HBox>
 
-    <!-- Barre de recherche + filtre -->
-    <HBox spacing="10">
-        <TextField fx:id="searchField" promptText="🔍  Rechercher par nom, type, catégorie…"
-                   styleClass="field" HBox.hgrow="ALWAYS" onKeyReleased="#onSearch"/>
-        <ComboBox fx:id="filterCategorie" promptText="Catégorie" prefWidth="160"
-                  styleClass="field" onAction="#onSearch"/>
-        <ComboBox fx:id="sortCombo" promptText="Trier par…" prefWidth="170"
-                  styleClass="field" onAction="#onSort"/>
-        <Button text="Réinitialiser" styleClass="btn-ghost" onAction="#onReset"/>
+    <!-- Filtre catégorie + réinitialiser -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <ComboBox fx:id="filterCategorie" promptText="Filtrer par catégorie" prefWidth="200"
+                  styleClass="combo-rgb" onAction="#onSearch"/>
+        <Button text="Réinitialiser" styleClass="btn-rgb-outline" onAction="#onReset"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="lblCount" text="0 produit(s)" styleClass="page-subtitle"/>
     </HBox>
 
     <!-- ListView produits -->
@@ -44,9 +48,4 @@
             </placeholder>
         </ListView>
     </VBox>
-
-    <!-- Compteur -->
-    <HBox alignment="CENTER_RIGHT">
-        <Label fx:id="lblCount" text="0 produit(s)" styleClass="page-subtitle"/>
-    </HBox>
 </VBox>

@@ -76,17 +76,6 @@
                             </StackPane>
                         </graphic>
                     </Button>
-                    <Button fx:id="navValidationBtn" text="Validation" onAction="#navValidation" maxWidth="1.7976931348623157E308">
-                        <styleClass>
-                            <String fx:value="nav-btn"/>
-                            <String fx:value="side-menu-btn"/>
-                        </styleClass>
-                        <graphic>
-                            <StackPane styleClass="side-icon">
-                                <SVGPath styleClass="side-svg" content="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59Z"/>
-                            </StackPane>
-                        </graphic>
-                    </Button>
                     <!--<Button fx:id="navCategoriesBtn" text="Catégories" onAction="#navCategories" maxWidth="1.7976931348623157E308">
                         <styleClass>
                             <String fx:value="nav-btn"/>

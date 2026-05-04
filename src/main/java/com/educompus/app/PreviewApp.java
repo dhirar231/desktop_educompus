@@ -31,7 +31,16 @@ public final class PreviewApp extends Application {
     public void start(Stage stage) throws Exception {
         // Configurer la base de données au démarrage
         DatabaseSetup.ensureTablesExist();
-        
+
+        // Start embedded HTTP server so mobile phones can open exams directly
+        try {
+            com.educompus.web.EmbeddedExamServer server = new com.educompus.web.EmbeddedExamServer(8000);
+            server.start();
+            System.out.println("EmbeddedExamServer started on port 8000");
+        } catch (Exception e) {
+            System.err.println("Could not start EmbeddedExamServer: " + e.getMessage());
+        }
+
         String fxmlPath = System.getProperty("fxml", "View/front/FrontLogin.fxml");
         String cssPath = System.getProperty("css", "styles/educompus.css");
         String title = System.getProperty("title", "EduCampus");
@@ -52,7 +61,6 @@ public final class PreviewApp extends Application {
             stage.setMinHeight(680);
             stage.show();
             
-            // Démarrer le nouveau système de notifications automatiques
             startNotificationScheduler();
             
             return;
@@ -92,10 +100,7 @@ public final class PreviewApp extends Application {
                     mainStage.setMinHeight(680);
                     mainStage.show();
 
-                    // Démarrer le service de notifications session live (ancien système)
                     SessionNotificationService.getInstance().demarrer(mainStage);
-                    
-                    // Démarrer le nouveau système de notifications automatiques
                     startNotificationScheduler();
                 } finally {
                     stage.close();
@@ -109,17 +114,12 @@ public final class PreviewApp extends Application {
         launch(args);
     }
     
-    /**
-     * Démarre le nouveau système de notifications automatiques.
-     */
     private void startNotificationScheduler() {
         try {
-            // Initialiser les services
             NotificationService notificationService = new NotificationService();
             SessionLiveRepository sessionRepository = new SessionLiveRepository();
             NotificationRepository notificationRepository = new NotificationRepository();
             
-            // Créer et démarrer le planificateur
             notificationScheduler = new NotificationSchedulerService(
                 notificationService, 
                 sessionRepository, 
@@ -129,12 +129,11 @@ public final class PreviewApp extends Application {
             notificationScheduler.start();
             System.out.println("[NotificationScheduler] Nouveau système de notifications démarré");
             
-            // Test automatique des notifications (optionnel)
             if (Boolean.parseBoolean(System.getProperty("test.notifications", "false"))) {
                 System.out.println("🧪 Mode test activé - Envoi de notifications de test...");
                 Platform.runLater(() -> {
                     try {
-                        Thread.sleep(3000); // Attendre 3 secondes
+                        Thread.sleep(3000);
                         NotificationTester.testBothNotifications();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -142,11 +141,10 @@ public final class PreviewApp extends Application {
                 });
             }
             
-            // TEST AUTOMATIQUE DE LA NOTIFICATION URGENTE (TEMPORAIRE)
             System.out.println("🚨 DÉCLENCHEMENT AUTOMATIQUE DU TEST DE NOTIFICATION URGENTE DANS 5 SECONDES...");
             Platform.runLater(() -> {
                 try {
-                    Thread.sleep(5000); // Attendre 5 secondes
+                    Thread.sleep(5000);
                     System.out.println("🚨 LANCEMENT DU TEST NOTIFICATION URGENTE...");
                     TestNotificationInApp.testUrgentNotificationNow();
                 } catch (InterruptedException e) {
@@ -160,9 +158,6 @@ public final class PreviewApp extends Application {
         }
     }
     
-    /**
-     * Arrête proprement le système de notifications.
-     */
     @Override
     public void stop() throws Exception {
         try {

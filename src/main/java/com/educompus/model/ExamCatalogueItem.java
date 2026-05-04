@@ -11,6 +11,8 @@ public final class ExamCatalogueItem {
     private String domainLabel;
     private int questionCount;
     private int estimatedMinutes;
+    // total estimated duration in seconds (preferred for precise display)
+    private int estimatedSeconds;
     private boolean published;
 
     public int getExamId() {
@@ -91,6 +93,23 @@ public final class ExamCatalogueItem {
 
     public void setEstimatedMinutes(int estimatedMinutes) {
         this.estimatedMinutes = Math.max(0, estimatedMinutes);
+    }
+
+    public int getEstimatedSeconds() {
+        return estimatedSeconds;
+    }
+
+    public void setEstimatedSeconds(int estimatedSeconds) {
+        this.estimatedSeconds = Math.max(0, estimatedSeconds);
+        // keep minutes in sync for compatibility
+        this.estimatedMinutes = (int) Math.max(0, Math.ceil(this.estimatedSeconds / 60.0));
+    }
+
+    public String getEstimatedDurationLabel() {
+        if (estimatedSeconds <= 0) return "0:00";
+        int mm = estimatedSeconds / 60;
+        int ss = estimatedSeconds % 60;
+        return String.format("%d:%02d", mm, ss);
     }
 
     public boolean isPublished() {

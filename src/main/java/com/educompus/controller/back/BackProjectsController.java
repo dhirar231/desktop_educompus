@@ -51,6 +51,9 @@ import java.io.File;
 import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
 import java.util.ArrayList;
@@ -985,7 +988,32 @@ public final class BackProjectsController {
 
     private static String deadlineChipText(String deadline) {
         String d = safe(deadline);
-        return d.isBlank() ? "Sans date" : d;
+        if (d.isBlank()) return "Sans date";
+        String[] patterns = new String[]{
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm",
+                "yyyy/MM/dd HH:mm:ss",
+                "yyyy/MM/dd HH:mm",
+                "dd/MM/yyyy HH:mm:ss",
+                "dd/MM/yyyy HH:mm",
+                "dd/MM/yy HH:mm",
+                "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String p : patterns) {
+            try {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(p);
+                if (p.contains("H") || p.contains("m")) {
+                    LocalDateTime dt = LocalDateTime.parse(d, fmt);
+                    return dt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+                } else {
+                    LocalDate ld = LocalDate.parse(d, fmt);
+                    return ld.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+                }
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        if (d.contains("-")) return d.replace('-', '/');
+        return d;
     }
 
     private static void info(String title, String message) {
@@ -1017,23 +1045,7 @@ public final class BackProjectsController {
     }
 
     private static void styleDialog(javafx.scene.control.Dialog<?> d) {
-        if (d == null || d.getDialogPane() == null) return;
-        String css = cssUri();
-        if (!css.isBlank() && !d.getDialogPane().getStylesheets().contains(css)) {
-            d.getDialogPane().getStylesheets().add(css);
-        }
-        if (!d.getDialogPane().getStyleClass().contains("rgb-dialog")) {
-            d.getDialogPane().getStyleClass().add("rgb-dialog");
-        }
-        for (javafx.scene.control.ButtonType bt : d.getDialogPane().getButtonTypes()) {
-            javafx.scene.Node b = d.getDialogPane().lookupButton(bt);
-            if (b == null) continue;
-            if (bt == javafx.scene.control.ButtonType.OK) {
-                b.getStyleClass().add("btn-rgb");
-            } else if (bt == javafx.scene.control.ButtonType.CANCEL) {
-                b.getStyleClass().add("btn-rgb-outline");
-            }
-        }
+        try { com.educompus.util.Dialogs.style(d); } catch (Exception ignored) {}
     }
 
     private static String cssUri() {

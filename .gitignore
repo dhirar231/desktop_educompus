@@ -6,4 +6,53 @@ tokens_calendar/
 *.class
 .idea/
 *.iml
-.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+target/classes/com/educompus/service/ServiceExam.class
+
+# Maven cache
+.m2/
+# Clés Stripe — ne jamais commiter
+src/main/resources/stripe/stripe.properties
+
+# Clés Twilio — ne jamais commiter
+src/main/resources/twilio/twilio.properties
+
+# Clés Cloudinary — ne jamais commiter
+src/main/resources/cloudinary/cloudinary.properties
+
+# Clé Gemini
+src/main/resources/gemini/gemini.properties
+
+# Clé Gemini — ne jamais commiter
+src/main/resources/gemini/gemini.properties
+
+# Clé Groq — ne jamais commiter
+src/main/resources/groq/groq.properties
+
+# Configuration Marketplace (toutes les clés API)
+src/main/resources/configMarketplace.properties
+
+
+# Maven
+target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Fichiers compilés
+*.jar
+*.war
+*.ear
+
+/var/jcef-bundle

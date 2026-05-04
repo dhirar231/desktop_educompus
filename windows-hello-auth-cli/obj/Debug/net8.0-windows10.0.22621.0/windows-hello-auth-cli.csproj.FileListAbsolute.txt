@@ -1,0 +1,1 @@
+D:\JavaSymphonyPI\eduCompusDesktop\windows-hello-auth-cli\obj\Debug\net8.0-windows10.0.22621.0\windows-hello-auth-cli.csproj.AssemblyReference.cache

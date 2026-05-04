@@ -57,7 +57,8 @@ public final class JcefBrowserService {
         }
 
         CefClient sharedClient = getOrCreateClient();
-        CefBrowser browser = sharedClient.createBrowser("about:blank", false, false);
+        log("Creating browser for URL: " + safeUrl);
+        CefBrowser browser = sharedClient.createBrowser(safeUrl, false, false);
         CountDownLatch latch = new CountDownLatch(1);
         DialogRef dialogRef = new DialogRef();
 
@@ -82,10 +83,15 @@ public final class JcefBrowserService {
                 dialog.addWindowListener(new WindowAdapter() {
                     @Override
                     public void windowOpened(WindowEvent e) {
-                        browser.createImmediately();
-                        browser.setFocus(true);
-                        browser.loadURL(safeUrl);
-                        log("Meeting dialog opened");
+                        try {
+                            log("windowOpened: creating browser UI and loading URL: " + safeUrl);
+                            browser.createImmediately();
+                            browser.setFocus(true);
+                            browser.loadURL(safeUrl);
+                            log("Meeting dialog opened");
+                        } catch (Exception ex) {
+                            log("Exception while opening dialog: " + ex.getMessage());
+                        }
                     }
 
                     @Override
@@ -218,6 +224,19 @@ public final class JcefBrowserService {
         builder.addJcefArgs("--allow-http-screen-capture");
         builder.addJcefArgs("--disable-usb-keyboard-detect");
         log("Initializing JCEF in " + installDir.getAbsolutePath());
+        // Debug: show where critical classes are loaded from to diagnose NoSuchMethodError
+        try {
+            java.net.URL boundedSrc = org.apache.commons.io.input.BoundedInputStream.class.getProtectionDomain().getCodeSource().getLocation();
+            log("[DEBUG] BoundedInputStream loaded from: " + boundedSrc);
+        } catch (Throwable t) {
+            log("[DEBUG] Unable to locate BoundedInputStream source: " + t.getMessage());
+        }
+        try {
+            java.net.URL gzipSrc = org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream.class.getProtectionDomain().getCodeSource().getLocation();
+            log("[DEBUG] GzipCompressorInputStream loaded from: " + gzipSrc);
+        } catch (Throwable t) {
+            log("[DEBUG] Unable to locate GzipCompressorInputStream source: " + t.getMessage());
+        }
         return builder.build();
     }
 
