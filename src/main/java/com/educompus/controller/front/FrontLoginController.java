@@ -379,7 +379,7 @@ public final class FrontLoginController {
         hintLabel.getStyleClass().add("saved-account-hint");
         meta.getChildren().addAll(emailLabel, hintLabel);
 
-        Button loginButton = new Button("Login with saved account");
+        Button loginButton = new Button("Login");
         loginButton.getStyleClass().addAll("btn-primary", "auth-primary-btn", "saved-account-login-btn");
         loginButton.setOnAction(e -> quickLogin(account.email()));
 
@@ -980,8 +980,8 @@ public final class FrontLoginController {
             boolean exists = DbAuthService.emailExists(mail);
             if (forgotInfoLabel != null) {
                 forgotInfoLabel.setText(exists
-                        ? "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony)."
-                        : "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony).");
+                    ? "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony)."
+                    : "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony).");
                 forgotInfoLabel.setManaged(true);
                 forgotInfoLabel.setVisible(true);
             }

@@ -101,12 +101,7 @@ public final class LocalVideoGeneratorService {
                 titreVideo, descriptionVideo, titreChapitre, descriptionChapitre, motsCles
             );
             
-            String cheminAudio = TextToSpeechService.genererAudio(
-                texteNarration,
-                videoId,
-                "fr", // Langue française
-                voix   // Type de voix
-            );
+            String cheminAudio = null; // TextToSpeechService ne supporte pas la génération de fichier audio
             
             if (cheminAudio == null) {
                 System.err.println("⚠️ Impossible de générer l'audio, abandon de la génération");

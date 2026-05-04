@@ -6,7 +6,6 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextField?>
@@ -98,7 +97,7 @@
                             <Button text="➕  Créer un cours" onAction="#createCours" styleClass="btn-rgb"/>
                             <Button fx:id="googleDriveSelectBtn" text="☁️  Gérer Google Drive" onAction="#openGoogleDriveManager" styleClass="btn-rgb-outline"/>
                         </HBox>
-                        <ListView fx:id="coursListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
+                        <ListView fx:id="coursListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>
@@ -113,7 +112,7 @@
                             <ComboBox fx:id="chapitreSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un chapitre" onAction="#createChapitre" styleClass="btn-rgb"/>
                         </HBox>
-                        <ListView fx:id="chapitreListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
+                        <ListView fx:id="chapitreListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>
@@ -128,7 +127,7 @@
                             <ComboBox fx:id="tdSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer un TD" onAction="#createTd" styleClass="btn-rgb"/>
                         </HBox>
-                        <ListView fx:id="tdListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
+                        <ListView fx:id="tdListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>
@@ -143,48 +142,7 @@
                             <ComboBox fx:id="videoSortCombo" styleClass="combo-rgb" prefWidth="160"/>
                             <Button text="➕  Créer une vidéo" onAction="#createVideo" styleClass="btn-rgb"/>
                         </HBox>
-                        <ListView fx:id="videoListView" VBox.vgrow="ALWAYS" styleClass="back-list"/>
-                    </VBox>
-                </content>
-            </Tab>
-
-            <!-- Sessions Live -->
-            <Tab text="🔴  Sessions Live">
-                <content>
-                    <VBox spacing="14" styleClass="card">
-                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-
-                        <!-- Barre d'outils -->
-                        <HBox spacing="10" alignment="CENTER_LEFT">
-                            <TextField fx:id="sessionSearchField" promptText="🔍  Rechercher par cours..." styleClass="field" HBox.hgrow="ALWAYS"/>
-                            <ComboBox fx:id="sessionCoursFilterCombo" promptText="Tous les cours" styleClass="combo-rgb" prefWidth="200"/>
-                            <ComboBox fx:id="sessionStatutFilterCombo" promptText="Tous les statuts" styleClass="combo-rgb" prefWidth="160"/>
-                            <Button text="➕  Nouvelle session" onAction="#createSession" styleClass="btn-rgb"/>
-                        </HBox>
-
-                        <!-- Compteurs statuts -->
-                        <HBox spacing="10">
-                            <Label fx:id="sessionStatPlanifieeLabel" text="📅 0 planifiée(s)" styleClass="chip chip-info"/>
-                            <Label fx:id="sessionStatEnCoursLabel"   text="🔴 0 en cours"     styleClass="chip chip-success"/>
-                            <Label fx:id="sessionStatTermineeLabel"  text="✅ 0 terminée(s)"  styleClass="chip chip-warning"/>
-                        </HBox>
-
-                        <!-- Liste des sessions -->
-                        <ListView fx:id="sessionListView" VBox.vgrow="ALWAYS"/>
-                    </VBox>
-                </content>
-            </Tab>
-
-            <!-- Calendrier Sessions Live -->
-            <Tab text="📅  Calendrier">
-                <content>
-                    <VBox spacing="14" styleClass="card">
-                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <HBox alignment="CENTER_LEFT" spacing="10">
-                            <Label text="Vue Calendrier — Sessions Live" styleClass="page-title"/>
-                            <Label text="Cliquez sur une session EN COURS pour rejoindre" styleClass="page-subtitle"/>
-                        </HBox>
-                        <VBox fx:id="calendarContainer" VBox.vgrow="ALWAYS"/>
+                        <ListView fx:id="videoListView" VBox.vgrow="ALWAYS"/>
                     </VBox>
                 </content>
             </Tab>

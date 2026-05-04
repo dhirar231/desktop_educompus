@@ -4,19 +4,34 @@ import com.educompus.app.AppState;
 import com.educompus.model.Commande;
 import com.educompus.model.LigneCommande;
 import com.educompus.model.Livraison;
+import com.educompus.repository.CommandeRepository;
 import com.educompus.repository.EducompusDB;
+import com.educompus.repository.LigneCommandeRepository;
+import com.educompus.repository.LivraisonRepository;
+import com.educompus.repository.PanierRepository;
+import com.educompus.repository.ProduitRepository;
 import com.educompus.service.ServiceCommande;
 import com.educompus.service.ServiceLigneCommande;
 import com.educompus.service.ServiceLivraison;
 import com.educompus.service.ServicePanier;
 import com.educompus.service.ServiceProduit;
+import com.educompus.service.StripePaymentIntent;
+import com.educompus.service.StripePaymentService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.concurrent.Worker;
+import javafx.application.Platform;
+import netscape.javascript.JSObject;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,11 +53,30 @@ public class FrontCommandeController {
     @FXML private Label errPhone;
     @FXML private Label errDate;
 
+    // Paiement Stripe (intégré dans la même page via WebView)
+    @FXML private VBox      paymentSection;
+    @FXML private Label     lblPaymentInfo;
+    @FXML private Label     errPayment;
+    @FXML private WebView   stripeWebView;
+    @FXML private Button    btnConfirmer;
+    @FXML private ScrollPane mainScrollPane;
+
     private final ServiceCommande      serviceCommande      = new ServiceCommande();
     private final ServiceLigneCommande serviceLigneCommande = new ServiceLigneCommande();
     private final ServiceLivraison     serviceLivraison     = new ServiceLivraison();
     private final ServicePanier        servicePanier        = new ServicePanier();
     private final ServiceProduit       serviceProduit       = new ServiceProduit();
+
+    private final CommandeRepository commandeRepo = new CommandeRepository();
+    private final LigneCommandeRepository ligneCommandeRepo = new LigneCommandeRepository();
+    private final LivraisonRepository livraisonRepo = new LivraisonRepository();
+    private final ProduitRepository produitRepo = new ProduitRepository();
+    private final PanierRepository panierRepo = new PanierRepository();
+
+    private StripePaymentService stripePaymentService;
+    private StripePaymentIntent currentPaymentIntent;
+    private boolean paymentUiShown = false;
+    private StripeJavaBridge javaBridgeRef; // référence forte pour éviter le GC
 
     private List<FrontPanierController.PanierItem> items;
     private Runnable onRetourCallback;
@@ -61,6 +95,10 @@ public class FrontCommandeController {
     @FXML
     private void initialize() {
         attacherValidation();
+        if (paymentSection != null) {
+            paymentSection.setVisible(false);
+            paymentSection.setManaged(false);
+        }
     }
 
     // ── Validation en temps réel ──────────────────────────────────────────────
@@ -165,33 +203,237 @@ public class FrontCommandeController {
     private void onConfirmer(ActionEvent event) {
         if (!validerTout()) return;
 
-        // Vérifier le stock avant de commencer
+        if (items == null || items.isEmpty()) {
+            afficher(errAdresse, fieldAdresse, "Votre panier est vide.");
+            return;
+        }
+        if (!verifierStockLocal()) return;
+
+        double total = items.stream()
+                .mapToDouble(i -> i.produit.getPrix() * i.panier.getQuantite())
+                .sum();
+
+        demarrerPaiementStripe(total);
+    }
+
+    private boolean verifierStockLocal() {
         for (FrontPanierController.PanierItem item : items) {
             if (item.produit.getStock() < item.panier.getQuantite()) {
                 afficher(errAdresse, fieldAdresse,
                         "Stock insuffisant pour « " + item.produit.getNom()
-                        + " » (disponible : " + item.produit.getStock() + ").");
-                return;
+                                + " » (disponible : " + item.produit.getStock() + ").");
+                return false;
             }
         }
+        return true;
+    }
 
+    private void demarrerPaiementStripe(double total) {
+        // Tenter d'initialiser Stripe — si les clés manquent, finaliser directement
+        try {
+            if (stripePaymentService == null) stripePaymentService = new StripePaymentService();
+        } catch (Exception e) {
+            // Stripe non configuré → finaliser la commande directement (mode sans paiement)
+            System.out.println("[INFO] Stripe non configuré (" + e.getMessage() + ") — commande directe.");
+            System.out.println("[DEBUG] STRIPE_SECRET_KEY = " + System.getenv("STRIPE_SECRET_KEY"));
+            System.out.println("[DEBUG] STRIPE_PUBLISHABLE_KEY = " + System.getenv("STRIPE_PUBLISHABLE_KEY"));
+            finaliserSansStripe();
+            return;
+        }
+        System.out.println("[Stripe] Service initialisé OK — création PaymentIntent...");
+
+        long amountMinorUnits = toMinorUnits(total);
+        btnConfirmer.setDisable(true);
+        btnConfirmer.setText("Paiement…");
+
+        new Thread(() -> {
+            try {
+                StripePaymentIntent intent = stripePaymentService.createPaymentIntent(amountMinorUnits, AppState.getUserId());
+                currentPaymentIntent = intent;
+                Platform.runLater(() -> afficherUiPaiement(total, intent));
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    btnConfirmer.setDisable(false);
+                    btnConfirmer.setText("✔  Confirmer la commande");
+                    showErreurVisible("Erreur Stripe : " + ex.getMessage());
+                });
+            }
+        }, "stripe-create-payment-intent").start();
+    }
+
+    private void finaliserSansStripe() {
+        btnConfirmer.setDisable(true);
+        btnConfirmer.setText("Enregistrement…");
+        new Thread(() -> {
+            try {
+                Commande commande = finaliserCommandeTransaction();
+                Platform.runLater(() -> {
+                    btnConfirmer.setDisable(false);
+                    btnConfirmer.setText("✔  Confirmer la commande");
+                    Alert ok = new Alert(Alert.AlertType.INFORMATION);
+                    ok.setTitle("Commande confirmée");
+                    ok.setHeaderText("Commande #" + commande.getId() + " enregistrée !");
+                    ok.setContentText("Total : " + String.format("%.2f TND", commande.getTotal())
+                            + "\nStatut : En attente de traitement.");
+                    styleAlert(ok);
+                    ok.showAndWait();
+                    if (onSuccessCallback != null) onSuccessCallback.run();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    btnConfirmer.setDisable(false);
+                    btnConfirmer.setText("✔  Confirmer la commande");
+                    showErreurVisible("Erreur : " + ex.getMessage());
+                });
+            }
+        }, "commande-sans-stripe").start();
+    }
+
+    private void showErreurVisible(String msg) {
+        // Rendre errPayment visible même s'il était managed=false
+        if (errPayment != null) {
+            errPayment.setText(msg);
+            errPayment.setVisible(true);
+            errPayment.setManaged(true);
+            if (!errPayment.getStyleClass().contains("field-error"))
+                errPayment.getStyleClass().add("field-error");
+        } else {
+            // Fallback : Alert
+            Alert a = new Alert(Alert.AlertType.ERROR);
+            a.setTitle("Erreur");
+            a.setHeaderText(null);
+            a.setContentText(msg);
+            styleAlert(a);
+            a.showAndWait();
+        }
+    }
+
+    private void afficherUiPaiement(double total, StripePaymentIntent intent) {
+        if (paymentSection != null) {
+            paymentSection.setVisible(true);
+            paymentSection.setManaged(true);
+        }
+
+        String currency = stripePaymentService != null ? stripePaymentService.getCurrency().toUpperCase() : "";
+        if (lblPaymentInfo != null) {
+            lblPaymentInfo.setText(String.format("Montant à payer : %.2f %s", total, currency));
+        }
+
+        if (stripeWebView == null) {
+            showErreurVisible("WebView indisponible — javafx-web manquant ou non chargé.");
+            btnConfirmer.setDisable(false);
+            btnConfirmer.setText("✔  Confirmer la commande");
+            return;
+        }
+
+        // Scroll automatique vers la section paiement
+        Platform.runLater(() -> {
+            if (mainScrollPane != null) mainScrollPane.setVvalue(1.0);
+            if (paymentSection != null) paymentSection.requestFocus();
+        });
+
+        WebEngine engine = stripeWebView.getEngine();
+        if (!paymentUiShown) {
+            engine.getLoadWorker().stateProperty().addListener((obs, old, state) -> {
+                if (state == Worker.State.SUCCEEDED) {
+                    try {
+                        JSObject window = (JSObject) engine.executeScript("window");
+                        javaBridgeRef = new StripeJavaBridge(
+                            () -> onPaiementTermine(
+                                    currentPaymentIntent != null ? currentPaymentIntent.id() : "",
+                                    "succeeded"),
+                            msg -> afficher(errPayment, paymentErrorRegion(), msg)
+                        );
+                        window.setMember("javaBridge", javaBridgeRef);
+                        System.out.println("[Stripe] WebView chargé, javaBridge injecté.");
+                    } catch (Exception e) {
+                        System.err.println("[Stripe] Erreur injection javaBridge : " + e.getMessage());
+                    }
+                } else if (state == Worker.State.FAILED) {
+                    System.err.println("[Stripe] WebView FAILED : " + engine.getLoadWorker().getException());
+                    Platform.runLater(() -> showErreurVisible("Impossible de charger le formulaire de paiement. Vérifiez votre connexion internet."));
+                }
+            });
+            paymentUiShown = true;
+        }
+
+        String html = chargerStripeHtml(stripePaymentService.getPublishableKey(), intent.clientSecret());
+        engine.loadContent(html, "text/html");
+        btnConfirmer.setText("Remplissez le formulaire ci-dessous →");
+    }
+
+    private String chargerStripeHtml(String publishableKey, String clientSecret) {
+        String template = readResourceUtf8("/stripe/embedded-payment.html");
+        return template
+                .replace("__PUBLISHABLE_KEY__", escapeJsString(publishableKey))
+                .replace("__CLIENT_SECRET__", escapeJsString(clientSecret));
+    }
+
+    private void onPaiementTermine(String paymentIntentId, String status) {
+        if (paymentIntentId == null || paymentIntentId.isBlank()) {
+            btnConfirmer.setDisable(false);
+            btnConfirmer.setText("✔  Confirmer la commande");
+            afficher(errPayment, paymentErrorRegion(), "Paiement non validé.");
+            return;
+        }
+
+        btnConfirmer.setText("Validation…");
+
+        new Thread(() -> {
+            try {
+                boolean succeeded = stripePaymentService != null && stripePaymentService.isSucceeded(paymentIntentId);
+                if (!succeeded) {
+                    Platform.runLater(() -> {
+                        btnConfirmer.setDisable(false);
+                        btnConfirmer.setText("✔  Confirmer la commande");
+                        afficher(errPayment, paymentErrorRegion(), "Paiement non finalisé (statut: " + status + ").");
+                    });
+                    return;
+                }
+
+                Commande commande = finaliserCommandeTransaction();
+                Platform.runLater(() -> {
+                    btnConfirmer.setDisable(false);
+                    btnConfirmer.setText("✔  Confirmer la commande");
+                    if (paymentSection != null) {
+                        paymentSection.setVisible(false);
+                        paymentSection.setManaged(false);
+                    }
+                    Alert ok = new Alert(Alert.AlertType.INFORMATION);
+                    ok.setTitle("Commande confirmée");
+                    ok.setHeaderText("Commande #" + commande.getId() + " enregistrée !");
+                    ok.setContentText("Statut : En attente de traitement.");
+                    styleAlert(ok);
+                    ok.showAndWait();
+                    if (onSuccessCallback != null) onSuccessCallback.run();
+                });
+
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    btnConfirmer.setDisable(false);
+                    btnConfirmer.setText("✔  Confirmer la commande");
+                    afficher(errPayment, paymentErrorRegion(), "Erreur: " + ex.getMessage());
+                });
+            }
+        }, "stripe-verify-and-finalize-order").start();
+    }
+
+    private Commande finaliserCommandeTransaction() throws Exception {
         java.sql.Connection conn = null;
         try {
             conn = EducompusDB.getConnection();
-            conn.setAutoCommit(false); // début transaction
+            conn.setAutoCommit(false);
 
             double total = items.stream()
                     .mapToDouble(i -> i.produit.getPrix() * i.panier.getQuantite())
                     .sum();
 
-            // 1. Commande
             Commande commande = new Commande();
             commande.setUserId(AppState.getUserId());
             commande.setTotal(total);
             commande.setDateCommande(LocalDateTime.now());
-            serviceCommande.ajouter(commande);
+            commandeRepo.insert(conn, commande);
 
-            // 2. Lignes + décrémentation stock
             for (FrontPanierController.PanierItem item : items) {
                 LigneCommande lc = new LigneCommande();
                 lc.setCommandeId(commande.getId());
@@ -200,13 +442,11 @@ public class FrontCommandeController {
                 lc.setImageProduit(item.produit.getImage());
                 lc.setPrixUnitaire(item.produit.getPrix());
                 lc.setQuantite(item.panier.getQuantite());
-                serviceLigneCommande.ajouter(lc);
+                ligneCommandeRepo.insert(conn, lc);
 
-                // Décrémenter le stock — lève une exception si insuffisant
-                serviceProduit.decrementeStock(item.produit.getId(), item.panier.getQuantite());
+                produitRepo.decrementeStock(conn, item.produit.getId(), item.panier.getQuantite());
             }
 
-            // 3. Livraison
             Livraison livraison = new Livraison();
             livraison.setCommandeId(commande.getId());
             livraison.setAdresse(fieldAdresse.getText().trim());
@@ -218,37 +458,49 @@ public class FrontCommandeController {
             if (fieldDateLivraison.getValue() != null) {
                 livraison.setDateLivraison(fieldDateLivraison.getValue().atStartOfDay());
             }
-            serviceLivraison.ajouter(livraison);
+            livraisonRepo.insert(conn, livraison);
 
-            // 4. Vider le panier
-            servicePanier.viderPanier(AppState.getUserId());
+            panierRepo.deleteByUser(conn, AppState.getUserId());
 
-            conn.commit(); // tout réussi → on valide
-
-            Alert ok = new Alert(Alert.AlertType.INFORMATION);
-            ok.setTitle("Commande confirmée");
-            ok.setHeaderText("Commande #" + commande.getId() + " enregistrée !");
-            ok.setContentText(
-                    "Total : " + String.format("%.2f TND", total) + "\n" +
-                    "Livraison à : " + livraison.getAdresse() + ", " + livraison.getVille() + "\n" +
-                    "Statut : En attente de traitement."
-            );
-            styleAlert(ok);
-            ok.showAndWait();
-
-            if (onSuccessCallback != null) onSuccessCallback.run();
-
+            conn.commit();
+            return commande;
         } catch (Exception e) {
-            // Rollback si n'importe quelle étape échoue
             if (conn != null) {
                 try { conn.rollback(); } catch (Exception ignored) {}
             }
-            afficher(errAdresse, fieldAdresse, "Erreur : " + e.getMessage());
+            throw e;
         } finally {
             if (conn != null) {
                 try { conn.setAutoCommit(true); conn.close(); } catch (Exception ignored) {}
             }
         }
+    }
+
+    private long toMinorUnits(double amount) {
+        return Math.round(amount * 100.0);
+    }
+
+    private String readResourceUtf8(String path) {
+        try (InputStream is = getClass().getResourceAsStream(path)) {
+            if (is == null) throw new IOException("Resource introuvable: " + path);
+            byte[] data = is.readAllBytes();
+            return new String(data, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
+    private Region paymentErrorRegion() {
+        return paymentSection != null ? paymentSection : fieldAdresse;
+    }
+
+    private String escapeJsString(String s) {
+        if (s == null) return "";
+        return s
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "");
     }
 
     // ── Validation complète avant soumission ──────────────────────────────────

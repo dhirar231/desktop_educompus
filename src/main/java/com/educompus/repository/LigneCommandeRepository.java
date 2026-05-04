@@ -8,8 +8,14 @@ import java.util.ArrayList;
 public class LigneCommandeRepository {
 
     public void insert(LigneCommande lc) throws SQLException {
-        String sql = "INSERT INTO ligne_commande (commande_id, produit_id, nom_produit, image_produit, prix_unitaire, quantite) VALUES (?, ?, ?, ?, ?, ?)";
         Connection conn = EducompusDB.getConnection();
+        try { insert(conn, lc); }
+        finally { conn.close(); }
+    }
+
+    /** Version transactionnelle */
+    public void insert(Connection conn, LigneCommande lc) throws SQLException {
+        String sql = "INSERT INTO ligne_commande (commande_id, produit_id, nom_produit, image_produit, prix_unitaire, quantite) VALUES (?, ?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql);
         try {
             ps.setInt(1, lc.getCommandeId());
@@ -20,7 +26,7 @@ public class LigneCommandeRepository {
             ps.setDouble(5, lc.getPrixUnitaire());
             ps.setInt(6, lc.getQuantite());
             ps.executeUpdate();
-        } finally { ps.close(); conn.close(); }
+        } finally { ps.close(); }
     }
 
     public void delete(int id) throws SQLException {

@@ -38,17 +38,7 @@
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
-            <artifactId>javafx-media</artifactId>
-            <version>${javafx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
             <artifactId>javafx-web</artifactId>
-            <version>${javafx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-swing</artifactId>
             <version>${javafx.version}</version>
         </dependency>
 
@@ -107,6 +97,18 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Apache POI - Excel support -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+
         <!-- PDF generation for certificates -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
@@ -114,69 +116,71 @@
             <version>2.0.29</version>
         </dependency>
 
-        <!-- Google Drive API Dependencies -->
+        <!-- Google API Client + Calendar + Drive -->
         <dependency>
             <groupId>com.google.api-client</groupId>
             <artifactId>google-api-client</artifactId>
-            <version>2.2.0</version>
+            <version>2.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.oauth-client</groupId>
             <artifactId>google-oauth-client-jetty</artifactId>
-            <version>1.34.1</version>
+            <version>1.36.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-calendar</artifactId>
+            <version>v3-rev20240111-2.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-drive</artifactId>
-            <version>v3-rev20220815-2.0.0</version>
-        </dependency>
-        <!-- Google Calendar API -->
-        <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-calendar</artifactId>
-            <version>v3-rev20220715-2.0.0</version>
+            <version>v3-rev20240123-2.0.0</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>2.0.9</version>
+            <groupId>com.google.http-client</groupId>
+            <artifactId>google-http-client-gson</artifactId>
+            <version>1.44.1</version>
         </dependency>
 
-        <!-- Jackson pour le parsing JSON -->
+        <!-- Gson JSON serialization -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.15.2</version>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
         </dependency>
 
-        <!-- QR code generation -->
+        <!-- JavaFX Swing interop (SwingFXUtils) -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- ZXing QR code generation -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
-            <version>3.5.1</version>
+            <version>3.5.3</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
-            <version>3.5.1</version>
+            <version>3.5.3</version>
         </dependency>
-        <!-- Embedded HTTP server -->
+
+        <!-- Stripe payments (server-side API calls; keep secret key out of client code) -->
         <dependency>
-            <groupId>org.nanohttpd</groupId>
-            <artifactId>nanohttpd</artifactId>
-            <version>2.3.1</version>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>26.0.0</version>
         </dependency>
-        <!-- Commons IO -->
+
+        <!-- Twilio SMS -->
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${commons-io.version}</version>
-        </dependency>
-        <!-- Excel import (Apache POI) -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>5.2.3</version>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>10.1.0</version>
         </dependency>
     </dependencies>
 
@@ -188,6 +192,11 @@
                 <version>3.2.5</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <environmentVariables>
+                        <TEST_USE_LOCAL_MYSQL>1</TEST_USE_LOCAL_MYSQL>
+                        <TEST_DB_USER>root</TEST_DB_USER>
+                        <TEST_DB_PASS></TEST_DB_PASS>
+                    </environmentVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -206,18 +215,6 @@
                     <mainClass>com.educompus.app.PreviewLauncher</mainClass>
                     <classpathScope>runtime</classpathScope>
                     <fork>true</fork>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
-                <configuration>
-                    <environmentVariables>
-                        <TEST_USE_LOCAL_MYSQL>1</TEST_USE_LOCAL_MYSQL>
-                        <TEST_DB_USER>root</TEST_DB_USER>
-                        <TEST_DB_PASS></TEST_DB_PASS>
-                    </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>

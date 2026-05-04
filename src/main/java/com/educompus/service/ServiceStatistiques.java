@@ -26,6 +26,136 @@ public class ServiceStatistiques {
         return queryDouble("SELECT COALESCE(AVG(note), 0) FROM avis");
     }
 
+    // ── Stats d'un produit spécifique ────────────────────────────────────────
+
+    public static class ProduitStatDetail {
+        public final double noteMoyenne;
+        public final int    nbAvis;
+        public final int    nbCommandes;   // fois commandé
+        public final double caTotal;       // chiffre d'affaires généré
+
+        public ProduitStatDetail(double noteMoyenne, int nbAvis, int nbCommandes, double caTotal) {
+            this.noteMoyenne = noteMoyenne;
+            this.nbAvis      = nbAvis;
+            this.nbCommandes = nbCommandes;
+            this.caTotal     = caTotal;
+        }
+    }
+
+    public ProduitStatDetail statsProduit(int produitId) throws SQLException {
+        // Note moyenne + nb avis
+        double note = 0; int nbAvis = 0;
+        String sqlAvis = "SELECT COALESCE(AVG(note),0), COUNT(*) FROM avis WHERE produit_id=?";
+        Connection conn = EducompusDB.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sqlAvis);
+        try {
+            ps.setInt(1, produitId);
+            ResultSet rs = ps.executeQuery();
+            try { if (rs.next()) { note = rs.getDouble(1); nbAvis = rs.getInt(2); } }
+            finally { rs.close(); }
+        } finally { ps.close(); conn.close(); }
+
+        // Nb commandes + CA
+        int nbCmd = 0; double ca = 0;
+        String sqlCmd = "SELECT COUNT(*), COALESCE(SUM(prix_unitaire * quantite),0) FROM ligne_commande WHERE produit_id=?";
+        conn = EducompusDB.getConnection();
+        ps = conn.prepareStatement(sqlCmd);
+        try {
+            ps.setInt(1, produitId);
+            ResultSet rs = ps.executeQuery();
+            try { if (rs.next()) { nbCmd = rs.getInt(1); ca = rs.getDouble(2); } }
+            finally { rs.close(); }
+        } finally { ps.close(); conn.close(); }
+
+        return new ProduitStatDetail(note, nbAvis, nbCmd, ca);
+    }
+
+    /** Retourne le rang du produit dans le top ventes (1-5), ou 0 si absent. */
+    public int rangTopVentes(int produitId) throws SQLException {
+        String sql = """
+                SELECT produit_id FROM (
+                    SELECT produit_id, SUM(quantite) AS nb
+                    FROM ligne_commande
+                    GROUP BY produit_id
+                    ORDER BY nb DESC
+                    LIMIT 5
+                ) top WHERE produit_id = ?
+                """;
+        Connection conn = EducompusDB.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql);
+        try {
+            ps.setInt(1, produitId);
+            ResultSet rs = ps.executeQuery();
+            try {
+                if (rs.next()) {
+                    // Calculer le rang exact
+                    String sqlRang = """
+                            SELECT rang FROM (
+                                SELECT produit_id, ROW_NUMBER() OVER (ORDER BY SUM(quantite) DESC) AS rang
+                                FROM ligne_commande
+                                GROUP BY produit_id
+                            ) r WHERE produit_id = ?
+                            """;
+                    Connection c2 = EducompusDB.getConnection();
+                    PreparedStatement ps2 = c2.prepareStatement(sqlRang);
+                    try {
+                        ps2.setInt(1, produitId);
+                        ResultSet rs2 = ps2.executeQuery();
+                        try { return rs2.next() ? rs2.getInt("rang") : 0; }
+                        finally { rs2.close(); }
+                    } finally { ps2.close(); c2.close(); }
+                }
+            } finally { rs.close(); }
+        } finally { ps.close(); conn.close(); }
+        return 0;
+    }
+
+    // ── Top 5 produits les plus vendus ───────────────────────────────────────
+
+    public static class ProduitVendu {
+        public final String nom;
+        public final String categorie;
+        public final int    nbVentes;
+        public final double caTotal;
+
+        public ProduitVendu(String nom, String categorie, int nbVentes, double caTotal) {
+            this.nom       = nom;
+            this.categorie = categorie;
+            this.nbVentes  = nbVentes;
+            this.caTotal   = caTotal;
+        }
+    }
+
+    public java.util.List<ProduitVendu> top5ProduitsVendus() throws SQLException {
+        String sql = """
+                SELECT p.nom, p.categorie,
+                       SUM(lc.quantite) AS nb_ventes,
+                       SUM(lc.prix_unitaire * lc.quantite) AS ca
+                FROM ligne_commande lc
+                JOIN produit p ON p.id = lc.produit_id
+                GROUP BY p.id, p.nom, p.categorie
+                ORDER BY nb_ventes DESC
+                LIMIT 5
+                """;
+        java.util.List<ProduitVendu> liste = new java.util.ArrayList<>();
+        Connection conn = EducompusDB.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql);
+        try {
+            ResultSet rs = ps.executeQuery();
+            try {
+                while (rs.next()) {
+                    liste.add(new ProduitVendu(
+                            rs.getString("nom"),
+                            rs.getString("categorie"),
+                            rs.getInt("nb_ventes"),
+                            rs.getDouble("ca")
+                    ));
+                }
+            } finally { rs.close(); }
+        } finally { ps.close(); conn.close(); }
+        return liste;
+    }
+
     // ── Répartition par catégorie ─────────────────────────────────────────────
 
     /** Retourne { catégorie → nombre de produits } */

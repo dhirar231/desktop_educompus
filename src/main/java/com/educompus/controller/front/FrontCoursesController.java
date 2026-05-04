@@ -127,12 +127,6 @@ public final class FrontCoursesController {
         if (!domainChip.getText().isBlank()) banner.getChildren().add(domainChip);
         if (!niveauChip.getText().isBlank()) banner.getChildren().add(niveauChip);
 
-        // Barre sous l'image : cœur à droite, sans fond
-        HBox favBar = new HBox();
-        favBar.setAlignment(Pos.CENTER_RIGHT);
-        favBar.setPadding(new Insets(4, 10, 0, 10));
-        favBar.getChildren().add(favBtn);
-
         VBox body = new VBox(8);
         body.setPadding(new Insets(6, 16, 14, 16));
 
@@ -170,7 +164,7 @@ public final class FrontCoursesController {
 
         card.setOnMouseClicked(e -> openDetail(cours));
 
-        card.getChildren().addAll(banner, favBar, body);
+        card.getChildren().addAll(banner, favBtn, body);
         return card;
     }
 
