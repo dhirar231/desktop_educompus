@@ -11,6 +11,7 @@ import java.util.Properties;
 /**
  * Upload d'images vers Cloudinary via l'API REST (sans SDK).
  * Utilise une signature HMAC-SHA1 pour l'authentification.
+ * ........
  */
 import com.educompus.util.MarketplaceConfig;
 
