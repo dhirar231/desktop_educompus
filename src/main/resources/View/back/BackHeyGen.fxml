@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.web.WebView?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.educompus.controller.back.BackHeyGenController">
+   <top>
+      <VBox spacing="10.0">
+         <children>
+            <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="🎬 Génération de Vidéos IA avec HeyGen" />
+            <Separator />
+         </children>
+         <padding>
+            <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
+         </padding>
+      </VBox>
+   </top>
+   <center>
+      <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+         <content>
+            <VBox spacing="15.0">
+               <children>
+                  <!-- Section Script -->
+                  <VBox spacing="8.0">
+                     <children>
+                        <Label style="-fx-font-weight: bold;" text="📝 Script de la vidéo" />
+                        <TextArea fx:id="scriptTextArea" prefRowCount="8" promptText="Saisissez le script de votre vidéo éducative ici..." wrapText="true" />
+                        <HBox spacing="10.0">
+                           <children>
+                              <Button fx:id="genererAudioButton" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="🔊 Générer Audio TTS" />
+                              <Button fx:id="jouerAudioButton" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="▶️ Jouer Audio" />
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+
+                  <!-- Section Paramètres -->
+                  <VBox spacing="10.0">
+                     <children>
+                        <Label style="-fx-font-weight: bold;" text="⚙️ Paramètres de génération" />
+                        
+                        <GridPane hgap="15.0" vgap="10.0">
+                           <columnConstraints>
+                              <ColumnConstraints hgrow="SOMETIMES" minWidth="120.0" />
+                              <ColumnConstraints hgrow="SOMETIMES" minWidth="200.0" />
+                              <ColumnConstraints hgrow="SOMETIMES" minWidth="120.0" />
+                              <ColumnConstraints hgrow="SOMETIMES" minWidth="200.0" />
+                           </columnConstraints>
+                           <rowConstraints>
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                           </rowConstraints>
+                           <children>
+                              <!-- Ligne 1 -->
+                              <Label text="👤 Avatar:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                              <ComboBox fx:id="avatarComboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                              
+                              <Label text="🗣️ Voix:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                              <ComboBox fx:id="voixComboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                              
+                              <!-- Ligne 2 -->
+                              <Label text="🎥 Qualité:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                              <ComboBox fx:id="qualiteComboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                              
+                              <Label text="📐 Ratio:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                              <ComboBox fx:id="ratioComboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                              
+                              <!-- Ligne 3 -->
+                              <Label text="⚡ Vitesse:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                              <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                 <children>
+                                    <Slider fx:id="vitesseSlider" max="2.0" min="0.5" value="0.9" HBox.hgrow="ALWAYS" />
+                                    <Label fx:id="vitesseLabel" minWidth="40.0" text="0.9x" />
+                                 </children>
+                              </HBox>
+                              
+                              <CheckBox fx:id="sousTitresCheckBox" selected="true" text="📝 Sous-titres" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                           </children>
+                        </GridPane>
+                     </children>
+                  </VBox>
+
+                  <!-- Section Actions -->
+                  <VBox spacing="10.0">
+                     <children>
+                        <Label style="-fx-font-weight: bold;" text="🚀 Actions" />
+                        <HBox spacing="15.0">
+                           <children>
+                              <Button fx:id="genererButton" style="-fx-background-color: #FF5722; -fx-text-fill: white; -fx-font-weight: bold;" text="🎬 Générer Vidéo HeyGen" />
+                              <Button fx:id="testerButton" style="-fx-background-color: #9C27B0; -fx-text-fill: white;" text="🧪 Tester Configuration" />
+                           </children>
+                        </HBox>
+                        
+                        <!-- Barre de progression -->
+                        <ProgressBar fx:id="progressBar" maxWidth="1.7976931348623157E308" visible="false" />
+                        <Label fx:id="statusLabel" style="-fx-font-size: 12px;" text="Prêt à générer une vidéo HeyGen" />
+                     </children>
+                  </VBox>
+
+                  <!-- Section Résultats -->
+                  <VBox spacing="10.0">
+                     <children>
+                        <Label style="-fx-font-weight: bold;" text="📊 Résultats" />
+                        
+                        <!-- Onglets pour les résultats -->
+                        <TabPane>
+                           <tabs>
+                              <Tab closable="false" text="📋 Détails">
+                                 <content>
+                                    <TextArea fx:id="resultatTextArea" editable="false" prefRowCount="8" promptText="Les détails de la génération apparaîtront ici..." wrapText="true" />
+                                 </content>
+                              </Tab>
+                              <Tab closable="false" text="🎥 Aperçu Vidéo">
+                                 <content>
+                                    <VBox spacing="10.0">
+                                       <children>
+                                          <WebView fx:id="videoWebView" prefHeight="300.0" />
+                                          <Label style="-fx-font-size: 11px; -fx-text-fill: #666;" text="💡 La vidéo s'affichera ici une fois générée" />
+                                       </children>
+                                       <padding>
+                                          <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                       </padding>
+                                    </VBox>
+                                 </content>
+                              </Tab>
+                           </tabs>
+                        </TabPane>
+                     </children>
+                  </VBox>
+
+                  <!-- Section Aide -->
+                  <VBox spacing="8.0">
+                     <children>
+                        <Label style="-fx-font-weight: bold;" text="💡 Conseils d'utilisation" />
+                        <VBox spacing="5.0" style="-fx-background-color: #f8f9fa; -fx-padding: 10; -fx-background-radius: 5;">
+                           <children>
+                              <Label text="• Rédigez un script clair et engageant (max 10000 caractères)" />
+                              <Label text="• Choisissez un avatar adapté à votre public cible" />
+                              <Label text="• Utilisez une vitesse de 0.8-0.9x pour l'éducation" />
+                              <Label text="• Activez les sous-titres pour l'accessibilité" />
+                              <Label text="• Testez d'abord votre configuration avant la génération finale" />
+                              <Label text="• La génération peut prendre 2-10 minutes selon la longueur" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </VBox>
+               </children>
+               <padding>
+                  <Insets bottom="20.0" left="15.0" right="15.0" top="10.0" />
+               </padding>
+            </VBox>
+         </content>
+      </ScrollPane>
+   </center>
+</BorderPane>

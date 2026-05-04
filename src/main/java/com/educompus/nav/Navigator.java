@@ -96,6 +96,10 @@ public final class Navigator {
         }
     }
 
+    public static Stage getStage() {
+        return stage;
+    }
+
     private static Image bufferedToFx(BufferedImage img) {
         if (img == null) {
             return null;

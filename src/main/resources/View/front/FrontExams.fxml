@@ -89,7 +89,11 @@
             <VBox styleClass="card" spacing="12" VBox.vgrow="ALWAYS">
                 <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                 <Label fx:id="quizTitleLabel" text="Quiz" styleClass="stat-value" wrapText="true"/>
-                <Label fx:id="quizProgressLabel" text="Question 1/1" styleClass="page-subtitle"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label fx:id="quizProgressLabel" text="Question 1/1" styleClass="page-subtitle"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="quizTimerLabel" text="00:00" styleClass="quiz-timer"/>
+                </HBox>
                 <Label fx:id="questionTextLabel" text="Question" styleClass="exam-question" wrapText="true"/>
                 <VBox fx:id="answersBox" spacing="10" VBox.vgrow="ALWAYS"/>
                 <Label fx:id="quizResultLabel" text="Sélectionnez une réponse pour continuer." styleClass="page-subtitle" wrapText="true"/>

@@ -2,25 +2,39 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-      styleClass="content" spacing="16">
-    <padding>
-        <Insets top="22" right="22" bottom="22" left="22"/>
-    </padding>
+<ScrollPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.educompus.controller.front.FrontCalendarController"
+            fitToWidth="true"
+            hbarPolicy="NEVER"
+            styleClass="content-scroll">
 
-    <VBox spacing="4">
-        <Label text="Calendrier" styleClass="page-title"/>
-        <Label text="Planning des séances / évènements (template)." styleClass="page-subtitle"/>
+    <VBox styleClass="content" spacing="24">
+        <padding>
+            <Insets top="22" right="22" bottom="22" left="22"/>
+        </padding>
+
+        <!-- En-tête de la page -->
+        <VBox spacing="6">
+            <Label fx:id="pageTitle" styleClass="page-title" text="📅 Mon Calendrier"/>
+            <Label fx:id="pageSubtitle" styleClass="page-subtitle"
+                   text="Consultez vos sessions live et événements à venir"/>
+        </VBox>
+
+        <!-- Conteneur du calendrier -->
+        <VBox fx:id="calendarContainer" spacing="16"/>
+
+        <!-- Section des sessions à venir -->
+        <VBox spacing="16">
+            <Label text="📌 Sessions à venir (7 prochains jours)" styleClass="section-title"
+                   style="-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: -edu-primary;"/>
+            <VBox fx:id="upcomingSessionsBox" spacing="12"/>
+        </VBox>
+
     </VBox>
 
-    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
-        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-        <Label text="Vue calendrier" styleClass="stat-title"/>
-        <Label text="Ici: calendrier mensuel + sessions + filtres." styleClass="page-subtitle" wrapText="true"/>
-        <Region VBox.vgrow="ALWAYS"/>
-    </VBox>
-</VBox>
-
+</ScrollPane>
