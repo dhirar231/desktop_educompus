@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.educompus.controller.back.BackTTSController">
+   <top>
+      <VBox spacing="10.0">
+         <children>
+            <Label text="Conversion Texte vers Parole (TTS)">
+               <font>
+                  <Font name="System Bold" size="24.0" />
+               </font>
+            </Label>
+            <Label text="Convertissez vos textes et scripts en audio avec Google TTS" textFill="#666666" />
+            <Separator />
+         </children>
+         <padding>
+            <Insets bottom="10.0" left="20.0" right="20.0" top="20.0" />
+         </padding>
+      </VBox>
+   </top>
+   <center>
+      <SplitPane dividerPositions="0.6" orientation="HORIZONTAL">
+         <items>
+            <!-- Panneau principal de conversion -->
+            <VBox spacing="15.0">
+               <children>
+                  <!-- Source du texte -->
+                  <VBox spacing="10.0">
+                     <children>
+                        <Label text="Source du texte">
+                           <font>
+                              <Font name="System Bold" size="14.0" />
+                           </font>
+                        </Label>
+                        
+                        <HBox spacing="10.0">
+                           <children>
+                              <Label text="Chapitre :" />
+                              <ComboBox fx:id="comboChapitres" prefWidth="200.0" promptText="Sélectionner un chapitre..." />
+                              <Label text="Vidéo :" />
+                              <ComboBox fx:id="comboVideos" prefWidth="200.0" promptText="Sélectionner une vidéo..." />
+                           </children>
+                        </HBox>
+                        
+                        <Label text="Texte à convertir :" />
+                        <TextArea fx:id="txtTexte" prefRowCount="8" promptText="Saisissez votre texte ici ou chargez-le depuis un chapitre/vidéo..." wrapText="true" />
+                        
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <Label fx:id="lblNombreMots" text="0 mots" textFill="#666666" />
+                              <Label text="•" textFill="#666666" />
+                              <Label fx:id="lblDureeEstimee" text="Durée estimée: 0:00" textFill="#666666" />
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+                  
+                  <Separator />
+                  
+                  <!-- Paramètres de synthèse -->
+                  <VBox spacing="10.0">
+                     <children>
+                        <Label text="Paramètres de synthèse">
+                           <font>
+                              <Font name="System Bold" size="14.0" />
+                           </font>
+                        </Label>
+                        
+                        <GridPane hgap="15.0" vgap="10.0">
+                           <columnConstraints>
+                              <ColumnConstraints hgrow="NEVER" minWidth="100.0" />
+                              <ColumnConstraints hgrow="ALWAYS" />
+                              <ColumnConstraints hgrow="NEVER" minWidth="80.0" />
+                           </columnConstraints>
+                           <rowConstraints>
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                           </rowConstraints>
+                           
+                           <Label text="Voix :" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                           <ComboBox fx:id="comboVoix" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                           <ComboBox fx:id="comboFormat" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                           
+                           <Label text="Vitesse :" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                           <Slider fx:id="sliderVitesse" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                           <Label fx:id="lblVitesse" text="1.00x" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                           
+                           <Label text="Tonalité :" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                           <Slider fx:id="sliderPitch" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                           <Label fx:id="lblPitch" text="0.0" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                           
+                           <Label text="Volume :" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                           <Slider fx:id="sliderVolume" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                           <Label fx:id="lblVolume" text="0.0 dB" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                        </GridPane>
+                     </children>
+                  </VBox>
+                  
+                  <Separator />
+                  
+                  <!-- Actions -->
+                  <VBox spacing="10.0">
+                     <children>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <Button fx:id="btnConvertir" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="🎤 Convertir en Audio" />
+                              <Button fx:id="btnTester" text="🔧 Tester Config" />
+                              <ProgressBar fx:id="progressConversion" prefWidth="150.0" />
+                           </children>
+                        </HBox>
+                        
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <Button fx:id="btnLire" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="▶ Lire" />
+                              <Button fx:id="btnArreter" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="⏹ Arrêter" />
+                              <Region HBox.hgrow="ALWAYS" />
+                              <Label fx:id="lblStatut" text="Prêt" />
+                           </children>
+                        </HBox>
+                        
+                        <Label fx:id="lblResultat" style="-fx-background-color: #f0f0f0; -fx-padding: 5;" text="" wrapText="true" />
+                     </children>
+                  </VBox>
+               </children>
+               <padding>
+                  <Insets bottom="20.0" left="20.0" right="10.0" top="10.0" />
+               </padding>
+            </VBox>
+            
+            <!-- Panneau historique -->
+            <VBox spacing="10.0">
+               <children>
+                  <Label text="Historique des fichiers audio">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+                  
+                  <ListView fx:id="listeFichiers" VBox.vgrow="ALWAYS" />
+                  
+                  <VBox spacing="5.0">
+                     <children>
+                        <Button fx:id="btnSupprimerFichier" maxWidth="1.7976931348623157E308" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="🗑 Supprimer" />
+                        <Button fx:id="btnOuvrirDossier" maxWidth="1.7976931348623157E308" text="📁 Ouvrir dossier" />
+                     </children>
+                  </VBox>
+                  
+                  <Separator />
+                  
+                  <!-- Informations -->
+                  <VBox spacing="5.0">
+                     <children>
+                        <Label text="ℹ Informations">
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                        <Label text="• Formats supportés: MP3, WAV, OGG" textFill="#666666" wrapText="true" />
+                        <Label text="• Limite: 5000 caractères par conversion" textFill="#666666" wrapText="true" />
+                        <Label text="• Voix françaises disponibles" textFill="#666666" wrapText="true" />
+                        <Label text="• Fichiers sauvés dans audio/generated/" textFill="#666666" wrapText="true" />
+                     </children>
+                  </VBox>
+               </children>
+               <padding>
+                  <Insets bottom="20.0" left="10.0" right="20.0" top="10.0" />
+               </padding>
+            </VBox>
+         </items>
+      </SplitPane>
+   </center>
+</BorderPane>

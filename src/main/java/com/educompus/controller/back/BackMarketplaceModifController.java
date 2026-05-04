@@ -1,8 +1,10 @@
 package com.educompus.controller.back;
 
 import com.educompus.model.Produit;
+import com.educompus.service.GroqRecommandationService;
 import com.educompus.service.ServiceProduit;
 import com.educompus.util.ProduitValidator;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -16,6 +18,8 @@ public class BackMarketplaceModifController {
 
     @FXML private TextField        fieldNom;
     @FXML private TextArea         fieldDescription;
+    @FXML private TextField        fieldMotsCles;
+    @FXML private Button           btnGenererDesc;
     @FXML private TextField        fieldPrix;
     @FXML private TextField        fieldStock;
     @FXML private ComboBox<String> fieldType;
@@ -70,6 +74,40 @@ public class BackMarketplaceModifController {
         fieldType.setValue(p.getType());
         fieldCategorie.setValue(p.getCategorie());
         fieldImage.setText(p.getImage() == null ? "" : p.getImage());
+    }
+
+    @FXML
+    private void onGenererDescription(ActionEvent event) {
+        String nom       = fieldNom.getText().trim();
+        String type      = fieldType.getValue();
+        String categorie = fieldCategorie.getValue();
+
+        if (nom.isBlank() || type == null || categorie == null) {
+            showAlert("Remplissez d'abord le nom, le type et la catégorie.");
+            return;
+        }
+
+        btnGenererDesc.setDisable(true);
+        btnGenererDesc.setText("⏳ Génération…");
+
+        new Thread(() -> {
+            try {
+                GroqRecommandationService groq = new GroqRecommandationService();
+                String desc = groq.genererDescription(nom, type, categorie,
+                        fieldMotsCles != null ? fieldMotsCles.getText().trim() : "");
+                javafx.application.Platform.runLater(() -> {
+                    fieldDescription.setText(desc);
+                    btnGenererDesc.setDisable(false);
+                    btnGenererDesc.setText("✨  Améliorer avec IA");
+                });
+            } catch (Exception ex) {
+                javafx.application.Platform.runLater(() -> {
+                    btnGenererDesc.setDisable(false);
+                    btnGenererDesc.setText("✨  Améliorer avec IA");
+                    showAlert("Erreur Groq : " + ex.getMessage());
+                });
+            }
+        }, "groq-desc-modif").start();
     }
 
     @FXML

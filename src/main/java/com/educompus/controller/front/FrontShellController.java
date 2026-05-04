@@ -96,6 +96,11 @@ public final class FrontShellController {
     @FXML
     private Button navProfileBtn;
 
+    @FXML
+    private Button navFavoritesBtn;
+
+    // navTranslatorBtn supprimé — bouton retiré de la sidebar
+
     private final List<Button> navButtons = new ArrayList<>();
 
     @FXML
@@ -113,6 +118,7 @@ public final class FrontShellController {
 
         navButtons.add(navDashboardBtn);
         navButtons.add(navMyCoursesBtn);
+        navButtons.add(navFavoritesBtn);
         navButtons.add(navExamsBtn);
         navButtons.add(navProjectsBtn);
         navButtons.add(navClubsBtn);
@@ -159,6 +165,12 @@ public final class FrontShellController {
     }
 
     @FXML
+    private void navFavorites(ActionEvent event) {
+        setContent(safeLoad("View/front/FrontFavorites.fxml"));
+        setActive(navFavoritesBtn);
+    }
+
+    @FXML
     private void navExams(ActionEvent event) {
         setContent(safeLoad("View/front/FrontExams.fxml"));
         setActive(navExamsBtn);
@@ -190,14 +202,32 @@ public final class FrontShellController {
 
     @FXML
     private void navCalendar(ActionEvent event) {
-        setContent(safeLoad("View/front/FrontCalendar.fxml"));
-        setActive(navCalendarBtn);
+        // Ouvrir Google Calendar dans le navigateur externe
+        try {
+            String googleCalendarUrl = "https://calendar.google.com";
+            java.awt.Desktop.getDesktop().browse(java.net.URI.create(googleCalendarUrl));
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Afficher une alerte en cas d'erreur
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.ERROR
+            );
+            alert.setTitle("Erreur");
+            alert.setHeaderText("Impossible d'ouvrir Google Calendar");
+            alert.setContentText("Veuillez ouvrir manuellement : https://calendar.google.com");
+            alert.showAndWait();
+        }
     }
 
     @FXML
     private void navProfile(ActionEvent event) {
         setContent(safeLoad("View/front/FrontProfile.fxml"));
         setActive(navProfileBtn);
+    }
+
+    @FXML
+    private void navTranslator(ActionEvent event) {
+        // Traducteur retiré de la sidebar - accessible via Mes cours
     }
 
     private void setContent(Node node) {

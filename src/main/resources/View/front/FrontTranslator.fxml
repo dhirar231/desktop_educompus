@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.educompus.controller.front.FrontTranslatorController"
+      styleClass="translator-root" spacing="0" prefWidth="900" prefHeight="600">
+
+    <!-- ── Header compact ── -->
+    <HBox styleClass="translator-header" alignment="CENTER_LEFT" spacing="10">
+        <padding><Insets top="12" right="18" bottom="12" left="18"/></padding>
+        <Label text="🌐" style="-fx-font-size: 18px;"/>
+        <Label text="Traducteur" styleClass="translator-main-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="statusLabel" styleClass="translator-status-top"/>
+        <ProgressIndicator fx:id="translateSpinner" prefWidth="18" prefHeight="18"/>
+    </HBox>
+
+    <!-- ── Barre de sélection des langues ── -->
+    <HBox styleClass="translator-lang-bar" alignment="CENTER" spacing="0">
+        <padding><Insets top="10" right="18" bottom="10" left="18"/></padding>
+        
+        <ComboBox fx:id="sourceLangCombo" styleClass="translator-lang-combo" prefWidth="130"/>
+        <Region prefWidth="15"/>
+        <Button fx:id="btnSwapLangs" styleClass="translator-swap-btn" onAction="#onSwapLangs">
+            <graphic>
+                <SVGPath content="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z" 
+                         styleClass="translator-swap-icon"/>
+            </graphic>
+        </Button>
+        <Region prefWidth="15"/>
+        <ComboBox fx:id="targetLangCombo" styleClass="translator-lang-combo" prefWidth="130"/>
+        <Region HBox.hgrow="ALWAYS"/>
+    </HBox>
+
+    <!-- ── Zone de traduction compacte ── -->
+    <HBox styleClass="translator-main-area" spacing="0" VBox.vgrow="ALWAYS" prefHeight="400">
+        
+        <!-- Colonne gauche : Texte source -->
+        <VBox styleClass="translator-panel translator-source-panel" spacing="0" HBox.hgrow="ALWAYS">
+            <TextArea fx:id="sourceText" 
+                      promptText="Saisissez votre texte..." 
+                      wrapText="true" 
+                      styleClass="translator-text-area translator-source-text"
+                      VBox.vgrow="ALWAYS"/>
+            
+            <!-- Footer source -->
+            <HBox styleClass="translator-footer" alignment="CENTER_LEFT" spacing="8">
+                <padding><Insets top="8" right="12" bottom="8" left="12"/></padding>
+                <Label fx:id="charCountLabel" text="0 / 5000" styleClass="translator-char-count"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnClear" text="✕ Effacer" styleClass="translator-clear-btn" onAction="#onClear"/>
+            </HBox>
+        </VBox>
+
+        <!-- Séparateur vertical -->
+        <Region styleClass="translator-divider" prefWidth="1"/>
+
+        <!-- Colonne droite : Texte traduit -->
+        <VBox styleClass="translator-panel translator-result-panel" spacing="0" HBox.hgrow="ALWAYS">
+            <StackPane VBox.vgrow="ALWAYS">
+                <TextArea fx:id="resultText" 
+                          editable="false" 
+                          wrapText="true" 
+                          styleClass="translator-text-area translator-result-text"
+                          promptText="Traduction"/>
+                
+                <!-- Overlay pour état vide -->
+                <VBox fx:id="emptyStateBox" alignment="CENTER" spacing="6" 
+                      style="-fx-background-color: transparent;" visible="false" managed="false">
+                    <Label text="🌍" style="-fx-font-size: 36px; -fx-opacity: 0.25;"/>
+                    <Label text="La traduction apparaîtra ici" 
+                           style="-fx-font-size: 12px; -fx-text-fill: rgba(0,0,0,0.35); -fx-font-weight: 500;"/>
+                </VBox>
+            </StackPane>
+            
+            <!-- Footer résultat -->
+            <HBox styleClass="translator-footer" alignment="CENTER_LEFT" spacing="8">
+                <padding><Insets top="8" right="12" bottom="8" left="12"/></padding>
+                <Button styleClass="translator-action-btn" onAction="#onCopyResult">
+                    <graphic>
+                        <HBox spacing="5" alignment="CENTER_LEFT">
+                            <SVGPath content="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" 
+                                     style="-fx-fill: -edu-primary;" scaleX="0.65" scaleY="0.65"/>
+                            <Label text="Copier" style="-fx-font-size: 11px; -fx-font-weight: 600; -fx-text-fill: -edu-primary;"/>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Region HBox.hgrow="ALWAYS"/>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <!-- ── Footer info API compact ── -->
+    <HBox styleClass="translator-api-info" alignment="CENTER_LEFT" spacing="6">
+        <padding><Insets top="6" right="12" bottom="6" left="12"/></padding>
+        <Label text="ⓘ" style="-fx-font-size: 10px; -fx-text-fill: rgba(0,0,0,0.4);"/>
+        <Label text="Traduction fournie par MyMemory API" 
+               style="-fx-font-size: 10px; -fx-text-fill: rgba(0,0,0,0.5);"/>
+    </HBox>
+
+</VBox>

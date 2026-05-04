@@ -68,6 +68,42 @@
                     <Label text="Avis clients" styleClass="page-title"
                            style="-fx-font-size: 16px;"/>
 
+                    <!-- Chat assistant IA -->
+                    <VBox styleClass="card" spacing="10"
+                          style="-fx-background-color: rgba(6,106,201,0.05);
+                                 -fx-border-color: rgba(6,106,201,0.2);
+                                 -fx-border-radius: 14px; -fx-background-radius: 14px;">
+                        <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="Assistant EduCampus"
+                                   style="-fx-font-weight: 800; -fx-font-size: 13px; -fx-text-fill: #1e293b;"/>
+                            <Label text="  Groq AI  "
+                                   style="-fx-background-color: linear-gradient(to right, #7c3aed, #2563eb);
+                                          -fx-text-fill: white; -fx-background-radius: 999px;
+                                          -fx-padding: 2 8 2 8; -fx-font-size: 9px; -fx-font-weight: 800;"/>
+                        </HBox>
+
+                        <!-- Historique messages -->
+                        <ScrollPane fx:id="chatScrollPane" fitToWidth="true" prefHeight="160"
+                                    hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                    styleClass="catalog-scroll">
+                            <content>
+                                <VBox fx:id="chatMessages" spacing="8" style="-fx-padding: 4;"/>
+                            </content>
+                        </ScrollPane>
+
+                        <!-- Saisie -->
+                        <HBox spacing="8">
+                            <TextField fx:id="chatInput"
+                                       promptText="Posez votre question sur ce produit..."
+                                       styleClass="field" HBox.hgrow="ALWAYS"
+                                       onAction="#onEnvoyerMessage"/>
+                            <Button text="Envoyer" styleClass="btn-primary"
+                                    onAction="#onEnvoyerMessage"/>
+                        </HBox>
+                    </VBox>
+
                     <!-- Formulaire avis -->
                     <VBox styleClass="card" spacing="14" fx:id="formAvisCard">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>

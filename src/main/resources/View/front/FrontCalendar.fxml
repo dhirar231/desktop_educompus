@@ -1,36 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.embed.swing.SwingNode?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.educompus.controller.front.FrontCalendarController"
-      fx:id="root"
-      styleClass="content" spacing="16">
-    <padding>
-        <Insets top="22" right="22" bottom="22" left="22"/>
-    </padding>
+<ScrollPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.educompus.controller.front.FrontCalendarController"
+            fitToWidth="true"
+            hbarPolicy="NEVER"
+            styleClass="content-scroll">
 
-    <VBox spacing="4">
-        <Label text="Meeting" styleClass="page-title"/>
-        <Label text="Espace etudiant pour rejoindre une salle Jitsi partagee par l'enseignant." styleClass="page-subtitle" wrapText="true"/>
-        <Label fx:id="accessLabel" text="L'administrateur n'a pas acces au meeting." style="-fx-text-fill: #d6293e; -fx-font-weight: 700;" visible="false" managed="false" wrapText="true"/>
-    </VBox>
+    <VBox styleClass="content" spacing="24">
+        <padding>
+            <Insets top="22" right="22" bottom="22" left="22"/>
+        </padding>
 
-    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
-        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-        <Label text="Rejoindre un meeting" styleClass="stat-title"/>
-        <Label fx:id="helperLabel" text="Domaine Jitsi" styleClass="page-subtitle" wrapText="true"/>
-        <TextField fx:id="roomField" promptText="Room ID ex: soutenance-gl-2026" styleClass="field"/>
-        <TextField fx:id="linkField" promptText="Lien meeting" styleClass="field" editable="false"/>
-        <VBox styleClass="card" prefHeight="560" VBox.vgrow="ALWAYS">
-            <SwingNode fx:id="meetingBrowserHost" VBox.vgrow="ALWAYS"/>
+        <!-- En-tête de la page -->
+        <VBox spacing="6">
+            <Label fx:id="pageTitle" styleClass="page-title" text="📅 Mon Calendrier"/>
+            <Label fx:id="pageSubtitle" styleClass="page-subtitle"
+                   text="Consultez vos sessions live et événements à venir"/>
         </VBox>
-        <Button text="Rejoindre" onAction="#joinMeeting" styleClass="btn-rgb"/>
-        <Button text="Copier lien" onAction="#copyLink" styleClass="btn-rgb-outline"/>
+
+        <!-- Conteneur du calendrier -->
+        <VBox fx:id="calendarContainer" spacing="16"/>
+
+        <!-- Section des sessions à venir -->
+        <VBox spacing="16">
+            <Label text="📌 Sessions à venir (7 prochains jours)" styleClass="section-title"
+                   style="-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: -edu-primary;"/>
+            <VBox fx:id="upcomingSessionsBox" spacing="12"/>
+        </VBox>
+
     </VBox>
-</VBox>
+
+</ScrollPane>
