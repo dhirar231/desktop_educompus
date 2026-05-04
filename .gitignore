@@ -25,3 +25,4 @@ target/classes/com/educompus/service/ServiceExam.class
 
 # JCEF cache
 var/
+.env
