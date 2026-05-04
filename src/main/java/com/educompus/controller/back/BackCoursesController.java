@@ -17,7 +17,6 @@ import com.educompus.service.SessionNotificationService;
 import com.educompus.service.ValidationResult;
 import com.educompus.service.AIVideoGenerationService;
 import com.educompus.util.Dialogs;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -28,7 +27,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Hyperlink;
@@ -42,7 +40,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TextField;
@@ -87,45 +85,58 @@ public final class BackCoursesController {
 
     @FXML private TextField coursSearchField;
     @FXML private ComboBox<String> coursSortCombo;
-    @FXML private javafx.scene.control.ListView<Cours> coursListView;
-    @FXML private javafx.scene.control.ListView<Chapitre> chapitreListView;
-    @FXML private javafx.scene.control.ListView<Td> tdListView;
-    @FXML private javafx.scene.control.ListView<VideoExplicative> videoListView;
+    @FXML private ListView<Cours> coursListView;
+
     @FXML private TextField chapitreSearchField;
     @FXML private ComboBox<String> chapitreSortCombo;
+    @FXML private ListView<Chapitre> chapitreListView;
+
     @FXML private TextField tdSearchField;
     @FXML private ComboBox<String> tdSortCombo;
+    @FXML private ListView<Td> tdListView;
+
     @FXML private TextField videoSearchField;
     @FXML private ComboBox<String> videoSortCombo;
-
-    // ── Sessions Live ──
-    @FXML private TextField sessionSearchField;
-    @FXML private ComboBox<Cours> sessionCoursFilterCombo;
-    @FXML private ComboBox<String> sessionStatutFilterCombo;
-    @FXML private ListView<SessionLive> sessionListView;
-    @FXML private Label sessionStatPlanifieeLabel;
-    @FXML private Label sessionStatEnCoursLabel;
-    @FXML private Label sessionStatTermineeLabel;
-
-    private final SessionLiveRepository sessionRepo = new SessionLiveRepository();
-    private final SessionLiveMetierService sessionMetier = new SessionLiveMetierService();
-    private final ObservableList<SessionLive> sessionItems = FXCollections.observableArrayList();
-
-    // ── Calendrier ──
-    @FXML private VBox calendarContainer;
-    private BackCalendarController calendarCtrl;
-
-
+    @FXML private ListView<VideoExplicative> videoListView;
 
     @FXML
     private void initialize() {
         setupListViews();
         setupSorts();
+        if (chapitreListView != null) {
+            chapitreListView.setOnMouseClicked(e -> {
+                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                    Chapitre sel = chapitreListView.getSelectionModel().getSelectedItem();
+                    if (sel != null) openTdVideoChoice(sel);
+                }
+            });
+        }
+        if (coursListView != null) {
+            coursListView.setOnMouseClicked(e -> {
+                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                    Cours sel = coursListView.getSelectionModel().getSelectedItem();
+                    if (sel != null) createChapitreForCourse(sel);
+                }
+            });
+        }
         refreshAll();
-        setupSessionListView();
+        setupListViews();
         setupSessionFilters();
         setupCalendar();
         setupAutoStatusCallback();
+    }
+
+    private void setupSessionFilters() {
+    }
+
+    private void setupCalendar() {
+    }
+
+    private void setupAutoStatusCallback() {
+    }
+
+    @FXML
+    private void openGoogleDriveManager() {
     }
 
     private void setupListViews() {
@@ -149,7 +160,7 @@ public final class BackCoursesController {
                     delBtn.getStyleClass().add("btn-danger");
                     driveBtn.getStyleClass().add("btn-rgb-compact");
                     driveBtn.setTooltip(new javafx.scene.control.Tooltip("Ouvrir dans Google Drive"));
-                    
+
                     VBox info = new VBox(2, titleLbl, metaLbl);
                     HBox.setHgrow(info, Priority.ALWAYS);
                     row = new HBox(10, info, driveLbl, driveBtn, editBtn, delBtn);
@@ -167,7 +178,7 @@ public final class BackCoursesController {
                                 } catch (Exception ex) {
                                     error("Erreur ouverture Drive", ex);
                                 }
-                            } 
+                            }
                             // Si en attente, afficher le statut
                             else if (cours.getDriveFolderId() != null && cours.getDriveFolderId().equals("EN_ATTENTE")) {
                                 info("En attente", "Ce cours est en attente d'ajout dans Google Drive. Veuillez patienter...");
@@ -184,7 +195,7 @@ public final class BackCoursesController {
                     if (empty || c == null) { setGraphic(null); return; }
                     titleLbl.setText(safe(c.getTitre()));
                     metaLbl.setText(safe(c.getDomaine()) + "  •  " + safe(c.getNiveau()) + "  •  " + safe(c.getNomFormateur()) + "  •  " + c.getDureeTotaleHeures() + "h  •  " + c.getChapitreCount() + " chap.");
-                    
+
                     // Affichage du statut Google Drive
                     if (c.getDriveLink() != null && !c.getDriveLink().isBlank()) {
                         driveLbl.setText("☁️ Sur Drive");
@@ -205,7 +216,7 @@ public final class BackCoursesController {
                         driveBtn.setDisable(true);
                         driveBtn.setText("☁️");
                     }
-                    
+
                     setGraphic(row);
                 }
             });
@@ -338,7 +349,7 @@ public final class BackCoursesController {
                     if (empty || v == null) { setGraphic(null); return; }
                     titleLbl.setText(safe(v.getTitre()));
                     metaLbl.setText(safe(v.getCoursTitre()) + "  •  " + safe(v.getChapitreTitre()) + "  •  " + safe(v.getDomaine()));
-                    
+
                     // Affichage du statut selon le type de vidéo
                     if (v.isAIGenerated()) {
                         String status = safe(v.getGenerationStatus());
@@ -386,7 +397,7 @@ public final class BackCoursesController {
                         playBtn.setDisable(v.getUrlVideo() == null || v.getUrlVideo().isBlank());
                         playBtn.setText("▶");
                     }
-                    
+
                     setGraphic(row);
                 }
             });
@@ -400,177 +411,6 @@ public final class BackCoursesController {
         reloadTds();
         reloadVideos();
         reloadSessions();
-    }
-
-    @FXML
-    private void createCours() {
-        FormResult<Cours> result = showCoursForm(null);
-        if (!result.saved()) return;
-        repository.createCours(result.value());
-        refreshAll();
-        info("Succès", "Cours créé avec succès");
-    }
-
-    @FXML
-    private void createChapitre() {
-        FormResult<Chapitre> result = showChapitreForm(null);
-        if (!result.saved()) return;
-        repository.createChapitre(result.value());
-        refreshAll();
-        info("Succès", "Chapitre créé avec succès");
-    }
-
-    @FXML
-    private void createTd() {
-        FormResult<Td> result = showTdForm(null);
-        if (!result.saved()) return;
-        repository.createTd(result.value());
-        refreshAll();
-        info("Succès", "TD créé avec succès");
-    }
-
-    @FXML
-    private void createVideo() {
-        FormResult<VideoExplicative> result = showVideoForm(null);
-        if (!result.saved()) return;
-        repository.createVideo(result.value());
-        refreshAll();
-        info("Succès", "Vidéo créée avec succès");
-    }
-
-    @FXML
-    private void openGoogleDriveManager() {
-        // Créer une fenêtre de dialogue pour sélectionner les cours
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Gérer Google Drive");
-        dialog.setHeaderText("Sélectionnez les cours à ajouter dans Google Drive");
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        
-        // Créer la liste des cours avec checkboxes
-        VBox content = new VBox(10);
-        content.setPadding(new javafx.geometry.Insets(20));
-        
-        Label infoLabel = new Label("Cochez les cours que vous souhaitez synchroniser avec Google Drive :");
-        infoLabel.setWrapText(true);
-        infoLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
-        
-        // ScrollPane pour la liste des cours
-        VBox coursCheckboxList = new VBox(8);
-        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane(coursCheckboxList);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setPrefHeight(400);
-        scrollPane.setStyle("-fx-background-color: transparent;");
-        
-        // Créer une checkbox pour chaque cours
-        java.util.List<javafx.scene.control.CheckBox> checkboxes = new java.util.ArrayList<>();
-        for (Cours cours : coursItems) {
-            javafx.scene.control.CheckBox cb = new javafx.scene.control.CheckBox();
-            
-            // Créer un HBox pour afficher les infos du cours
-            Label titleLabel = new Label(safe(cours.getTitre()));
-            titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
-            
-            Label metaLabel = new Label(safe(cours.getDomaine()) + " • " + safe(cours.getNiveau()) + 
-                                       " • " + cours.getChapitreCount() + " chapitres");
-            metaLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #888;");
-            
-            Label statusLabel = new Label();
-            statusLabel.getStyleClass().add("chip");
-            statusLabel.setStyle("-fx-font-size: 10px;");
-            
-            // Définir le statut
-            if (cours.getDriveLink() != null && !cours.getDriveLink().isBlank()) {
-                statusLabel.setText("☁️ Déjà sur Drive");
-                statusLabel.getStyleClass().add("chip-success");
-                cb.setSelected(false);
-                cb.setDisable(true);
-            } else if (cours.getDriveFolderId() != null && cours.getDriveFolderId().equals("EN_ATTENTE")) {
-                statusLabel.setText("⏳ En attente");
-                statusLabel.getStyleClass().add("chip-warning");
-                cb.setSelected(false);
-                cb.setDisable(true);
-            } else {
-                statusLabel.setText("📱 Local");
-                statusLabel.getStyleClass().add("chip-info");
-                cb.setSelected(false);
-            }
-            
-            VBox infoBox = new VBox(2, titleLabel, metaLabel);
-            HBox.setHgrow(infoBox, Priority.ALWAYS);
-            
-            HBox row = new HBox(10, cb, infoBox, statusLabel);
-            row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-            row.setStyle("-fx-padding: 8; -fx-background-color: #f5f5f5; -fx-background-radius: 8;");
-            
-            // Stocker le cours dans les propriétés de la checkbox
-            cb.setUserData(cours);
-            checkboxes.add(cb);
-            
-            coursCheckboxList.getChildren().add(row);
-        }
-        
-        // Boutons de sélection rapide
-        HBox quickSelectBox = new HBox(10);
-        Button selectAllBtn = new Button("Tout sélectionner");
-        selectAllBtn.getStyleClass().add("btn-rgb-compact");
-        selectAllBtn.setOnAction(e -> {
-            for (javafx.scene.control.CheckBox cb : checkboxes) {
-                if (!cb.isDisable()) cb.setSelected(true);
-            }
-        });
-        
-        Button deselectAllBtn = new Button("Tout désélectionner");
-        deselectAllBtn.getStyleClass().add("btn-rgb-compact");
-        deselectAllBtn.setOnAction(e -> {
-            for (javafx.scene.control.CheckBox cb : checkboxes) {
-                if (!cb.isDisable()) cb.setSelected(false);
-            }
-        });
-        
-        quickSelectBox.getChildren().addAll(selectAllBtn, deselectAllBtn);
-        
-        content.getChildren().addAll(infoLabel, quickSelectBox, scrollPane);
-        
-        dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().setPrefWidth(600);
-        Dialogs.style(dialog);
-        
-        Optional<ButtonType> result = dialog.showAndWait();
-        
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Récupérer les cours sélectionnés
-            java.util.List<Cours> selectedCours = new java.util.ArrayList<>();
-            for (javafx.scene.control.CheckBox cb : checkboxes) {
-                if (cb.isSelected() && cb.getUserData() instanceof Cours) {
-                    selectedCours.add((Cours) cb.getUserData());
-                }
-            }
-            
-            if (selectedCours.isEmpty()) {
-                info("Aucun cours sélectionné", "Veuillez sélectionner au moins un cours à synchroniser.");
-                return;
-            }
-            
-            // Confirmer l'action
-            if (!confirm("Synchroniser avec Google Drive", 
-                    "Voulez-vous synchroniser " + selectedCours.size() + " cours avec Google Drive ?\n\n" +
-                    "Cela créera des dossiers pour chaque cours et y ajoutera tous les contenus.")) {
-                return;
-            }
-            
-            // Lancer la synchronisation pour chaque cours
-            for (Cours cours : selectedCours) {
-                cours.setDriveFolderId("EN_ATTENTE");
-                repository.updateCours(cours);
-                lancerSynchronisationGoogleDrive(cours);
-            }
-            
-            info("✅ Synchronisation lancée", 
-                 selectedCours.size() + " cours ont été marqués pour synchronisation avec Google Drive.\n\n" +
-                 "Cela peut prendre quelques minutes. Rafraîchissez la liste pour voir le statut.");
-            
-            refreshAll();
-        }
     }
 
     private void reloadCours() {
@@ -599,6 +439,9 @@ public final class BackCoursesController {
         applyVideoSort();
         if (videoListView != null) { videoListView.setItems(videoItems); videoListView.refresh(); }
         if (statsVideoLabel != null) statsVideoLabel.setText(String.valueOf(videoItems.size()));
+    }
+
+    private void reloadSessions() {
     }
 
     private void setupSorts() {
@@ -639,13 +482,104 @@ public final class BackCoursesController {
         videoItems.sort(Comparator.comparing(c -> safe(c.getTitre()), String.CASE_INSENSITIVE_ORDER));
     }
 
+
+    // ── CRUD ──────────────────────────────────────────────────────────────────
+
+    @FXML
+    private void createCours() {
+        FormResult<Cours> result = showCoursForm(null);
+        if (!result.saved()) return;
+        try {
+            repository.createCours(result.value());
+            info("✅ Cours ajouté", "Le cours « " + safe(result.value().getTitre()) + " » a été ajouté avec succès.");
+            reloadCours();
+        } catch (Exception e) { error("Erreur ajout cours", e); }
+    }
+
+    @FXML
+    private void createChapitre() { createChapitreForCourse(null); }
+
+    @FXML
+    private void createChapitreForCourse(Cours cours) {
+        FormResult<Chapitre> result = showChapitreForm(null, cours);
+        if (!result.saved()) return;
+        try {
+            repository.createChapitre(result.value());
+            info("✅ Chapitre ajouté", "Le chapitre « " + safe(result.value().getTitre()) + " » a été ajouté avec succès.");
+            refreshAll();
+        } catch (Exception e) {
+            error("Erreur ajout chapitre", e);
+        }
+    }
+
+    private void openTdVideoChoice(Chapitre chapitre) {
+        if (chapitre == null) return;
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Ajouter contenu");
+        alert.setHeaderText("Ajouter un TD ou une video pour le chapitre '" + safe(chapitre.getTitre()) + "'? ");
+        alert.setContentText("Choisissez l'action souhaitée.");
+        ButtonType tdButton = new ButtonType("Creer TD");
+        ButtonType videoButton = new ButtonType("Creer video");
+        ButtonType cancelButton = ButtonType.CANCEL;
+        alert.getButtonTypes().setAll(tdButton, videoButton, cancelButton);
+        Optional<ButtonType> choice = alert.showAndWait();
+        if (choice.isEmpty() || choice.get() == cancelButton) return;
+        if (choice.get() == tdButton) {
+            createTdForChapitre(chapitre);
+        } else if (choice.get() == videoButton) {
+            createVideoForChapitre(chapitre);
+        }
+    }
+
+    private void createTdForChapitre(Chapitre chapitre) {
+        FormResult<Td> result = showTdForm(null, chapitre);
+        if (!result.saved()) return;
+        try {
+            repository.createTd(result.value());
+            info("✅ TD ajouté", "Le TD « " + safe(result.value().getTitre()) + " » a été ajouté avec succès.");
+            refreshAll();
+        } catch (Exception e) { error("Erreur ajout TD", e); }
+    }
+
+    private void createVideoForChapitre(Chapitre chapitre) {
+        FormResult<VideoExplicative> result = showVideoForm(null, chapitre);
+        if (!result.saved()) return;
+        try {
+            repository.createVideo(result.value());
+            info("✅ Vidéo ajoutée", "La vidéo « " + safe(result.value().getTitre()) + " » a été ajoutée avec succès.");
+            refreshAll();
+        } catch (Exception e) { error("Erreur ajout vidéo", e); }
+    }
+
+    @FXML
+    private void createTd() {
+        FormResult<Td> result = showTdForm(null);
+        if (!result.saved()) return;
+        try {
+            repository.createTd(result.value());
+            info("✅ TD ajouté", "Le TD « " + safe(result.value().getTitre()) + " » a été ajouté avec succès.");
+            refreshAll();
+        } catch (Exception e) { error("Erreur ajout TD", e); }
+    }
+
+    @FXML
+    private void createVideo() {
+        FormResult<VideoExplicative> result = showVideoForm(null);
+        if (!result.saved()) return;
+        try {
+            repository.createVideo(result.value());
+            info("✅ Vidéo ajoutée", "La vidéo « " + safe(result.value().getTitre()) + " » a été ajoutée avec succès.");
+            refreshAll();
+        } catch (Exception e) { error("Erreur ajout vidéo", e); }
+    }
+
     private void editCours(Cours cours) {
         if (!confirm("Modifier le cours", "Voulez-vous modifier le cours :\n« " + safe(cours.getTitre()) + " » ?")) return;
         FormResult<Cours> result = showCoursForm(cours);
         if (!result.saved()) return;
         try {
             repository.updateCours(result.value());
-            
+
             // Logique Métier Avancé : Google Drive
             if (result.flag() && result.value().getImage() != null && !result.value().getImage().startsWith("auto:")) {
                 if (result.value().getDriveFolderId() == null) {
@@ -654,7 +588,7 @@ public final class BackCoursesController {
             } else {
                 result.value().setDriveFolderId(null);
             }
-            
+
             info("✅ Cours modifié", "Le cours « " + safe(result.value().getTitre()) + " » a été modifié avec succès.");
             refreshAll();
         } catch (Exception e) { error("Erreur modification cours", e); }
@@ -675,32 +609,32 @@ public final class BackCoursesController {
 
     private void showGoogleDriveMenu(Cours cours) {
         ContextMenu menu = new ContextMenu();
-        
+
         MenuItem addToDriveItem = new MenuItem("☁️ Ajouter dans Google Drive");
         addToDriveItem.setOnAction(e -> {
-            if (!confirm("Ajouter dans Google Drive", 
+            if (!confirm("Ajouter dans Google Drive",
                     "Voulez-vous ajouter le cours « " + safe(cours.getTitre()) + " » dans Google Drive ?\n\n" +
                     "Cela créera un dossier pour ce cours et y ajoutera tous les chapitres, TDs et vidéos.")) {
                 return;
             }
-            
+
             try {
                 // Marquer le cours comme en attente d'ajout dans Google Drive
                 cours.setDriveFolderId("EN_ATTENTE");
                 repository.updateCours(cours);
-                
+
                 info("✅ Ajout en cours", "Le cours « " + safe(cours.getTitre()) + " » a été marqué pour ajout dans Google Drive.\n\n" +
                         "Cela peut prendre quelques minutes. Veuillez rafraîchir la liste pour voir le statut.");
-                
+
                 // Lancer la synchronisation en arrière-plan
                 lancerSynchronisationGoogleDrive(cours);
-                
+
                 refreshAll();
             } catch (Exception ex) {
                 error("Erreur — Ajout Google Drive", ex);
             }
         });
-        
+
         MenuItem selectFolderItem = new MenuItem("📁 Sélectionner un dossier Google Drive");
         selectFolderItem.setOnAction(e -> {
             // Ouvrir un dialogue pour sélectionner un dossier
@@ -708,15 +642,15 @@ public final class BackCoursesController {
             dialog.setTitle("Sélectionner un dossier Google Drive");
             dialog.setHeaderText("Entrez l'ID ou le lien du dossier Google Drive");
             dialog.setContentText("ID du dossier ou lien complet :");
-            
+
             var result = dialog.showAndWait();
             if (result.isPresent() && !result.get().isBlank()) {
                 String folderId = extractFolderIdFromLink(result.get());
-                
+
                 try {
                     cours.setDriveFolderId(folderId);
                     repository.updateCours(cours);
-                    
+
                     info("✅ Dossier sélectionné", "Le dossier Google Drive a été associé au cours « " + safe(cours.getTitre()) + " ».");
                     refreshAll();
                 } catch (Exception ex) {
@@ -724,7 +658,7 @@ public final class BackCoursesController {
                 }
             }
         });
-        
+
         MenuItem viewDriveItem = new MenuItem("🌐 Ouvrir Google Drive");
         viewDriveItem.setOnAction(e -> {
             try {
@@ -734,7 +668,7 @@ public final class BackCoursesController {
                 error("Erreur ouverture Drive", ex);
             }
         });
-        
+
         menu.getItems().addAll(addToDriveItem, new SeparatorMenuItem(), selectFolderItem, viewDriveItem);
         menu.show(coursListView, 100, 100);
     }
@@ -746,35 +680,35 @@ public final class BackCoursesController {
                 try {
                     System.out.println("📤 Synchronisation Google Drive pour: " + cours.getTitre());
                     updateMessage("Initialisation de Google Drive...");
-                    
+
                     // Créer le service Google Drive
-                    com.educompus.service.GoogleDriveService driveService = 
+                    com.educompus.service.GoogleDriveService driveService =
                         new com.educompus.service.GoogleDriveService();
-                    
+
                     updateMessage("Création du dossier pour le cours...");
-                    
+
                     // Créer un dossier pour le cours sur Google Drive
                     String coursFolderId = driveService.getOrCreateCoursFolder(cours.getTitre());
-                    
+
                     updateMessage("Récupération des chapitres...");
-                    
+
                     // Récupérer tous les chapitres du cours
                     java.util.List<Chapitre> chapitres = repository.listChapitresByCoursId(cours.getId());
-                    
+
                     int totalItems = chapitres.size();
                     int processedItems = 0;
-                    
+
                     // Pour chaque chapitre, créer un sous-dossier
                     for (Chapitre chapitre : chapitres) {
-                        updateMessage("Traitement du chapitre: " + chapitre.getTitre() + 
+                        updateMessage("Traitement du chapitre: " + chapitre.getTitre() +
                                     " (" + (processedItems + 1) + "/" + totalItems + ")");
-                        
+
                         // Créer le sous-dossier du chapitre
                         String chapitreFolderId = driveService.getOrCreateSubFolder(
-                            coursFolderId, 
+                            coursFolderId,
                             sanitizeFolderName(chapitre.getTitre())
                         );
-                        
+
                         // Uploader le fichier PDF du chapitre si disponible
                         if (chapitre.getFichierC() != null && !chapitre.getFichierC().isBlank()) {
                             java.io.File fichier = new java.io.File(chapitre.getFichierC());
@@ -788,7 +722,7 @@ public final class BackCoursesController {
                                 );
                             }
                         }
-                        
+
                         // Uploader les TDs du chapitre
                         java.util.List<Td> allTds = repository.listTds("");
                         for (Td td : allTds) {
@@ -807,26 +741,26 @@ public final class BackCoursesController {
                                 }
                             }
                         }
-                        
+
                         processedItems++;
                         updateProgress(processedItems, totalItems);
                     }
-                    
+
                     updateMessage("Finalisation...");
-                    
+
                     // Générer le lien vers le dossier du cours
                     String driveLink = "https://drive.google.com/drive/folders/" + coursFolderId;
-                    
+
                     // Mettre à jour le cours avec le lien Google Drive
                     cours.setDriveFolderId(coursFolderId);
                     cours.setDriveLink(driveLink);
                     repository.updateCours(cours);
-                    
+
                     System.out.println("✅ Synchronisation terminée pour: " + cours.getTitre());
                     System.out.println("📁 Lien Drive: " + driveLink);
-                    
+
                     javafx.application.Platform.runLater(() -> {
-                        info("✅ Synchronisation terminée", 
+                        info("✅ Synchronisation terminée",
                              "Le cours « " + safe(cours.getTitre()) + " » a été ajouté à Google Drive avec succès!\n\n" +
                              "Dossier créé avec " + chapitres.size() + " chapitre(s).\n\n" +
                              "Cliquez sur le bouton ☁️ du cours pour ouvrir le dossier Google Drive.");
@@ -835,7 +769,7 @@ public final class BackCoursesController {
                 } catch (Exception e) {
                     System.err.println("❌ Erreur synchronisation: " + e.getMessage());
                     e.printStackTrace();
-                    
+
                     // En cas d'erreur, réinitialiser le statut
                     cours.setDriveFolderId(null);
                     try {
@@ -843,7 +777,7 @@ public final class BackCoursesController {
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
-                    
+
                     javafx.application.Platform.runLater(() -> {
                         String errorMsg = e.getMessage();
                         if (errorMsg != null && (errorMsg.contains("credentials") || errorMsg.contains("FileNotFoundException"))) {
@@ -851,21 +785,21 @@ public final class BackCoursesController {
                             Alert alert = new Alert(Alert.AlertType.ERROR);
                             alert.setTitle("Erreur d'authentification");
                             alert.setHeaderText("Configuration Google Drive requise");
-                            
+
                             VBox content = new VBox(10);
                             content.setPadding(new javafx.geometry.Insets(10));
-                            
+
                             Label msg1 = new Label("Veuillez configurer le fichier credentials.json pour Google Drive.");
                             msg1.setWrapText(true);
                             msg1.setStyle("-fx-font-size: 13px;");
-                            
+
                             Label msg2 = new Label("📁 Emplacement requis : src/main/resources/credentials.json");
                             msg2.setWrapText(true);
                             msg2.setStyle("-fx-font-size: 12px; -fx-text-fill: #666; -fx-font-family: monospace;");
-                            
+
                             Label msg3 = new Label("📚 Guide rapide (5 minutes) :");
                             msg3.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
-                            
+
                             javafx.scene.control.Hyperlink link1 = new javafx.scene.control.Hyperlink("GOOGLE_DRIVE_QUICK_SETUP.md");
                             link1.setOnAction(ev -> {
                                 try {
@@ -874,10 +808,10 @@ public final class BackCoursesController {
                                     System.err.println("Impossible d'ouvrir le fichier: " + ex.getMessage());
                                 }
                             });
-                            
+
                             Label msg4 = new Label("📖 Documentation complète :");
                             msg4.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
-                            
+
                             javafx.scene.control.Hyperlink link2 = new javafx.scene.control.Hyperlink("docs/GOOGLE_DRIVE_SETUP.md");
                             link2.setOnAction(ev -> {
                                 try {
@@ -886,10 +820,10 @@ public final class BackCoursesController {
                                     System.err.println("Impossible d'ouvrir le fichier: " + ex.getMessage());
                                 }
                             });
-                            
+
                             Label msg5 = new Label("🌐 Console Google Cloud :");
                             msg5.setStyle("-fx-font-size: 12px; -fx-font-weight: bold;");
-                            
+
                             javafx.scene.control.Hyperlink link3 = new javafx.scene.control.Hyperlink("https://console.cloud.google.com/");
                             link3.setOnAction(ev -> {
                                 try {
@@ -898,10 +832,10 @@ public final class BackCoursesController {
                                     System.err.println("Impossible d'ouvrir le lien: " + ex.getMessage());
                                 }
                             });
-                            
-                            content.getChildren().addAll(msg1, msg2, new javafx.scene.control.Separator(), 
+
+                            content.getChildren().addAll(msg1, msg2, new javafx.scene.control.Separator(),
                                                         msg3, link1, msg4, link2, msg5, link3);
-                            
+
                             alert.getDialogPane().setContent(content);
                             alert.getDialogPane().setPrefWidth(500);
                             Dialogs.style(alert);
@@ -915,7 +849,7 @@ public final class BackCoursesController {
                 return null;
             }
         };
-        
+
         new Thread(task).setDaemon(true);
         new Thread(task).start();
     }
@@ -941,7 +875,7 @@ public final class BackCoursesController {
 
     private void showChapitreActionMenu(Chapitre chapitre, javafx.scene.input.MouseEvent event) {
         ContextMenu menu = new ContextMenu();
-        
+
         MenuItem addTdItem = new MenuItem("➕ Ajouter un TD");
         addTdItem.setOnAction(e -> {
             FormResult<Td> result = showTdForm(null, chapitre);
@@ -954,18 +888,18 @@ public final class BackCoursesController {
                 error("Erreur — Création TD", ex);
             }
         });
-        
+
         MenuItem addVideoItem = new MenuItem("➕ Ajouter une vidéo explicative");
         addVideoItem.setOnAction(e -> {
             FormResult<VideoExplicative> result = showVideoForm(null, chapitre);
             if (!result.saved()) return;
             try {
                 int videoId = repository.createVideoExplicative(result.value());
-                
+
                 // Si c'est une vidéo AI, déclencher la génération
                 if (result.flag()) {
                     info("✅ Vidéo créée", "La vidéo explicative a été créée avec succès.\nGénération AI en cours...");
-                    
+
                     // Récupérer la vidéo créée
                     VideoExplicative video = repository.getVideoExplicativeById(videoId);
                     if (video != null) {
@@ -975,13 +909,13 @@ public final class BackCoursesController {
                 } else {
                     info("✅ Vidéo créée", "La vidéo explicative a été créée avec succès");
                 }
-                
+
                 refreshAll();
             } catch (Exception ex) {
                 error("Erreur — Création vidéo", ex);
             }
         });
-        
+
         menu.getItems().addAll(addTdItem, addVideoItem);
         menu.show(chapitreListView, event.getScreenX(), event.getScreenY());
     }
@@ -992,7 +926,7 @@ public final class BackCoursesController {
             protected Void call() throws Exception {
                 try {
                     System.out.println("🎬 Démarrage génération vidéo AI: " + video.getTitre());
-                    
+
                     // Utiliser le service de génération AI
                     var result = AIVideoGenerationService.generateVideo(
                         video.getDescription(),
@@ -1000,16 +934,16 @@ public final class BackCoursesController {
                         video.getNiveau(),
                         video.getDomaine()
                     ).get(); // Attendre le résultat
-                    
+
                     if (result.isSuccess()) {
                         // Mettre à jour la vidéo avec l'URL générée
                         video.setUrlVideo(result.getVideoUrl());
                         video.setGenerationStatus("COMPLETED");
                         video.setAiScript(result.getScript());
                         repository.updateVideoExplicative(video);
-                        
+
                         System.out.println("✅ Vidéo générée avec succès: " + result.getVideoUrl());
-                        
+
                         javafx.application.Platform.runLater(() -> {
                             info("✅ Génération terminée", "La vidéo AI a été générée avec succès!");
                             refreshAll();
@@ -1018,9 +952,9 @@ public final class BackCoursesController {
                         // Erreur de génération
                         video.setGenerationStatus("ERROR");
                         repository.updateVideoExplicative(video);
-                        
+
                         System.err.println("❌ Erreur génération: " + result.getErrorMessage());
-                        
+
                         javafx.application.Platform.runLater(() -> {
                             error("Erreur génération", new Exception(result.getErrorMessage()));
                             refreshAll();
@@ -1029,14 +963,14 @@ public final class BackCoursesController {
                 } catch (Exception e) {
                     System.err.println("❌ Exception génération: " + e.getMessage());
                     e.printStackTrace();
-                    
+
                     video.setGenerationStatus("ERROR");
                     try {
                         repository.updateVideoExplicative(video);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
-                    
+
                     javafx.application.Platform.runLater(() -> {
                         error("Erreur génération vidéo", e);
                         refreshAll();
@@ -1045,7 +979,7 @@ public final class BackCoursesController {
                 return null;
             }
         };
-        
+
         // Lancer la tâche en arrière-plan
         new Thread(task).setDaemon(true);
         new Thread(task).start();
@@ -1150,7 +1084,7 @@ public final class BackCoursesController {
         Label errFormateur = addRow(grid, 4, "Nom du formateur *", formateurField);
         Label errDuree = addRow(grid, 5, "Duree totale (heures) *", dureeField);
         Label errImage = addRow(grid, 6, "Image (png/jpg)", imageBox);
-        
+
         javafx.scene.control.CheckBox importantCheck = new javafx.scene.control.CheckBox("Cours Important (Sauvegarder dans Google Drive une fois validé)");
         if (source != null && source.getDriveFolderId() != null) importantCheck.setSelected(true);
         importantCheck.setStyle("-fx-text-fill: #3b82f6; -fx-font-weight: bold;");
@@ -1366,7 +1300,7 @@ public final class BackCoursesController {
         // Nouvelle option : Générer avec AI
         javafx.scene.control.CheckBox aiGenerateCheck = new javafx.scene.control.CheckBox("🤖 Générer vidéo AI depuis la description");
         aiGenerateCheck.setStyle("-fx-text-fill: #9333ea; -fx-font-weight: bold; -fx-font-size: 12px;");
-        
+
         // Quand AI est activé, désactiver le champ URL
         aiGenerateCheck.selectedProperty().addListener((obs, old, newVal) -> {
             urlField.setDisable(newVal);
@@ -1413,23 +1347,12 @@ public final class BackCoursesController {
         Label errTitre = addRow(grid, 2, "Titre *", titreField);
         Label errUrl = addRow(grid, 3, "Url video *", urlField);
         Label errDesc = addRow(grid, 4, "Description *", descriptionArea);
-        Label errAI = addRow(grid, 5, "Génération AI", aiGenerateCheck);
-        Label errNiveau = addRow(grid, 6, "Niveau *", niveauCombo);
-        Label errDomaine = addRow(grid, 7, "Domaine *", domaineCombo);
+        Label errNiveau = addRow(grid, 5, "Niveau *", niveauCombo);
+        Label errDomaine = addRow(grid, 6, "Domaine *", domaineCombo);
 
         liveValidate(titreField, errTitre, () -> CoursValidationService.validateVideoTitre(titreField.getText()));
-        liveValidate(urlField, errUrl, () -> {
-            if (aiGenerateCheck.isSelected()) return new ValidationResult(); // Pas de validation URL si AI
-            return CoursValidationService.validateVideoUrl(urlField.getText());
-        });
-        liveValidate(descriptionArea, errDesc, () -> { 
-            ValidationResult r = new ValidationResult(); 
-            String v = descriptionArea.getText().trim(); 
-            if (v.isBlank()) r.addError("Obligatoire."); 
-            else if (v.length() < 10) r.addError("Min 10 caractères."); 
-            else if (aiGenerateCheck.isSelected() && v.length() < 50) r.addError("Pour l'AI, min 50 caractères pour une bonne génération.");
-            return r; 
-        });
+        liveValidate(urlField, errUrl, () -> CoursValidationService.validateVideoUrl(urlField.getText()));
+        liveValidate(descriptionArea, errDesc, () -> { ValidationResult r = new ValidationResult(); String v = descriptionArea.getText().trim(); if (v.isBlank()) r.addError("Obligatoire."); else if (v.length() < 10) r.addError("Min 10 caractères."); else if (v.chars().anyMatch(Character::isDigit)) r.addError("Pas de chiffres."); return r; });
 
         Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Créer une vidéo" : "Modifier une vidéo", grid);
         Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
@@ -1438,22 +1361,7 @@ public final class BackCoursesController {
             if (coursCombo.getValue() == null) { FormValidator.markError(coursCombo, "Obligatoire"); errCours.setText("⚠ Cours obligatoire."); err = true; }
             if (chapitreCombo.getValue() == null) { FormValidator.markError(chapitreCombo, "Obligatoire"); errChapitre.setText("⚠ Chapitre obligatoire."); err = true; }
             if (titreField.getText().trim().isBlank()) { FormValidator.markError(titreField, "Obligatoire"); errTitre.setText("⚠ Titre obligatoire."); err = true; }
-            
-            // Validation conditionnelle selon le mode AI ou URL
-            if (aiGenerateCheck.isSelected()) {
-                if (descriptionArea.getText().trim().length() < 50) { 
-                    FormValidator.markError(descriptionArea, "Min 50 car. pour AI"); 
-                    errDesc.setText("⚠ Min 50 caractères pour une bonne génération AI."); 
-                    err = true; 
-                }
-            } else {
-                if (urlField.getText().trim().isBlank()) { 
-                    FormValidator.markError(urlField, "Obligatoire"); 
-                    errUrl.setText("⚠ URL obligatoire."); 
-                    err = true; 
-                }
-            }
-            
+            if (urlField.getText().trim().isBlank()) { FormValidator.markError(urlField, "Obligatoire"); errUrl.setText("⚠ URL obligatoire."); err = true; }
             if (descriptionArea.getText().trim().length() < 10) { FormValidator.markError(descriptionArea, "Min 10 car."); errDesc.setText("⚠ Min 10 caractères."); err = true; }
             if (err) ev.consume();
         });
@@ -1468,7 +1376,7 @@ public final class BackCoursesController {
         video.setDescription(text(descriptionArea));
         video.setNiveau(safe(niveauCombo.getValue()));
         video.setDomaine(safe(domaineCombo.getValue()));
-        
+
         // Configuration selon le mode choisi
         if (aiGenerateCheck.isSelected()) {
             video.setAIGenerated(true);
@@ -1479,7 +1387,7 @@ public final class BackCoursesController {
             video.setAIGenerated(false);
             video.setGenerationStatus("COMPLETED");
         }
-        
+
         return FormResult.saved(video, aiGenerateCheck.isSelected()); // Le flag indique si c'est une génération AI
     }
 
@@ -1618,11 +1526,9 @@ public final class BackCoursesController {
             msg = sb.length() > 0 ? sb.toString() : e.getClass().getSimpleName();
         }
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(title);
-        alert.setContentText(msg);
-        Dialogs.style(alert);
-        alert.showAndWait();
+        alert.setTitle(title); alert.setHeaderText(title);
+        alert.setContentText(e == null ? "Erreur" : safe(e.getMessage()));
+        Dialogs.style(alert); alert.showAndWait();
     }
 
     private static int parseDuree(String s) { try { return Integer.parseInt(s.trim()); } catch (Exception e) { return 0; } }
@@ -1631,662 +1537,8 @@ public final class BackCoursesController {
     private static String text(TextArea a) { return a == null ? "" : safe(a.getText()); }
 
     private record FormResult<T>(T value, boolean saved, boolean flag) {
-        static <T> FormResult<T> saved(T v, boolean flag) { return new FormResult<>(v, true, flag); }
         static <T> FormResult<T> saved(T v) { return new FormResult<>(v, true, false); }
+        static <T> FormResult<T> saved(T v, boolean flag) { return new FormResult<>(v, true, flag); }
         static <T> FormResult<T> cancelled() { return new FormResult<>(null, false, false); }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // MODULE SESSIONS LIVE
-    // ══════════════════════════════════════════════════════════════════════════
-
-    private void setupSessionListView() {
-        if (sessionListView == null) return;
-        sessionListView.setCellFactory(lv -> new ListCell<>() {
-            private final Label statutBadge = new Label();
-            private final Label syncBadge   = new Label();
-            private final Label nomCoursLbl  = new Label();
-            private final Label dateHeureLbl = new Label();
-            private final Label lienLbl      = new Label();
-            private final Button startBtn    = new Button("▶ Démarrer");
-            private final Button endBtn      = new Button("⏹ Terminer");
-            private final Button editBtn     = new Button("✏️");
-            private final Button delBtn      = new Button("🗑️");
-            private final Button joinBtn     = new Button("🔗 Rejoindre");
-            private final HBox row;
-            {
-                statutBadge.getStyleClass().add("chip");
-                statutBadge.setStyle("-fx-font-size: 11px; -fx-font-weight: 700;");
-                nomCoursLbl.getStyleClass().add("project-card-title");
-                dateHeureLbl.getStyleClass().add("page-subtitle");
-                dateHeureLbl.setStyle("-fx-font-size: 11px;");
-                lienLbl.getStyleClass().add("page-subtitle");
-                lienLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: #6c63ff;");
-                startBtn.getStyleClass().add("btn-rgb");
-                endBtn.getStyleClass().add("btn-rgb-outline");
-                editBtn.getStyleClass().add("btn-rgb-outline");
-                delBtn.getStyleClass().add("btn-danger");
-                joinBtn.getStyleClass().add("btn-rgb-compact");
-
-                VBox info = new VBox(2, nomCoursLbl, dateHeureLbl, lienLbl);
-                HBox.setHgrow(info, javafx.scene.layout.Priority.ALWAYS);
-                row = new HBox(10, statutBadge, syncBadge, info, joinBtn, startBtn, endBtn, editBtn, delBtn);
-                row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-                row.setPadding(new javafx.geometry.Insets(8, 12, 8, 12));
-
-                startBtn.setOnAction(e -> { if (getItem() != null) demarrerSession(getItem()); });
-                endBtn.setOnAction(e -> { if (getItem() != null) terminerSession(getItem()); });
-                editBtn.setOnAction(e -> { if (getItem() != null) editSession(getItem()); });
-                delBtn.setOnAction(e -> { if (getItem() != null) deleteSession(getItem()); });
-                joinBtn.setOnAction(e -> { if (getItem() != null) rejoindreSession(getItem()); });
-            }
-
-            @Override protected void updateItem(SessionLive s, boolean empty) {
-                super.updateItem(s, empty);
-                if (empty || s == null) { setGraphic(null); return; }
-
-                nomCoursLbl.setText(safe(s.getNomCours()));
-                dateHeureLbl.setText("📅 " + s.getDateHeureFormatee());
-                lienLbl.setText("🔗 " + safe(s.getLien()));
-
-                // Badge statut
-                statutBadge.setText(s.getIconeStatut() + " " + s.getLibelleStatut());
-                statutBadge.getStyleClass().removeAll("chip-success", "chip-warning", "chip-danger", "chip-info");
-                switch (s.getStatut()) {
-                    case EN_COURS  -> statutBadge.getStyleClass().add("chip-success");
-                    case PLANIFIEE -> statutBadge.getStyleClass().add("chip-info");
-                    case TERMINEE  -> statutBadge.getStyleClass().add("chip-warning");
-                    case ANNULEE   -> statutBadge.getStyleClass().add("chip-danger");
-                }
-
-                // Badge sync Calendar
-                Label sb = SessionNotificationService.buildSyncBadge(s);
-                syncBadge.setText(sb.getText());
-                syncBadge.setStyle(sb.getStyle());
-
-                // Boutons selon statut
-                startBtn.setDisable(s.getStatut() != SessionStatut.PLANIFIEE);
-                endBtn.setDisable(s.getStatut() != SessionStatut.EN_COURS);
-                joinBtn.setDisable(!s.peutEtreRejointe());
-                editBtn.setDisable(s.getStatut() == SessionStatut.TERMINEE || s.getStatut() == SessionStatut.ANNULEE);
-
-                setGraphic(row);
-            }
-        });
-    }
-
-    private void setupSessionFilters() {
-        // Filtre par cours
-        if (sessionCoursFilterCombo != null) {
-            sessionCoursFilterCombo.setItems(FXCollections.observableArrayList(repository.listCours("")));
-            sessionCoursFilterCombo.setPromptText("Tous les cours");
-            sessionCoursFilterCombo.valueProperty().addListener((obs, o, n) -> reloadSessions());
-        }
-        // Filtre par statut
-        if (sessionStatutFilterCombo != null) {
-            sessionStatutFilterCombo.getItems().setAll("Tous", "📅 Planifiée", "🔴 En cours", "✅ Terminée", "❌ Annulée");
-            sessionStatutFilterCombo.setValue("Tous");
-            sessionStatutFilterCombo.valueProperty().addListener((obs, o, n) -> reloadSessions());
-        }
-        // Recherche texte
-        if (sessionSearchField != null) {
-            sessionSearchField.textProperty().addListener((obs, o, n) -> reloadSessions());
-        }
-    }
-
-    private void reloadSessions() {
-        List<SessionLive> all = sessionRepo.getAllSessions();
-
-        // Filtre cours
-        if (sessionCoursFilterCombo != null && sessionCoursFilterCombo.getValue() != null) {
-            int coursId = sessionCoursFilterCombo.getValue().getId();
-            all = all.stream().filter(s -> {
-                List<SessionLive> byCours = sessionRepo.getSessionsByCoursId(coursId);
-                return byCours.stream().anyMatch(sc -> sc.getId() == s.getId());
-            }).toList();
-        }
-
-        // Filtre statut
-        if (sessionStatutFilterCombo != null) {
-            String filtre = safe(sessionStatutFilterCombo.getValue());
-            if (!filtre.isBlank() && !filtre.equals("Tous")) {
-                SessionStatut statut = null;
-                if (filtre.contains("Planifiée")) statut = SessionStatut.PLANIFIEE;
-                else if (filtre.contains("En cours")) statut = SessionStatut.EN_COURS;
-                else if (filtre.contains("Terminée")) statut = SessionStatut.TERMINEE;
-                else if (filtre.contains("Annulée")) statut = SessionStatut.ANNULEE;
-                if (statut != null) {
-                    final SessionStatut s = statut;
-                    all = all.stream().filter(sess -> sess.getStatut() == s).toList();
-                }
-            }
-        }
-
-        // Filtre recherche texte
-        if (sessionSearchField != null && !sessionSearchField.getText().isBlank()) {
-            String q = sessionSearchField.getText().trim().toLowerCase();
-            all = all.stream().filter(s -> safe(s.getNomCours()).toLowerCase().contains(q)).toList();
-        }
-
-        sessionItems.setAll(all);
-        if (sessionListView != null) { sessionListView.setItems(sessionItems); sessionListView.refresh(); }
-
-        // Mise à jour des compteurs
-        long planifiees = all.stream().filter(s -> s.getStatut() == SessionStatut.PLANIFIEE).count();
-        long enCours    = all.stream().filter(s -> s.getStatut() == SessionStatut.EN_COURS).count();
-        long terminees  = all.stream().filter(s -> s.getStatut() == SessionStatut.TERMINEE).count();
-        if (sessionStatPlanifieeLabel != null) sessionStatPlanifieeLabel.setText("📅 " + planifiees + " planifiée(s)");
-        if (sessionStatEnCoursLabel   != null) sessionStatEnCoursLabel.setText("🔴 " + enCours + " en cours");
-        if (sessionStatTermineeLabel  != null) sessionStatTermineeLabel.setText("✅ " + terminees + " terminée(s)");
-    }
-
-    @FXML
-    private void createSession() {
-        FormResult<SessionLive> result = showSessionForm(null);
-        if (!result.saved()) return;
-        try {
-            sessionRepo.ajouterSession(result.value());
-
-            // Synchronisation Google Calendar en arrière-plan
-            syncCalendarAjouter(result.value());
-
-            info("✅ Session créée", "La session « " + safe(result.value().getNomCours()) + " » a été créée.");
-            reloadSessions();
-        } catch (Exception e) { error("Erreur création session", e); }
-    }
-
-    private void editSession(SessionLive session) {
-        FormResult<SessionLive> result = showSessionForm(session);
-        if (!result.saved()) return;
-        try {
-            sessionRepo.modifierSession(result.value());
-
-            // Mise à jour Google Calendar en arrière-plan
-            syncCalendarModifier(result.value());
-
-            info("✅ Session modifiée", "La session a été mise à jour.");
-            reloadSessions();
-        } catch (Exception e) { error("Erreur modification session", e); }
-    }
-
-    private void deleteSession(SessionLive session) {
-        if (!confirm("Supprimer la session",
-                "Supprimer la session « " + safe(session.getNomCours()) + " » ?\nCette action est irréversible.")) return;
-        try {
-            // Supprimer l'événement Google Calendar en arrière-plan
-            syncCalendarSupprimer(session);
-
-            sessionRepo.supprimerSession(session.getId());
-            reloadSessions();
-        } catch (Exception e) { error("Erreur suppression session", e); }
-    }
-
-    private void demarrerSession(SessionLive session) {
-        if (!confirm("Démarrer la session",
-                "Démarrer la session « " + safe(session.getNomCours()) + " » ?\nLe statut passera à EN_COURS.")) return;
-        try {
-            sessionMetier.startSession(session.getId());
-            info("🔴 Session démarrée", "La session est maintenant EN COURS.\nLes étudiants peuvent rejoindre.");
-            reloadSessions();
-        } catch (Exception e) { error("Erreur démarrage session", e); }
-    }
-
-    private void terminerSession(SessionLive session) {
-        if (!confirm("Terminer la session",
-                "Terminer la session « " + safe(session.getNomCours()) + " » ?\nTous les participants seront déconnectés.")) return;
-        try {
-            sessionMetier.endSession(session.getId());
-            info("✅ Session terminée", "La session est maintenant TERMINÉE.");
-            reloadSessions();
-        } catch (Exception e) { error("Erreur fin de session", e); }
-    }
-
-    private void rejoindreSession(SessionLive session) {
-        if (!session.peutEtreRejointe()) {
-            info("Session non disponible", "Cette session n'est pas encore active.");
-            return;
-        }
-        try {
-            java.awt.Desktop.getDesktop().browse(java.net.URI.create(session.getLien()));
-        } catch (Exception e) {
-            // Fallback : copier le lien dans le presse-papier
-            javafx.scene.input.Clipboard cb = javafx.scene.input.Clipboard.getSystemClipboard();
-            javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();
-            cc.putString(session.getLien());
-            cb.setContent(cc);
-            info("Lien copié", "Impossible d'ouvrir le navigateur.\nLe lien a été copié dans le presse-papier :\n" + session.getLien());
-        }
-    }
-
-    // ── Calendrier ────────────────────────────────────────────────────────────
-
-    private void setupCalendar() {
-        if (calendarContainer == null) return;
-        calendarCtrl = new BackCalendarController();
-        calendarContainer.getChildren().setAll(calendarCtrl.getRootNode());
-        VBox.setVgrow(calendarCtrl.getRootNode(), javafx.scene.layout.Priority.ALWAYS);
-    }
-
-    /** Rafraîchit le calendrier et la liste quand un statut change automatiquement. */
-    private void setupAutoStatusCallback() {
-        SessionNotificationService.getInstance().setOnStatutChange(session -> {
-            reloadSessions();
-            if (calendarCtrl != null) {
-                calendarContainer.getChildren().setAll(calendarCtrl.getRootNode());
-            }
-        });
-    }
-
-    // ── Synchronisation Google Calendar ──────────────────────────────────────
-
-    private void syncCalendarAjouter(SessionLive session) {
-        if (!GoogleCalendarService.isConfigured()) return;
-        Thread t = new Thread(() -> {
-            try {
-                GoogleCalendarService calendarService = new GoogleCalendarService();
-                String eventId = calendarService.creerEvenement(session);
-                if (eventId != null) {
-                    session.setGoogleEventId(eventId);
-                    sessionRepo.updateGoogleEventId(session.getId(), eventId);
-                    javafx.application.Platform.runLater(() ->
-                        info("📅 Google Calendar", "Session ajoutée à votre Google Calendar !\nRappel automatique 30 min avant."));
-                }
-            } catch (Exception e) {
-                System.err.println("[Calendar] Sync ajouter (ignoré): " + e.getMessage());
-            }
-        });
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private void syncCalendarModifier(SessionLive session) {
-        if (!GoogleCalendarService.isConfigured() || !session.estSynchroniseeCalendar()) return;
-        Thread t = new Thread(() -> {
-            try {
-                new GoogleCalendarService().mettreAJourEvenement(session);
-            } catch (Exception e) {
-                System.err.println("[Calendar] Sync modifier (ignoré): " + e.getMessage());
-            }
-        });
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private void syncCalendarSupprimer(SessionLive session) {
-        if (!GoogleCalendarService.isConfigured() || !session.estSynchroniseeCalendar()) return;
-        Thread t = new Thread(() -> {
-            try {
-                new GoogleCalendarService().supprimerEvenement(session.getGoogleEventId());
-            } catch (Exception e) {
-                System.err.println("[Calendar] Sync supprimer (ignoré): " + e.getMessage());
-            }
-        });
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private FormResult<SessionLive> showSessionForm(SessionLive source) {
-        // ── Sélection du cours (OBLIGATOIRE — le nom est auto-rempli) ──
-        ComboBox<Cours> coursCombo = comboCours();
-        coursCombo.setPromptText("Sélectionner un cours...");
-
-        // Label affichant le nom du cours sélectionné (lecture seule)
-        Label nomCoursDisplay = new Label("— Sélectionnez un cours ci-dessus —");
-        nomCoursDisplay.setStyle("-fx-font-size: 12px; -fx-text-fill: #888; -fx-font-style: italic;");
-
-        // Mise à jour automatique du nom affiché
-        coursCombo.valueProperty().addListener((obs, o, n) -> {
-            if (n != null) {
-                nomCoursDisplay.setText("✅  " + safe(n.getTitre()));
-                nomCoursDisplay.setStyle("-fx-font-size: 12px; -fx-text-fill: #29b6d8; -fx-font-weight: 700;");
-            } else {
-                nomCoursDisplay.setText("— Sélectionnez un cours ci-dessus —");
-                nomCoursDisplay.setStyle("-fx-font-size: 12px; -fx-text-fill: #888; -fx-font-style: italic;");
-            }
-        });
-
-        TextField lienField = field();
-        lienField.setPromptText("https://meet.google.com/xxx-yyyy-zzz");
-
-        javafx.scene.control.DatePicker datePicker = new javafx.scene.control.DatePicker();
-        datePicker.getStyleClass().add("field");
-        datePicker.setMaxWidth(Double.MAX_VALUE);
-        datePicker.setPromptText("Date de la session");
-
-        TextField heureField = field();
-        heureField.setPromptText("HH:mm  (ex: 14:30)");
-
-        ComboBox<String> statutCombo = comboStrings(
-            List.of("PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"));
-        statutCombo.setValue("PLANIFIEE");
-
-        // ── Pré-remplissage si modification ──
-        if (source != null) {
-            // Retrouver le cours par coursId ou par nom
-            for (Cours c : coursCombo.getItems()) {
-                if (source.getCoursId() > 0 && c.getId() == source.getCoursId()) {
-                    coursCombo.setValue(c); break;
-                } else if (safe(c.getTitre()).equals(safe(source.getNomCours()))) {
-                    coursCombo.setValue(c); break;
-                }
-            }
-            lienField.setText(safe(source.getLien()));
-            if (source.getDate() != null) datePicker.setValue(source.getDate());
-            if (source.getHeure() != null) heureField.setText(source.getHeure().toString());
-            statutCombo.setValue(source.getStatut().name());
-        } else {
-            datePicker.setValue(LocalDate.now());
-        }
-
-        // ── Grille du formulaire ──
-        GridPane grid = formGrid();
-        Label errCours  = addRow(grid, 0, "Cours *",        coursCombo);
-        // Ligne affichage nom (pas de label d'erreur)
-        Label lblNomCours = new Label("Nom du cours");
-        lblNomCours.getStyleClass().add("form-label");
-        grid.add(lblNomCours, 0, 2);
-        grid.add(nomCoursDisplay, 1, 2);
-        Label errLien   = addRow(grid, 2, "Lien session *", lienField);
-        Label errDate   = addRow(grid, 3, "Date *",         datePicker);
-        Label errHeure  = addRow(grid, 4, "Heure *",        heureField);
-        Label errStatut = addRow(grid, 5, "Statut",         statutCombo);
-
-        // Validation live du lien
-        liveValidate(lienField, errLien, () -> SessionLiveValidationService.validerLien(lienField.getText()));
-
-        // Aide plateformes
-        Label helpLbl = new Label("✅ Plateformes : Google Meet, Zoom, Teams, Webex, Whereby, Jitsi");
-        helpLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: #6c63ff;");
-        grid.add(helpLbl, 1, 12);
-
-        Dialog<ButtonType> dialog = buildFormDialog(
-            source == null ? "➕ Nouvelle session live" : "✏️ Modifier la session live", grid);
-
-        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            boolean err = false;
-            // Cours obligatoire
-            if (coursCombo.getValue() == null) {
-                FormValidator.markError(coursCombo, "Obligatoire");
-                errCours.setText("⚠ Veuillez sélectionner un cours."); err = true;
-            }
-            // Lien obligatoire et valide
-            ValidationResult lienResult = SessionLiveValidationService.validerLien(lienField.getText());
-            if (!lienResult.isValid()) {
-                FormValidator.markError(lienField, lienResult.firstError());
-                errLien.setText("⚠ " + lienResult.firstError()); err = true;
-            }
-            // Date obligatoire
-            if (datePicker.getValue() == null) {
-                errDate.setText("⚠ Date obligatoire."); err = true;
-            }
-            // Heure obligatoire et format valide
-            if (heureField.getText().isBlank()) {
-                FormValidator.markError(heureField, "Obligatoire");
-                errHeure.setText("⚠ Heure obligatoire (HH:mm)."); err = true;
-            } else {
-                try { LocalTime.parse(heureField.getText().trim()); }
-                catch (Exception ex) {
-                    FormValidator.markError(heureField, "Format invalide");
-                    errHeure.setText("⚠ Format invalide. Utilisez HH:mm (ex: 14:30)."); err = true;
-                }
-            }
-            if (err) ev.consume();
-        });
-
-        Optional<ButtonType> answer = dialog.showAndWait();
-        if (answer.isEmpty() || answer.get().getButtonData() != javafx.scene.control.ButtonBar.ButtonData.OK_DONE)
-            return FormResult.cancelled();
-
-        Cours coursSelectionne = coursCombo.getValue();
-        SessionLive session = source != null ? source : new SessionLive();
-        session.setCoursId(coursSelectionne.getId());
-        session.setNomCours(safe(coursSelectionne.getTitre())); // auto depuis le cours
-        session.setLien(lienField.getText().trim());
-        session.setDate(datePicker.getValue());
-        session.setHeure(LocalTime.parse(heureField.getText().trim()));
-        session.setStatut(SessionStatut.fromString(statutCombo.getValue()));
-
-        return FormResult.saved(session);
-    }
-    
-    /**
-     * Migre tous les contenus existants vers la nouvelle structure Google Drive hiérarchique.
-     */
-    @FXML
-    private void migrateAllContentsToDrive() {
-        // Vérifier que credentials.json existe
-        if (getClass().getResourceAsStream("/credentials.json") == null) {
-            error("Configuration Google Drive manquante",
-                new Exception("Le fichier credentials.json est introuvable dans les ressources."));
-            return;
-        }
-        
-        // Confirmer l'action
-        if (!confirm("Migration complète vers Google Drive", 
-            "Voulez-vous migrer TOUS les contenus existants vers Google Drive ?\n\n" +
-            "Cette opération va créer une structure hiérarchique :\n" +
-            "📁 Gestion Cours\n" +
-            "  └── 📁 [Nom du Cours]\n" +
-            "      ├── 📄 Cours_principal.pdf\n" +
-            "      └── 📁 [Chapitre]\n" +
-            "          ├── 📄 Chapitre.pdf\n" +
-            "          ├── 📁 TDs\n" +
-            "          └── 📁 Vidéos\n\n" +
-            "⚠️ Cette opération peut prendre du temps selon le nombre de fichiers.")) {
-            return;
-        }
-        
-        // Lancer la migration en arrière-plan
-        Task<Void> migrationTask = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                updateMessage("Initialisation de la migration...");
-                
-                com.educompus.service.GoogleDriveService driveService = new com.educompus.service.GoogleDriveService();
-                
-                // Récupérer tous les contenus
-                List<Cours> cours = repository.listCours("");
-                List<Chapitre> chapitres = repository.listChapitres("");
-                List<Td> tds = repository.listTds("");
-                List<VideoExplicative> videos = repository.listVideos("");
-                
-                int totalItems = cours.size() + chapitres.size() + tds.size() + videos.size();
-                int currentItem = 0;
-                
-                // Migrer tous les cours
-                updateMessage("Migration des cours...");
-                for (Cours c : cours) {
-                    currentItem++;
-                    if (c.getImage() != null && !c.getImage().startsWith("auto:")) {
-                        java.io.File file = new java.io.File(c.getImage());
-                        if (file.exists()) {
-                            try {
-                                String fileName = "Cours_" + c.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".pdf";
-                                driveService.uploadCoursFile(c.getImage(), fileName, c.getTitre());
-                                updateMessage("Cours uploadé: " + c.getTitre() + " (" + currentItem + "/" + totalItems + ")");
-                            } catch (Exception e) {
-                                System.err.println("Erreur cours " + c.getTitre() + ": " + e.getMessage());
-                            }
-                        }
-                    }
-                }
-                
-                // Migrer tous les chapitres
-                updateMessage("Migration des chapitres...");
-                for (Chapitre ch : chapitres) {
-                    currentItem++;
-                    if (ch.getFichierC() != null && !ch.getFichierC().isBlank()) {
-                        java.io.File file = new java.io.File(ch.getFichierC());
-                        if (file.exists()) {
-                            try {
-                                // Trouver le cours associé
-                                String coursTitle = cours.stream()
-                                    .filter(c -> c.getId() == ch.getCoursId())
-                                    .map(Cours::getTitre)
-                                    .findFirst()
-                                    .orElse("Cours_Inconnu");
-                                
-                                String fileName = "Chapitre_" + ch.getOrdre() + "_" + ch.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".pdf";
-                                driveService.uploadChapitreFile(ch.getFichierC(), fileName, coursTitle, ch.getTitre());
-                                updateMessage("Chapitre uploadé: " + ch.getTitre() + " (" + currentItem + "/" + totalItems + ")");
-                            } catch (Exception e) {
-                                System.err.println("Erreur chapitre " + ch.getTitre() + ": " + e.getMessage());
-                            }
-                        }
-                    }
-                }
-                
-                // Migrer tous les TDs
-                updateMessage("Migration des TDs...");
-                for (Td td : tds) {
-                    currentItem++;
-                    if (td.getFichier() != null && !td.getFichier().isBlank()) {
-                        java.io.File file = new java.io.File(td.getFichier());
-                        if (file.exists()) {
-                            try {
-                                // Trouver le cours et chapitre associés
-                                String coursTitle = cours.stream()
-                                    .filter(c -> c.getId() == td.getCoursId())
-                                    .map(Cours::getTitre)
-                                    .findFirst()
-                                    .orElse("Cours_Inconnu");
-                                
-                                String chapitreTitre = td.getChapitreTitre();
-                                if (chapitreTitre == null || chapitreTitre.isBlank()) {
-                                    chapitreTitre = chapitres.stream()
-                                        .filter(ch -> ch.getId() == td.getChapitreId())
-                                        .map(Chapitre::getTitre)
-                                        .findFirst()
-                                        .orElse("Chapitre_Inconnu");
-                                }
-                                
-                                String fileName = "TD_" + td.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".pdf";
-                                driveService.uploadTdFile(td.getFichier(), fileName, coursTitle, chapitreTitre);
-                                updateMessage("TD uploadé: " + td.getTitre() + " (" + currentItem + "/" + totalItems + ")");
-                            } catch (Exception e) {
-                                System.err.println("Erreur TD " + td.getTitre() + ": " + e.getMessage());
-                            }
-                        }
-                    }
-                }
-                
-                // Migrer toutes les vidéos
-                updateMessage("Migration des vidéos...");
-                for (VideoExplicative video : videos) {
-                    currentItem++;
-                    if (video.getUrlVideo() != null && !video.getUrlVideo().isBlank()) {
-                        try {
-                            // Trouver le cours et chapitre associés
-                            String coursTitle = cours.stream()
-                                .filter(c -> c.getId() == video.getCoursId())
-                                .map(Cours::getTitre)
-                                .findFirst()
-                                .orElse("Cours_Inconnu");
-                            
-                            String chapitreTitre = video.getChapitreTitre();
-                            if (chapitreTitre == null || chapitreTitre.isBlank()) {
-                                chapitreTitre = chapitres.stream()
-                                    .filter(ch -> ch.getId() == video.getChapitreId())
-                                    .map(Chapitre::getTitre)
-                                    .findFirst()
-                                    .orElse("Chapitre_Inconnu");
-                            }
-                            
-                            java.io.File file = new java.io.File(video.getUrlVideo());
-                            if (file.exists() && video.getUrlVideo().toLowerCase().endsWith(".mp4")) {
-                                // Upload du fichier MP4
-                                String fileName = video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + ".mp4";
-                                driveService.uploadVideoFile(video.getUrlVideo(), fileName, coursTitle, chapitreTitre);
-                                updateMessage("Vidéo uploadée: " + video.getTitre() + " (" + currentItem + "/" + totalItems + ")");
-                            } else {
-                                // Créer un fichier texte avec le lien
-                                java.io.File tempFile = java.io.File.createTempFile("Video_", ".txt");
-                                java.nio.file.Files.writeString(tempFile.toPath(),
-                                    "Titre: " + video.getTitre() + "\n" +
-                                    "Lien vidéo: " + video.getUrlVideo() + "\n" +
-                                    "Type: " + (video.isAIGenerated() ? "Générée par AI" : "Manuelle") + "\n" +
-                                    "Chapitre: " + chapitreTitre);
-                                
-                                String fileName = video.getTitre().replaceAll("[<>:\"/\\\\|?*]", "_") + "_lien.txt";
-                                driveService.uploadVideoFile(tempFile.getAbsolutePath(), fileName, coursTitle, chapitreTitre);
-                                tempFile.delete();
-                                updateMessage("Lien vidéo uploadé: " + video.getTitre() + " (" + currentItem + "/" + totalItems + ")");
-                            }
-                        } catch (Exception e) {
-                            System.err.println("Erreur vidéo " + video.getTitre() + ": " + e.getMessage());
-                        }
-                    }
-                }
-                
-                updateMessage("Migration terminée !");
-                return null;
-            }
-        };
-        
-        // Afficher le dialogue de progression
-        Alert progressAlert = new Alert(Alert.AlertType.INFORMATION);
-        progressAlert.setTitle("Migration vers Google Drive");
-        progressAlert.setHeaderText("Migration en cours...");
-        
-        ProgressIndicator progressIndicator = new ProgressIndicator();
-        progressIndicator.setProgress(-1);
-        
-        Label progressLabel = new Label("Initialisation...");
-        progressLabel.textProperty().bind(migrationTask.messageProperty());
-        
-        VBox progressContent = new VBox(10, progressIndicator, progressLabel);
-        progressContent.setAlignment(javafx.geometry.Pos.CENTER);
-        progressContent.setPadding(new javafx.geometry.Insets(20));
-        
-        progressAlert.getDialogPane().setContent(progressContent);
-        progressAlert.getButtonTypes().clear();
-        progressAlert.getButtonTypes().add(ButtonType.CANCEL);
-        
-        Dialogs.style(progressAlert);
-        
-        // Gérer le succès
-        migrationTask.setOnSucceeded(e -> {
-            progressAlert.close();
-            info("✅ Migration réussie", 
-                "Tous vos contenus ont été migrés vers Google Drive !\n\n" +
-                "Structure hiérarchique créée :\n" +
-                "📁 Gestion Cours\n" +
-                "  └── 📁 [Nom du Cours]\n" +
-                "      ├── 📄 Cours_principal.pdf\n" +
-                "      └── 📁 [Chapitre]\n" +
-                "          ├── 📄 Chapitre.pdf\n" +
-                "          ├── 📁 Travaux Dirigés\n" +
-                "          │   └── 📄 TD_xxx.pdf\n" +
-                "          └── 📁 Vidéos Explicatives\n" +
-                "              └── 📄 Video_xxx.mp4\n\n" +
-                "Chaque contenu est maintenant organisé dans son chapitre !");
-        });
-        
-        // Gérer les erreurs
-        migrationTask.setOnFailed(e -> {
-            progressAlert.close();
-            Throwable exception = migrationTask.getException();
-            error("Erreur migration", new Exception("Échec de la migration: " + 
-                (exception != null ? exception.getMessage() : "Erreur inconnue")));
-        });
-        
-        // Gérer l'annulation
-        migrationTask.setOnCancelled(e -> {
-            progressAlert.close();
-            info("Migration annulée", "La migration vers Google Drive a été annulée.");
-        });
-        
-        // Lancer la tâche
-        Thread migrationThread = new Thread(migrationTask);
-        migrationThread.setDaemon(true);
-        migrationThread.start();
-        
-        // Afficher le dialogue
-        progressAlert.showAndWait().ifPresent(result -> {
-            if (result == ButtonType.CANCEL) {
-                migrationTask.cancel();
-            }
-        });
     }
 }

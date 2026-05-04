@@ -10,6 +10,7 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:id="rootPane"
       fx:controller="com.educompus.controller.back.BackStatistiquesController"
       styleClass="content" spacing="18">
     <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
@@ -21,6 +22,9 @@
             <Label text="Vue analytique des produits, avis et chiffre d'affaires."
                    styleClass="page-subtitle"/>
         </VBox>
+        <Button text="🖼  Exporter PNG" styleClass="btn-ghost"
+                style="-fx-text-fill: #7c3aed; -fx-font-weight: 700;"
+                onAction="#onExporterPng"/>
         <Button text="↻  Actualiser" styleClass="btn-ghost" onAction="#onActualiser"/>
     </HBox>
 
@@ -93,23 +97,50 @@
                     </VBox>
                 </HBox>
 
-                <!-- Section 3 : Top 5 produits notés -->
-                <VBox styleClass="card" spacing="10">
-                    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                    <Label text="Top 5 produits les mieux notés" styleClass="stat-title"/>
-                    <TableView fx:id="tableTop5" prefHeight="200"
-                               style="-fx-background-color: transparent; -fx-border-color: transparent;">
-                        <columns>
-                            <TableColumn fx:id="colTopNom"      text="Produit"    prefWidth="260"/>
-                            <TableColumn fx:id="colTopCat"      text="Catégorie"  prefWidth="150"/>
-                            <TableColumn fx:id="colTopNote"     text="Note moy."  prefWidth="110" style="-fx-alignment: CENTER;"/>
-                            <TableColumn fx:id="colTopNbAvis"   text="Nb avis"    prefWidth="90"  style="-fx-alignment: CENTER;"/>
-                        </columns>
-                        <placeholder>
-                            <Label text="Aucun avis enregistré." styleClass="page-subtitle"/>
-                        </placeholder>
-                    </TableView>
-                </VBox>
+                <!-- Section 3 : Top 5 produits notés + Top 5 vendus côte à côte -->
+                <HBox spacing="14">
+                    <!-- Top 5 mieux notés -->
+                    <VBox styleClass="card" spacing="10" HBox.hgrow="ALWAYS">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <Label text="Top 5 produits les mieux notés" styleClass="stat-title"/>
+                        <TableView fx:id="tableTop5" prefHeight="200"
+                                   style="-fx-background-color: transparent; -fx-border-color: transparent;">
+                            <columns>
+                                <TableColumn fx:id="colTopNom"    text="Produit"   prefWidth="200"/>
+                                <TableColumn fx:id="colTopCat"    text="Catégorie" prefWidth="120"/>
+                                <TableColumn fx:id="colTopNote"   text="Note"      prefWidth="100" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colTopNbAvis" text="Avis"      prefWidth="70"  style="-fx-alignment: CENTER;"/>
+                            </columns>
+                            <placeholder>
+                                <Label text="Aucun avis enregistré." styleClass="page-subtitle"/>
+                            </placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Top 5 plus vendus -->
+                    <VBox styleClass="card" spacing="10" HBox.hgrow="ALWAYS">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label text="Top 5 produits les plus vendus" styleClass="stat-title"/>
+                            <Label text="  ventes  "
+                                   style="-fx-background-color: rgba(12,188,135,0.15);
+                                          -fx-text-fill: #0cbc87; -fx-background-radius: 999px;
+                                          -fx-padding: 2 8 2 8; -fx-font-size: 10px; -fx-font-weight: 700;"/>
+                        </HBox>
+                        <TableView fx:id="tableTop5Vendus" prefHeight="200"
+                                   style="-fx-background-color: transparent; -fx-border-color: transparent;">
+                            <columns>
+                                <TableColumn fx:id="colVenduNom"     text="Produit"   prefWidth="180"/>
+                                <TableColumn fx:id="colVenduCat"     text="Catégorie" prefWidth="110"/>
+                                <TableColumn fx:id="colVenduNb"      text="Ventes"    prefWidth="70"  style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colVenduCa"      text="CA (TND)"  prefWidth="90"  style="-fx-alignment: CENTER_RIGHT;"/>
+                            </columns>
+                            <placeholder>
+                                <Label text="Aucune vente enregistrée." styleClass="page-subtitle"/>
+                            </placeholder>
+                        </TableView>
+                    </VBox>
+                </HBox>
 
                 <!-- Section 5 : CA par catégorie -->
                 <VBox styleClass="card" spacing="10">

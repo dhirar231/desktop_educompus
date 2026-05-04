@@ -4,9 +4,15 @@ import com.educompus.app.AppState;
 import com.educompus.model.Commande;
 import com.educompus.model.LigneCommande;
 import com.educompus.model.Livraison;
+import com.educompus.model.Produit;
+import com.educompus.service.CloudinaryService;
+import com.educompus.service.FacturePNGService;
+import com.educompus.service.GarantiePNGService;
 import com.educompus.service.ServiceCommande;
 import com.educompus.service.ServiceLigneCommande;
 import com.educompus.service.ServiceLivraison;
+import com.educompus.service.ServiceProduit;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -14,6 +20,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.awt.Desktop;
+import java.io.File;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -26,6 +34,7 @@ public class FrontMesCommandesController {
     private final ServiceCommande      serviceCommande      = new ServiceCommande();
     private final ServiceLigneCommande serviceLigneCommande = new ServiceLigneCommande();
     private final ServiceLivraison     serviceLivraison     = new ServiceLivraison();
+    private final ServiceProduit       serviceProduit       = new ServiceProduit();
 
     private Runnable onRetourCallback;
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -144,13 +153,41 @@ public class FrontMesCommandesController {
                         lc.getPrixUnitaire() * lc.getQuantite()));
                 st.setStyle("-fx-font-weight: 800; -fx-text-fill: -edu-primary; -fx-font-size: 13px;");
 
-                row.getChildren().addAll(infos, st);
+                // Bouton garantie si type = Materiel
+                HBox actions = new HBox(6);
+                actions.setAlignment(Pos.CENTER_RIGHT);
+                if (lc.getProduitId() != null) {
+                    try {
+                        Produit produit = serviceProduit.findById(lc.getProduitId());
+                        if (produit != null && "Materiel".equalsIgnoreCase(produit.getType())) {
+                            Button btnGarantie = new Button("🛡 Garantie");
+                            btnGarantie.getStyleClass().add("btn-rgb-outline");
+                            btnGarantie.setStyle("-fx-font-size: 10px; -fx-text-fill: #7c3aed;");
+                            btnGarantie.setOnAction(e -> genererGarantie(cmd, lc, produit, btnGarantie));
+                            actions.getChildren().add(btnGarantie);
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                row.getChildren().addAll(infos, st, actions);
                 corps.getChildren().add(row);
             }
         } catch (Exception ignored) {}
 
-        // ── Pied : infos livraison ──
+        // ── Pied : infos livraison + bouton facture ──
         VBox pied = buildPiedLivraison(cmd.getId());
+
+        // Ajouter le bouton directement dans le pied
+        HBox actionBar = new HBox();
+        actionBar.setAlignment(Pos.CENTER_RIGHT);
+        actionBar.setPadding(new Insets(6, 0, 0, 0));
+
+        Button btnPng = new Button("🖼  Télécharger la facture");
+        btnPng.getStyleClass().add("btn-primary");
+        btnPng.setStyle("-fx-font-size: 11px;");
+        btnPng.setOnAction(e -> imprimerFacturePng(cmd, btnPng));
+        actionBar.getChildren().add(btnPng);
+        pied.getChildren().add(actionBar);
 
         card.getChildren().addAll(header, corps, pied);
         return card;
@@ -223,6 +260,188 @@ public class FrontMesCommandesController {
         } catch (Exception ignored) {}
 
         return pied;
+    }
+
+    // ── Génération garantie PNG ───────────────────────────────────────────────
+
+    private void genererGarantie(Commande cmd, LigneCommande lc, Produit produit, Button btn) {
+        btn.setDisable(true);
+        btn.setText("⏳");
+        new Thread(() -> {
+            try {
+                // 1. Générer le PNG
+                GarantiePNGService svc = new GarantiePNGService();
+                File png = svc.generer(cmd, lc, produit);
+
+                // 2. Upload Cloudinary
+                String urlCloud = null;
+                String errCloud = null;
+                try {
+                    CloudinaryService cloudinary = new CloudinaryService();
+                    urlCloud = cloudinary.uploader(png, "garanties");
+                    System.out.println("[Cloudinary] Garantie uploadée : " + urlCloud);
+                } catch (Exception ex) {
+                    errCloud = ex.getMessage();
+                    System.err.println("[Cloudinary] Upload garantie échoué : " + ex.getMessage());
+                }
+
+                final String urlFinale = urlCloud;
+                final String errFinale = errCloud;
+
+                Platform.runLater(() -> {
+                    btn.setDisable(false);
+                    btn.setText("🛡 Garantie");
+
+                    // Ouvrir localement
+                    try {
+                        if (java.awt.Desktop.isDesktopSupported())
+                            java.awt.Desktop.getDesktop().open(png);
+                    } catch (Exception ignored) {}
+
+                    // Dialog avec lien Cloudinary
+                    Dialog<Void> dialog = new Dialog<>();
+                    dialog.setTitle("Certificat de garantie");
+                    dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+                    VBox content = new VBox(10);
+                    content.setPadding(new Insets(10));
+
+                    Label lblLocal = new Label("📁 Fichier local :\n" + png.getAbsolutePath());
+                    lblLocal.setWrapText(true);
+                    lblLocal.getStyleClass().add("page-subtitle");
+                    content.getChildren().add(lblLocal);
+
+                    if (urlFinale != null) {
+                        Label lblCloud = new Label("☁ Disponible en ligne :");
+                        lblCloud.getStyleClass().add("stat-title");
+                        Hyperlink lien = new Hyperlink(urlFinale);
+                        lien.setWrapText(true);
+                        lien.setMaxWidth(420);
+                        lien.setStyle("-fx-text-fill: -edu-primary; -fx-font-size: 11px;");
+                        lien.setOnAction(ev -> {
+                            try { java.awt.Desktop.getDesktop().browse(new java.net.URI(urlFinale)); }
+                            catch (Exception ignored) {}
+                        });
+                        content.getChildren().addAll(lblCloud, lien);
+                    } else if (errFinale != null) {
+                        Label lblErr = new Label("⚠ Upload échoué : " + errFinale);
+                        lblErr.getStyleClass().add("field-error");
+                        lblErr.setWrapText(true);
+                        content.getChildren().add(lblErr);
+                    }
+
+                    dialog.getDialogPane().setContent(content);
+                    if (commandesBox.getScene() != null)
+                        dialog.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    dialog.showAndWait();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    btn.setDisable(false);
+                    btn.setText("🛡 Garantie");
+                    Alert err = new Alert(Alert.AlertType.ERROR);
+                    err.setTitle("Erreur");
+                    err.setHeaderText(null);
+                    err.setContentText("Impossible de générer la garantie :\n" + ex.getMessage());
+                    if (commandesBox.getScene() != null)
+                        err.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    err.showAndWait();
+                });
+            }
+        }, "garantie-png").start();
+    }
+
+    // ── Impression facture PNG ────────────────────────────────────────────────
+
+    private void imprimerFacturePng(Commande cmd, Button btn) {
+        btn.setDisable(true);
+        btn.setText("Génération…");
+
+        new Thread(() -> {
+            try {
+                List<LigneCommande> lignes = serviceLigneCommande.afficherByCommande(cmd.getId());
+                Livraison liv = serviceLivraison.findByCommande(cmd.getId());
+
+                FacturePNGService service = new FacturePNGService();
+                File png = service.genererPng(cmd, lignes, liv);
+
+                // Upload vers Cloudinary
+                String urlCloud = null;
+                String erreurCloud = null;
+                try {
+                    CloudinaryService cloudinary = new CloudinaryService();
+                    urlCloud = cloudinary.uploader(png, "factures");
+                    System.out.println("[Cloudinary] Facture uploadée : " + urlCloud);
+                } catch (Exception ex) {
+                    erreurCloud = ex.getMessage();
+                    System.err.println("[Cloudinary] Upload échoué : " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+
+                final String urlFinale   = urlCloud;
+                final String errFinale   = erreurCloud;
+
+                Platform.runLater(() -> {
+                    btn.setDisable(false);
+                    btn.setText("🖼  Télécharger la facture");
+                    try {
+                        if (Desktop.isDesktopSupported())
+                            Desktop.getDesktop().open(png);
+                    } catch (Exception ignored) {}
+
+                    // Dialog avec lien cliquable
+                    Dialog<Void> dialog = new Dialog<>();
+                    dialog.setTitle("Facture générée");
+                    dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+                    VBox content = new VBox(10);
+                    content.setPadding(new Insets(10));
+
+                    Label lblLocal = new Label("📁 Fichier local :\n" + png.getAbsolutePath());
+                    lblLocal.setWrapText(true);
+                    lblLocal.getStyleClass().add("page-subtitle");
+                    content.getChildren().add(lblLocal);
+
+                    if (urlFinale != null) {
+                        Label lblCloud = new Label("☁ Disponible en ligne :");
+                        lblCloud.getStyleClass().add("stat-title");
+
+                        Hyperlink lien = new Hyperlink(urlFinale);
+                        lien.setWrapText(true);
+                        lien.setMaxWidth(420);
+                        lien.setStyle("-fx-text-fill: -edu-primary; -fx-font-size: 11px;");
+                        lien.setOnAction(ev -> {
+                            try {
+                                Desktop.getDesktop().browse(new java.net.URI(urlFinale));
+                            } catch (Exception ignored) {}
+                        });
+                        content.getChildren().addAll(lblCloud, lien);
+                    } else if (errFinale != null) {
+                        Label lblErr = new Label("⚠ Upload échoué : " + errFinale);
+                        lblErr.getStyleClass().add("field-error");
+                        lblErr.setWrapText(true);
+                        content.getChildren().add(lblErr);
+                    }
+
+                    dialog.getDialogPane().setContent(content);
+                    if (commandesBox.getScene() != null)
+                        dialog.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    dialog.showAndWait();
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    btn.setDisable(false);
+                    btn.setText("🖼  Télécharger la facture");
+                    Alert err = new Alert(Alert.AlertType.ERROR);
+                    err.setTitle("Erreur");
+                    err.setHeaderText(null);
+                    err.setContentText("Impossible de générer la facture :\n" + ex.getMessage());
+                    if (commandesBox.getScene() != null)
+                        err.getDialogPane().getStylesheets().addAll(commandesBox.getScene().getStylesheets());
+                    err.showAndWait();
+                });
+            }
+        }, "facture-png").start();
     }
 
     // ── Actions ──────────────────────────────────────────────────────────────

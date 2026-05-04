@@ -8,8 +8,14 @@ import java.util.ArrayList;
 public class CommandeRepository {
 
     public void insert(Commande c) throws SQLException {
-        String sql = "INSERT INTO commande (total, date_commande, user_id) VALUES (?, ?, ?)";
         Connection conn = EducompusDB.getConnection();
+        try { insert(conn, c); }
+        finally { conn.close(); }
+    }
+
+    /** Version transactionnelle — connexion externe */
+    public void insert(Connection conn, Commande c) throws SQLException {
+        String sql = "INSERT INTO commande (total, date_commande, user_id) VALUES (?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         try {
             ps.setDouble(1, c.getTotal());
@@ -19,7 +25,7 @@ public class CommandeRepository {
             ResultSet keys = ps.getGeneratedKeys();
             try { if (keys.next()) c.setId(keys.getInt(1)); }
             finally { keys.close(); }
-        } finally { ps.close(); conn.close(); }
+        } finally { ps.close(); }
     }
 
     public void updateDate(Commande c) throws SQLException {
