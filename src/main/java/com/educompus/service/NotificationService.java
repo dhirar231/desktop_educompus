@@ -13,6 +13,7 @@ import javafx.animation.Timeline;
 import javafx.animation.KeyFrame;
 
 import java.awt.Desktop;
+import java.io.File;
 import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Logger;
@@ -55,10 +56,7 @@ public final class NotificationService {
                 alert.setHeaderText("Session dans 30 minutes");
                 alert.setContentText(buildNotificationMessage(session, type));
                 
-                // Configuration de l'apparence
-                alert.getDialogPane().getStylesheets().add(
-                    getClass().getResource("/styles/educompus.css").toExternalForm()
-                );
+                applyNotificationStyles(alert);
                 alert.getDialogPane().getStyleClass().add("notification-info");
                 
                 // Affichage non-bloquant
@@ -94,10 +92,7 @@ public final class NotificationService {
                 alert.setHeaderText("Session dans 5 minutes !");
                 alert.setContentText(buildNotificationMessage(session, type));
                 
-                // Configuration urgente
-                alert.getDialogPane().getStylesheets().add(
-                    getClass().getResource("/styles/educompus.css").toExternalForm()
-                );
+                applyNotificationStyles(alert);
                 alert.getDialogPane().getStyleClass().add("notification-urgent");
                 
                 // Boutons d'action
@@ -135,10 +130,7 @@ public final class NotificationService {
                 alert.setHeaderText("Notification manquée");
                 alert.setContentText(buildCatchupMessage(session, type));
                 
-                // Configuration
-                alert.getDialogPane().getStylesheets().add(
-                    getClass().getResource("/styles/educompus.css").toExternalForm()
-                );
+                applyNotificationStyles(alert);
                 alert.getDialogPane().getStyleClass().add("notification-info");
                 
                 // Bouton pour rejoindre
@@ -274,6 +266,30 @@ public final class NotificationService {
             alert.setContentText(message);
             alert.showAndWait();
         });
+    }
+
+    private void applyNotificationStyles(Alert alert) {
+        if (alert == null || alert.getDialogPane() == null) {
+            return;
+        }
+        try {
+            var resource = getClass().getResource("/styles/educompus.css");
+            if (resource != null) {
+                alert.getDialogPane().getStylesheets().add(resource.toExternalForm());
+                return;
+            }
+            File css = new File("styles/educompus.css");
+            if (!css.exists()) {
+                css = new File("eduCompus-javafx/styles/educompus.css");
+            }
+            if (!css.exists()) {
+                css = new File(new File("..", "eduCompus-javafx"), "styles/educompus.css");
+            }
+            if (css.exists()) {
+                alert.getDialogPane().getStylesheets().add(css.toURI().toString());
+            }
+        } catch (Exception ignored) {
+        }
     }
     
     /**

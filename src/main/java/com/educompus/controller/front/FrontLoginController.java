@@ -133,6 +133,9 @@ public final class FrontLoginController {
     private WebView captchaView;
 
     @FXML
+    private Label captchaLabel;
+
+    @FXML
     private ImageView logoImage;
 
     @FXML
@@ -168,6 +171,7 @@ public final class FrontLoginController {
     private Preferences prefs;
     private String captchaToken = "";
     private String recaptchaSecretKey = "";
+    private boolean captchaEnabled = true;
     private final SavedAccountService savedAccountService = new SavedAccountService();
     private final Random random = new java.security.SecureRandom();
 
@@ -572,17 +576,25 @@ public final class FrontLoginController {
     }
 
     private void initCaptcha() {
+        captchaEnabled = isConfigEnabled("RECAPTCHA_ENABLED", true);
+        if (!captchaEnabled) {
+            setCaptchaVisible(false);
+            captchaToken = "";
+            recaptchaSecretKey = "";
+            return;
+        }
+
         recaptchaSecretKey = getConfigValue("RECAPTCHA_SECRET_KEY");
         String recaptchaSiteKey = getConfigValue("RECAPTCHA_SITE_KEY");
 
         if (captchaView == null) {
             return;
         }
+        setCaptchaVisible(true);
         captchaView.setMinHeight(CAPTCHA_MIN_HEIGHT);
         captchaView.setPrefHeight(CAPTCHA_MIN_HEIGHT);
         if (recaptchaSiteKey.isBlank()) {
-            captchaView.setManaged(false);
-            captchaView.setVisible(false);
+            setCaptchaVisible(false);
             showError("Captcha indisponible: clé site manquante.");
             return;
         }
@@ -607,6 +619,10 @@ public final class FrontLoginController {
     }
 
     private boolean verifyCaptchaOrShowError() {
+        if (!captchaEnabled) {
+            return true;
+        }
+
         String token = resolveCaptchaToken();
         if (token.isBlank()) {
             showError("Veuillez valider le captcha.");
@@ -723,6 +739,29 @@ public final class FrontLoginController {
 
         String fromDotEnv = loadDotEnvValues().getOrDefault(key, "").trim();
         return fromDotEnv;
+    }
+
+    private boolean isConfigEnabled(String key, boolean defaultValue) {
+        String value = getConfigValue(key);
+        if (value.isBlank()) {
+            return defaultValue;
+        }
+        String normalized = value.trim().toLowerCase(java.util.Locale.ROOT);
+        return !("false".equals(normalized)
+                || "0".equals(normalized)
+                || "no".equals(normalized)
+                || "off".equals(normalized));
+    }
+
+    private void setCaptchaVisible(boolean visible) {
+        if (captchaLabel != null) {
+            captchaLabel.setManaged(visible);
+            captchaLabel.setVisible(visible);
+        }
+        if (captchaView != null) {
+            captchaView.setManaged(visible);
+            captchaView.setVisible(visible);
+        }
     }
 
     private static Map<String, String> loadDotEnvValues() {

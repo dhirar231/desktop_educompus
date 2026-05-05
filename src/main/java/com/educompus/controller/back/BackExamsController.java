@@ -1,7 +1,9 @@
 package com.educompus.controller.back;
 
 import com.educompus.model.Cours;
+import com.educompus.model.ExamAnswer;
 import com.educompus.model.ExamCatalogueItem;
+import com.educompus.model.ExamQuestion;
 import com.educompus.repository.CourseManagementRepository;
 import com.educompus.repository.ExamRepository;
 import com.educompus.service.ExamValidationService;
@@ -38,13 +40,24 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.stage.FileChooser;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import java.io.File;
+import java.io.FileInputStream;
+import java.text.Normalizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -214,6 +227,31 @@ public final class BackExamsController {
     }
 
     @FXML
+    private void importExcel(ActionEvent event) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Importer examens depuis Excel");
+        chooser.getExtensionFilters().setAll(
+                new FileChooser.ExtensionFilter("Fichiers Excel", "*.xlsx", "*.xls")
+        );
+        Window owner = examsList == null || examsList.getScene() == null ? null : examsList.getScene().getWindow();
+        File file = chooser.showOpenDialog(owner);
+        if (file == null) {
+            return;
+        }
+
+        try {
+            ImportSummary summary = importExcelFile(file);
+            reload();
+            info("Import Excel",
+                    "Import terminé.\nExamens: " + summary.exams()
+                            + "\nQuestions: " + summary.questions()
+                            + "\nRéponses: " + summary.answers());
+        } catch (Exception e) {
+            error("Import Excel", e);
+        }
+    }
+
+    @FXML
     private void editExam(ActionEvent event) {
         ExamCatalogueItem selected = currentExam();
         if (selected == null) {
@@ -248,6 +286,10 @@ public final class BackExamsController {
 
     public void triggerDeleteExam() {
         deleteExam(null);
+    }
+
+    public void triggerImportExcel() {
+        importExcel(null);
     }
 
     @FXML
@@ -368,6 +410,183 @@ public final class BackExamsController {
         item.setCourseId(courseCombo.getValue().getId());
         if (source == null) item.setPublished(false);
         return FormResult.saved(item);
+    }
+
+    private ImportSummary importExcelFile(File file) throws Exception {
+        if (courses.isEmpty()) {
+            loadCourses();
+        }
+        try (FileInputStream input = new FileInputStream(file);
+             Workbook workbook = WorkbookFactory.create(input)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null || sheet.getPhysicalNumberOfRows() < 2) {
+                throw new IllegalArgumentException("Le fichier Excel est vide.");
+            }
+
+            DataFormatter formatter = new DataFormatter();
+            Map<String, Integer> header = readHeader(sheet.getRow(sheet.getFirstRowNum()), formatter);
+            Map<String, ExamCatalogueItem> importedExams = new HashMap<>();
+            int examCount = 0;
+            int questionCount = 0;
+            int answerCount = 0;
+
+            for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null || rowIsBlank(row, formatter)) {
+                    continue;
+                }
+
+                String examTitle = firstCell(row, header, formatter, "exam title", "examen", "titre examen", "titre");
+                if (examTitle.isBlank()) {
+                    continue;
+                }
+
+                String courseValue = firstCell(row, header, formatter, "course id", "cours id", "cours_id", "course", "cours");
+                int courseId = resolveCourseId(courseValue);
+                if (courseId <= 0) {
+                    throw new IllegalArgumentException("Cours introuvable ligne " + (i + 1) + ": " + courseValue);
+                }
+
+                String level = firstCell(row, header, formatter, "level", "niveau");
+                String domain = firstCell(row, header, formatter, "domain", "domaine", "matiere", "matière");
+                String description = firstCell(row, header, formatter, "description", "desc");
+                String examKey = courseId + "|" + normalizeKey(examTitle);
+                ExamCatalogueItem exam = importedExams.get(examKey);
+                if (exam == null) {
+                    exam = new ExamCatalogueItem();
+                    exam.setCourseId(courseId);
+                    exam.setExamTitle(examTitle);
+                    exam.setExamDescription(description.isBlank() ? "Import Excel" : description);
+                    exam.setLevelLabel(level);
+                    exam.setDomainLabel(domain);
+                    exam.setPublished(false);
+                    repository.addExam(exam);
+                    importedExams.put(examKey, exam);
+                    examCount++;
+                }
+
+                String questionText = firstCell(row, header, formatter, "question", "texte question", "question text");
+                if (questionText.isBlank()) {
+                    continue;
+                }
+
+                ExamQuestion question = new ExamQuestion();
+                question.setText(questionText);
+                question.setDurationSeconds(parseInt(firstCell(row, header, formatter, "duration", "duree", "durée", "seconds"), 45));
+                repository.addQuestion(question, exam.getExamId());
+                questionCount++;
+
+                String correct = firstCell(row, header, formatter, "correct", "bonne reponse", "bonne réponse", "correct answer");
+                for (int answerIndex = 1; answerIndex <= 4; answerIndex++) {
+                    String answerText = firstCell(row, header, formatter,
+                            "answer" + answerIndex,
+                            "answer " + answerIndex,
+                            "reponse" + answerIndex,
+                            "réponse" + answerIndex,
+                            "reponse " + answerIndex,
+                            "réponse " + answerIndex);
+                    if (answerText.isBlank()) {
+                        continue;
+                    }
+                    ExamAnswer answer = new ExamAnswer();
+                    answer.setText(answerText);
+                    answer.setCorrect(isCorrectAnswer(correct, answerIndex, answerText));
+                    repository.addAnswer(answer, question.getId());
+                    answerCount++;
+                }
+            }
+            if (examCount == 0) {
+                throw new IllegalArgumentException("Aucun examen importé. Vérifiez les colonnes du fichier.");
+            }
+            return new ImportSummary(examCount, questionCount, answerCount);
+        }
+    }
+
+    private Map<String, Integer> readHeader(Row row, DataFormatter formatter) {
+        Map<String, Integer> header = new HashMap<>();
+        if (row == null) {
+            return header;
+        }
+        for (Cell cell : row) {
+            String key = normalizeKey(formatter.formatCellValue(cell));
+            if (!key.isBlank()) {
+                header.put(key, cell.getColumnIndex());
+            }
+        }
+        return header;
+    }
+
+    private boolean rowIsBlank(Row row, DataFormatter formatter) {
+        for (Cell cell : row) {
+            if (!safe(formatter.formatCellValue(cell)).isBlank()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String firstCell(Row row, Map<String, Integer> header, DataFormatter formatter, String... names) {
+        for (String name : names) {
+            Integer index = header.get(normalizeKey(name));
+            if (index != null) {
+                return safe(formatter.formatCellValue(row.getCell(index)));
+            }
+        }
+        return "";
+    }
+
+    private int resolveCourseId(String value) {
+        String raw = safe(value);
+        int id = parseInt(raw, 0);
+        if (id > 0) {
+            for (Cours course : courses) {
+                if (course.getId() == id) {
+                    return id;
+                }
+            }
+        }
+        String wanted = normalizeKey(raw);
+        for (Cours course : courses) {
+            if (normalizeKey(course.getTitre()).equals(wanted)) {
+                return course.getId();
+            }
+        }
+        return 0;
+    }
+
+    private static boolean isCorrectAnswer(String correctValue, int answerIndex, String answerText) {
+        String correct = normalizeKey(correctValue);
+        if (correct.isBlank()) {
+            return false;
+        }
+        if (correct.equals(String.valueOf(answerIndex)) || correct.equals("answer " + answerIndex)
+                || correct.equals("answer" + answerIndex)
+                || correct.equals("reponse " + answerIndex)
+                || correct.equals("reponse" + answerIndex)) {
+            return true;
+        }
+        if (correct.length() == 1) {
+            char c = correct.charAt(0);
+            if (c >= 'a' && c <= 'd') {
+                return answerIndex == (c - 'a' + 1);
+            }
+        }
+        return correct.equals(normalizeKey(answerText));
+    }
+
+    private static int parseInt(String value, int fallback) {
+        try {
+            return Integer.parseInt(safe(value).replace(".0", ""));
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private static String normalizeKey(String value) {
+        String normalized = Normalizer.normalize(safe(value), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase();
+        return normalized.replaceAll("[^a-z0-9]+", " ").trim();
     }
 
     private Dialog<ButtonType> buildFormDialog(String title, Node content) {
@@ -533,5 +752,8 @@ public final class BackExamsController {
     private record FormResult<T>(T value, boolean saved) {
         static <T> FormResult<T> saved(T value) { return new FormResult<>(value, true); }
         static <T> FormResult<T> cancelled() { return new FormResult<>(null, false); }
+    }
+
+    private record ImportSummary(int exams, int questions, int answers) {
     }
 }

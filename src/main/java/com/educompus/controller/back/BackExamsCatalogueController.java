@@ -334,6 +334,15 @@ public final class BackExamsCatalogueController {
     }
 
     @FXML
+    private void importExcel(ActionEvent event) {
+        ensureTableMode();
+        if (embeddedTableController != null) {
+            embeddedTableController.triggerImportExcel();
+            reloadCatalogue();
+        }
+    }
+
+    @FXML
     private void openQuestionsForSelectedExam(ActionEvent event) {
         ensureTableMode();
         if (embeddedTableController != null) {

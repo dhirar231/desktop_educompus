@@ -141,7 +141,7 @@
                       </styleClass>
                     </Button>
                   </VBox>
-                  <Label text="Vérification" styleClass="stat-title"/>
+                  <Label fx:id="captchaLabel" text="Vérification" styleClass="stat-title"/>
                   <WebView fx:id="captchaView" prefHeight="234" minHeight="234"
                                              contextMenuEnabled="false" styleClass="captcha-box"/>
                   <Label fx:id="errorLabel" text="" visible="false" managed="false" styleClass="auth-error"/>

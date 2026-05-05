@@ -6,9 +6,11 @@ import com.educompus.model.ProjectSubmissionView;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.service.FormValidator;
+import com.educompus.service.ProjectMeetingService;
 import com.educompus.service.ProjectValidationService;
 import com.educompus.service.ValidationResult;
 import com.educompus.util.Theme;
+import com.educompus.util.UrlOpener;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -34,6 +36,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -66,6 +70,7 @@ import java.util.Optional;
 public final class BackProjectsController {
     private final ProjectRepository projectRepo = new ProjectRepository();
     private final ProjectSubmissionRepository submissionRepo = new ProjectSubmissionRepository();
+    private final ProjectMeetingService meetingService = new ProjectMeetingService();
 
     @FXML
     private MenuButton projectsMenuButton;
@@ -81,6 +86,9 @@ public final class BackProjectsController {
 
     @FXML
     private VBox submissionsPane;
+
+    @FXML
+    private VBox meetingsPane;
 
     @FXML
     private VBox cataloguePane;
@@ -126,6 +134,9 @@ public final class BackProjectsController {
     private javafx.scene.control.ListView<ProjectSubmissionView> submissionsList;
 
     @FXML
+    private javafx.scene.control.ListView<Project> meetingsList;
+
+    @FXML
     private TextField submissionsSearchField;
 
     @FXML
@@ -135,6 +146,7 @@ public final class BackProjectsController {
     private FlowPane adminCardsFlow;
 
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
+    private final ObservableList<Project> meetingProjects = FXCollections.observableArrayList();
     private final List<Project> allProjects = new ArrayList<>();
     private int projectsPageSize = 10;
     private int projectsCurrentPage = 1;
@@ -158,6 +170,7 @@ public final class BackProjectsController {
         }
 
         setupProjectsTable();
+        setupMeetingsList();
         setupSubmissionsTable();
         if (adminOnlyCatalogue) {
             setupAdminCatalogue();
@@ -201,6 +214,41 @@ public final class BackProjectsController {
     }
 
     @FXML
+    private void showMeetingsView(ActionEvent event) {
+        setView(meetingsPane);
+        if (projectsMenuButton != null) {
+            projectsMenuButton.setText("Meetings");
+        }
+        reloadProjects(null);
+    }
+
+    @FXML
+    private void openMailingDialog(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/View/back/BackProjectMailing.fxml"));
+            Parent root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Envoyer mail");
+            stage.initModality(Modality.WINDOW_MODAL);
+            Window owner = projectsMenuButton == null || projectsMenuButton.getScene() == null
+                    ? null
+                    : projectsMenuButton.getScene().getWindow();
+            if (owner != null) {
+                stage.initOwner(owner);
+            }
+            Scene scene = new Scene(root, 980, 720);
+            if (projectsMenuButton != null && projectsMenuButton.getScene() != null) {
+                scene.getStylesheets().setAll(projectsMenuButton.getScene().getStylesheets());
+            }
+            Theme.apply(root);
+            stage.setScene(scene);
+            stage.showAndWait();
+        } catch (Exception e) {
+            error("Mailing", e);
+        }
+    }
+
+    @FXML
     private void showCatalogueView(ActionEvent event) {
         if (!(AppState.isAdmin() || AppState.isTeacher())) {
             showProjectsView(null);
@@ -225,6 +273,7 @@ public final class BackProjectsController {
     private void setView(VBox pane) {
         setPaneVisible(projectsPane, pane == projectsPane);
         setPaneVisible(submissionsPane, pane == submissionsPane);
+        setPaneVisible(meetingsPane, pane == meetingsPane);
         setPaneVisible(cataloguePane, pane == cataloguePane);
     }
 
@@ -401,6 +450,132 @@ public final class BackProjectsController {
         if (projectSearchField != null) projectSearchField.setOnAction(e -> reloadProjects(null));
     }
 
+    private void setupMeetingsList() {
+        if (meetingsList == null) return;
+        meetingsList.setItems(meetingProjects);
+        meetingsList.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Project p, boolean empty) {
+                super.updateItem(p, empty);
+                if (empty || p == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
+
+                boolean active = p.isMeetingActive() && !safe(p.getMeetingUrl()).isBlank();
+                Label title = new Label(safe(p.getTitle()));
+                title.getStyleClass().add("stat-value");
+                Label meta = new Label(active
+                        ? "Meeting actif  •  " + safe(p.getMeetingRoom())
+                        : "Aucun meeting actif");
+                meta.getStyleClass().add("page-subtitle");
+                VBox left = new VBox(4, title, meta);
+
+                Button open = new Button(active ? "Recréer" : "Ouvrir");
+                open.getStyleClass().add("btn-rgb");
+                open.setOnAction(e -> openMeeting(p));
+
+                Button join = new Button("Rejoindre");
+                join.getStyleClass().add("btn-rgb-outline");
+                join.setDisable(!active);
+                join.setOnAction(e -> joinMeeting(p));
+
+                Button copy = new Button("Copier lien");
+                copy.getStyleClass().add("btn-rgb-outline");
+                copy.setDisable(!active);
+                copy.setOnAction(e -> copyMeetingLink(p));
+
+                Button close = new Button("Fermer");
+                close.getStyleClass().add("btn-rgb-outline");
+                close.setDisable(!active);
+                close.setOnAction(e -> closeMeeting(p));
+
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+                HBox row = new HBox(10, left, spacer, open, join, copy, close);
+                row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                row.setPadding(new javafx.geometry.Insets(10, 12, 10, 12));
+                setGraphic(row);
+                setText(null);
+            }
+        });
+    }
+
+    private void openMeeting(Project project) {
+        try {
+            Project updated = meetingService.openMeetingForProject(project);
+            replaceProject(updated);
+            info("Meeting", "Meeting ouvert pour: " + safe(updated.getTitle()));
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private void closeMeeting(Project project) {
+        try {
+            Project updated = meetingService.closeMeetingForProject(project);
+            replaceProject(updated);
+            info("Meeting", "Meeting fermé.");
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private void joinMeeting(Project project) {
+        try {
+            String url = meetingService.joinUrl(project, false);
+            if (!UrlOpener.openSilent(url)) {
+                copyText(url);
+                info("Meeting", "Ouverture navigateur impossible. Le lien a été copié.");
+            }
+        } catch (Exception e) {
+            error("Meeting", e);
+        }
+    }
+
+    private void copyMeetingLink(Project project) {
+        Project refreshed = meetingService.refresh(project);
+        String url = refreshed == null ? "" : safe(refreshed.getMeetingUrl());
+        if (url.isBlank()) {
+            info("Meeting", "Aucun lien meeting à copier.");
+            return;
+        }
+        copyText(url);
+        info("Meeting", "Lien copié.");
+    }
+
+    private void replaceProject(Project updated) {
+        if (updated == null) return;
+        for (int i = 0; i < allProjects.size(); i++) {
+            if (allProjects.get(i) != null && allProjects.get(i).getId() == updated.getId()) {
+                allProjects.set(i, updated);
+                break;
+            }
+        }
+        for (int i = 0; i < projects.size(); i++) {
+            if (projects.get(i) != null && projects.get(i).getId() == updated.getId()) {
+                projects.set(i, updated);
+                break;
+            }
+        }
+        for (int i = 0; i < meetingProjects.size(); i++) {
+            if (meetingProjects.get(i) != null && meetingProjects.get(i).getId() == updated.getId()) {
+                meetingProjects.set(i, updated);
+                break;
+            }
+        }
+        if (projectsList != null) projectsList.refresh();
+        if (meetingsList != null) meetingsList.refresh();
+        renderAdminCards();
+    }
+
+    private static void copyText(String value) {
+        ClipboardContent content = new ClipboardContent();
+        content.putString(safe(value));
+        Clipboard.getSystemClipboard().setContent(content);
+    }
+
     @FXML
     private void onProjectsPrev(ActionEvent ev) {
         if (projectsCurrentPage > 1) {
@@ -509,6 +684,7 @@ public final class BackProjectsController {
         String q = projectSearchField == null ? "" : String.valueOf(projectSearchField.getText());
         allProjects.clear();
         allProjects.addAll(projectRepo.listAll(q));
+        meetingProjects.setAll(allProjects);
         refreshSubmissionCounts();
         applyProjectsSort();
         // refresh admin cards view when projects change — render from full list

@@ -1,5 +1,7 @@
 package com.educompus.repository;
 
+import com.educompus.model.AppNotification;
+import com.educompus.model.AuthUser;
 import com.educompus.model.NotificationState;
 import com.educompus.model.NotificationType;
 import com.educompus.model.SessionLive;
@@ -21,7 +23,104 @@ public final class NotificationRepository {
      * Constructeur par défaut.
      */
     public NotificationRepository() {
-        // Utilise EducompusDB pour les connexions
+        ensureAppNotificationTable();
+    }
+
+    public int countUnreadForUser(int userId) {
+        if (userId <= 0) {
+            return 0;
+        }
+        String sql = "SELECT COUNT(*) FROM app_notification WHERE recipient_user_id = ? AND is_read = 0";
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            logger.warning("Erreur count unread app notifications: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    public List<AppNotification> listRecentForUser(int userId, int limit) {
+        if (userId <= 0) {
+            return List.of();
+        }
+        String sql = """
+                SELECT id, recipient_user_id, type, title, message, source_entity_type, source_entity_id, is_read, created_at
+                FROM app_notification
+                WHERE recipient_user_id = ?
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+                """;
+        List<AppNotification> out = new ArrayList<>();
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, Math.max(1, Math.min(50, limit)));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(mapAppNotification(rs));
+                }
+            }
+        } catch (SQLException e) {
+            logger.warning("Erreur list app notifications: " + e.getMessage());
+        }
+        return out;
+    }
+
+    public void markAllAsRead(int userId) {
+        if (userId <= 0) {
+            return;
+        }
+        String sql = "UPDATE app_notification SET is_read = 1 WHERE recipient_user_id = ?";
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.warning("Erreur mark app notifications read: " + e.getMessage());
+        }
+    }
+
+    public void createProjectSubmissionNotifications(int projectId, int studentId, String studentEmail, String projectTitle) {
+        String title = "Nouvelle soumission projet";
+        String message = safe(studentEmail) + " a soumis le projet \"" + safe(projectTitle) + "\".";
+        try {
+            AuthUserRepository users = new AuthUserRepository();
+            for (AuthUser user : users.findAll()) {
+                if (user != null && (user.admin() || user.teacher())) {
+                    createAppNotification(user.id(), "PROJECT_SUBMISSION", title, message, "project", projectId);
+                }
+            }
+        } catch (Exception e) {
+            logger.warning("Erreur création notifications projet: " + e.getMessage());
+        }
+    }
+
+    private void createAppNotification(int recipientUserId, String type, String title, String message,
+                                       String sourceEntityType, int sourceEntityId) {
+        if (recipientUserId <= 0) {
+            return;
+        }
+        String sql = """
+                INSERT INTO app_notification
+                    (recipient_user_id, type, title, message, source_entity_type, source_entity_id, is_read, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, 0, NOW())
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, recipientUserId);
+            ps.setString(2, safe(type));
+            ps.setString(3, safe(title));
+            ps.setString(4, safe(message));
+            ps.setString(5, safe(sourceEntityType));
+            ps.setInt(6, sourceEntityId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.warning("Erreur insert app notification: " + e.getMessage());
+        }
     }
     
     /**
@@ -356,5 +455,48 @@ public final class NotificationRepository {
         state.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         
         return state;
+    }
+
+    private AppNotification mapAppNotification(ResultSet rs) throws SQLException {
+        AppNotification notification = new AppNotification();
+        notification.setId(rs.getInt("id"));
+        notification.setRecipientUserId(rs.getInt("recipient_user_id"));
+        notification.setType(rs.getString("type"));
+        notification.setTitle(rs.getString("title"));
+        notification.setMessage(rs.getString("message"));
+        notification.setSourceEntityType(rs.getString("source_entity_type"));
+        notification.setSourceEntityId(rs.getInt("source_entity_id"));
+        notification.setRead(rs.getBoolean("is_read"));
+        Timestamp created = rs.getTimestamp("created_at");
+        notification.setCreatedAt(created == null ? "" : created.toString());
+        return notification;
+    }
+
+    private void ensureAppNotificationTable() {
+        String sql = """
+                CREATE TABLE IF NOT EXISTS app_notification (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    recipient_user_id INT NOT NULL,
+                    type VARCHAR(80) NOT NULL,
+                    title VARCHAR(180) NOT NULL,
+                    message TEXT NOT NULL,
+                    source_entity_type VARCHAR(80) NULL,
+                    source_entity_id INT NULL,
+                    is_read TINYINT(1) NOT NULL DEFAULT 0,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_app_notification_recipient_read (recipient_user_id, is_read),
+                    INDEX idx_app_notification_created (created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """;
+        try (Connection conn = EducompusDB.getConnection();
+             Statement st = conn.createStatement()) {
+            st.execute(sql);
+        } catch (SQLException e) {
+            logger.warning("Erreur création app_notification: " + e.getMessage());
+        }
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 }
