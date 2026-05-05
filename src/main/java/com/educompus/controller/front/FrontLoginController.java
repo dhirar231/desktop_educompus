@@ -360,6 +360,9 @@ public final class FrontLoginController {
             for (SavedAccountService.SavedAccountEntry account : accounts) {
                 savedAccountsList.getChildren().add(buildSavedAccountCard(account));
             }
+            if (hasSavedAccounts) {
+                savedAccountsList.getChildren().add(buildWindowsHelloSetupRow());
+            }
         }
 
         if (savedAccountsSwitchRow != null) {
@@ -405,6 +408,23 @@ public final class FrontLoginController {
         return card;
     }
 
+    private Node buildWindowsHelloSetupRow() {
+        HBox row = new HBox(10);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        Label hint = new Label("Windows Hello doit etre configure sur ce PC.");
+        hint.getStyleClass().add("page-subtitle");
+
+        Button setupButton = new Button("Configurer Windows Hello");
+        setupButton.getStyleClass().add("btn-ghost");
+        setupButton.setOnAction(e -> openWindowsHelloSetup());
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+        row.getChildren().addAll(hint, spacer, setupButton);
+        return row;
+    }
+
     private String extractAvatarLetter(String emailValue) {
         String value = emailValue == null ? "" : emailValue.trim();
         if (value.isBlank()) {
@@ -423,7 +443,7 @@ public final class FrontLoginController {
         WindowsHelloAuthService.VerificationResult helloResult = WindowsHelloAuthService
                 .verify("Authenticate to continue with EduCampus Quick Login");
         if (!helloResult.success()) {
-            showError(helloResult.message());
+            showError(helloSetupMessage(helloResult.message()));
             shake(cardPane);
             return;
         }
@@ -464,6 +484,21 @@ public final class FrontLoginController {
     @FXML
     private void useSavedAccountLogin(ActionEvent event) {
         setManualLoginVisible(false);
+    }
+
+    private void openWindowsHelloSetup() {
+        WindowsHelloAuthService.VerificationResult result = WindowsHelloAuthService.openSetup();
+        if (!result.success()) {
+            showError(result.message());
+        }
+    }
+
+    private String helloSetupMessage(String message) {
+        String value = message == null ? "" : message.trim();
+        if (value.contains("DeviceNotPresent") || value.contains("NotConfiguredForUser")) {
+            return "Windows Hello n'est pas configure sur ce PC. Cliquez sur 'Configurer Windows Hello', ajoutez un PIN/empreinte, puis revenez ici.";
+        }
+        return value.isBlank() ? "Verification Windows Hello echouee." : value;
     }
 
     private void maybeOfferCredentialSave(String mail, String pass) {

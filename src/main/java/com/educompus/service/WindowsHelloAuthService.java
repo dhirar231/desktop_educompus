@@ -12,6 +12,37 @@ public final class WindowsHelloAuthService {
     private WindowsHelloAuthService() {
     }
 
+    public static VerificationResult checkAvailability() {
+        if (!isWindows()) {
+            return new VerificationResult(false, "Windows Hello est disponible uniquement sous Windows.");
+        }
+
+        Path cliProject = resolveHelloCliProject();
+        if (cliProject == null) {
+            return new VerificationResult(false, "Projet Windows Hello introuvable: windows-hello-auth-cli.");
+        }
+
+        Process process = null;
+        try {
+            process = startCli(cliProject, "--check");
+
+            boolean finished = process.waitFor(20, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                return new VerificationResult(false, "Le delai Windows Hello est depasse.");
+            }
+
+            String output = readAll(process.getInputStream()).trim();
+            return parseAvailabilityResult(output, process.exitValue());
+        } catch (Exception e) {
+            return new VerificationResult(false, "Windows Hello indisponible: " + safeMessage(e));
+        } finally {
+            if (process != null) {
+                process.destroy();
+            }
+        }
+    }
+
     public static VerificationResult verify(String reason) {
         if (!isWindows()) {
             return new VerificationResult(false, "Windows Hello est disponible uniquement sous Windows.");
@@ -24,16 +55,7 @@ public final class WindowsHelloAuthService {
 
         Process process = null;
         try {
-            List<String> command = new ArrayList<>();
-            command.add("dotnet");
-            command.add("run");
-            command.add("--project");
-            command.add(cliProject.toString());
-
-            process = new ProcessBuilder(command)
-                    .directory(cliProject.getParent().toFile())
-                    .redirectErrorStream(true)
-                    .start();
+            process = startCli(cliProject);
 
             boolean finished = process.waitFor(90, TimeUnit.SECONDS);
             if (!finished) {
@@ -50,6 +72,86 @@ public final class WindowsHelloAuthService {
                 process.destroy();
             }
         }
+    }
+
+    public static VerificationResult openSetup() {
+        if (!isWindows()) {
+            return new VerificationResult(false, "Windows Hello est disponible uniquement sous Windows.");
+        }
+
+        Path cliProject = resolveHelloCliProject();
+        if (cliProject == null) {
+            return new VerificationResult(false, "Projet Windows Hello introuvable: windows-hello-auth-cli.");
+        }
+
+        Process process = null;
+        try {
+            process = startCli(cliProject, "--setup");
+            boolean finished = process.waitFor(20, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                return new VerificationResult(false, "Le delai d'ouverture des parametres Windows Hello est depasse.");
+            }
+            String output = readAll(process.getInputStream()).trim();
+            if (process.exitValue() == 0) {
+                return new VerificationResult(true, output);
+            }
+            return parseResult(output, process.exitValue());
+        } catch (Exception e) {
+            return new VerificationResult(false, "Parametres Windows Hello indisponibles: " + safeMessage(e));
+        } finally {
+            if (process != null) {
+                process.destroy();
+            }
+        }
+    }
+
+    private static Process startCli(Path cliProject, String... args) throws Exception {
+        List<String> command = new ArrayList<>();
+        command.add("dotnet");
+        command.add("run");
+        command.add("--project");
+        command.add(cliProject.toString());
+        if (args != null && args.length > 0) {
+            command.add("--");
+            for (String arg : args) {
+                if (arg != null && !arg.isBlank()) {
+                    command.add(arg);
+                }
+            }
+        }
+
+        return new ProcessBuilder(command)
+                .directory(cliProject.getParent().toFile())
+                .redirectErrorStream(true)
+                .start();
+    }
+
+    private static VerificationResult parseAvailabilityResult(String output, int exitCode) {
+        if (output == null || output.isBlank()) {
+            return new VerificationResult(false, "Aucune reponse de Windows Hello.");
+        }
+
+        String[] lines = output.split("\\R");
+        for (String line : lines) {
+            String value = line == null ? "" : line.trim();
+            if ("Windows Hello available.".equalsIgnoreCase(value)) {
+                return new VerificationResult(true, "");
+            }
+            if (value.startsWith("Windows Hello unavailable:")) {
+                String detail = value.substring("Windows Hello unavailable:".length()).trim();
+                return new VerificationResult(false, "Windows Hello indisponible: " + detail + ".");
+            }
+            if (value.startsWith("Windows Hello error:")) {
+                String detail = value.substring("Windows Hello error:".length()).trim();
+                return new VerificationResult(false, "Windows Hello indisponible: " + detail + ".");
+            }
+        }
+
+        if (exitCode == 0) {
+            return new VerificationResult(true, "");
+        }
+        return new VerificationResult(false, "Windows Hello indisponible.");
     }
 
     private static VerificationResult parseResult(String output, int exitCode) {
