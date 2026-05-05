@@ -8,6 +8,8 @@ import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 
 import com.educompus.controller.front.SplashController;
 import com.educompus.nav.Navigator;
@@ -61,6 +63,7 @@ public final class PreviewApp extends Application {
             stage.setMinHeight(680);
             stage.show();
             
+            SessionNotificationService.getInstance().demarrer(stage);
             startNotificationScheduler();
             
             return;

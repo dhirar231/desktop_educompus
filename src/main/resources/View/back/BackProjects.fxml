@@ -33,9 +33,11 @@
             <items>
                 <MenuItem text="Projets" onAction="#showProjectsView"/>
                 <MenuItem text="Soumissions" onAction="#showSubmissionsView"/>
+                <MenuItem text="Meetings" onAction="#showMeetingsView"/>
                 <MenuItem fx:id="catalogueMenuItem" text="Catalogue (cartes)" onAction="#showCatalogueView"/>
             </items>
         </MenuButton>
+        <Button text="Envoyer mail" onAction="#openMailingDialog" styleClass="btn-rgb-outline"/>
     </HBox>
 
     <StackPane fx:id="viewStack" VBox.vgrow="ALWAYS">
@@ -83,6 +85,15 @@
                     </VBox>
                 </center>
             </BorderPane>
+        </VBox>
+
+        <VBox fx:id="meetingsPane" visible="false" managed="false" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
+            <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
+                <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                <Label text="Meetings des projets" styleClass="stat-title"/>
+                <Label text="Ouvrez une salle, copiez son lien ou fermez le meeting directement depuis chaque projet." styleClass="page-subtitle" wrapText="true"/>
+                <ListView fx:id="meetingsList" VBox.vgrow="ALWAYS"/>
+            </VBox>
         </VBox>
 
         <VBox fx:id="cataloguePane" visible="false" managed="false" StackPane.alignment="TOP_LEFT" VBox.vgrow="ALWAYS">

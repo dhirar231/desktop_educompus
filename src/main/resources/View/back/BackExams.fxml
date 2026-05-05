@@ -50,6 +50,7 @@
                 <Button text="Nouveau" onAction="#newExam" styleClass="btn-rgb"/>
                 <Button text="Modifier" onAction="#editExam" styleClass="btn-rgb-outline"/>
                 <Button text="Supprimer" onAction="#deleteExam" styleClass="btn-rgb-outline"/>
+                <Button text="Importer Excel" onAction="#importExcel" styleClass="btn-rgb-outline"/>
                 <Button text="Questions &amp; réponses" onAction="#openQuestionsPage" styleClass="btn-rgb-outline"/>
             </HBox>
         </top>

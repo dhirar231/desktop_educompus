@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javafx.application.Platform;
 import java.time.LocalDate;
@@ -1107,14 +1108,55 @@ public final class FrontProjectsController {
         }
         try {
             String joinUrl = projectMeetingService.joinUrl(project, muted);
-            String room = safe(project.getMeetingRoom());
-            String title = "EduCompus | Meeting | " + (room.isBlank() ? ("Project " + project.getId()) : room);
-            // browserService.openMeetingDialog(title, joinUrl); // Disabled - JcefBrowserService not available
-            info("Meeting", "Ouverture du lien: " + joinUrl);
+            if (!openExternalUrl(joinUrl)) {
+                copyTextToClipboard(joinUrl);
+                info("Meeting", "Impossible d'ouvrir le navigateur automatiquement. Le lien a ete copie.");
+            }
             updateMeetingPanel(project);
         } catch (Exception e) {
             error("Meeting", e);
         }
+    }
+
+    private static boolean openExternalUrl(String rawUrl) {
+        String url = safe(rawUrl);
+        if (url.isBlank()) {
+            return false;
+        }
+        try {
+            URI uri = URI.create(url);
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(uri);
+                return true;
+            }
+            return openExternalUrlWithPlatformCommand(url);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean openExternalUrlWithPlatformCommand(String url) {
+        try {
+            String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+            ProcessBuilder pb;
+            if (os.contains("win")) {
+                pb = new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url);
+            } else if (os.contains("mac")) {
+                pb = new ProcessBuilder("open", url);
+            } else {
+                pb = new ProcessBuilder("xdg-open", url);
+            }
+            pb.start();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static void copyTextToClipboard(String value) {
+        ClipboardContent content = new ClipboardContent();
+        content.putString(safe(value));
+        Clipboard.getSystemClipboard().setContent(content);
     }
 
     private Project refreshProjectState(Project project) {
@@ -1304,10 +1346,9 @@ public final class FrontProjectsController {
         try {
             submissionRepo.create(s);
             try {
-                java.lang.reflect.Method method = notificationRepo.getClass().getMethod("createProjectSubmissionNotifications", int.class, int.class, String.class, String.class);
-                method.invoke(notificationRepo, selectedProject.getId(), uid, AppState.getUserEmail(), selectedProject.getTitle());
+                notificationRepo.createProjectSubmissionNotifications(selectedProject.getId(), uid, AppState.getUserEmail(), selectedProject.getTitle());
             } catch (Exception e) {
-                // Method not implemented
+                error("Notification", e);
             }
             resetSubmitFormFields();
             info("Soumission", "Votre soumission a été enregistrée.");
