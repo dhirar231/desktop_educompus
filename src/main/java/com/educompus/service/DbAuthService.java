@@ -120,6 +120,32 @@ public final class DbAuthService {
         }
     }
 
+    public static void updatePasswordByEmail(String email, String plainPassword) {
+        String mail = email == null ? "" : email.trim().toLowerCase();
+        String pass = plainPassword == null ? "" : plainPassword;
+        if (mail.isBlank()) {
+            throw new IllegalArgumentException("L'email est obligatoire.");
+        }
+        if (pass.isBlank()) {
+            throw new IllegalArgumentException("Le mot de passe est obligatoire.");
+        }
+
+        String hash = BCrypt.withDefaults().hashToString(12, pass.toCharArray());
+        String sql = "UPDATE `user` SET password = ? WHERE email = ?";
+
+        try (Connection conn = EducompusDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, hash);
+            ps.setString(2, mail);
+            int updated = ps.executeUpdate();
+            if (updated <= 0) {
+                throw new IllegalStateException("Compte introuvable.");
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("DB mise a jour mot de passe impossible: " + safeMessage(e), e);
+        }
+    }
+
     private static String safeMessage(Exception e) {
         if (e == null) {
             return "unknown error";

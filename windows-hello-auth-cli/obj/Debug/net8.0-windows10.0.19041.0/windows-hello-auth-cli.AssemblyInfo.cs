@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("windows-hello-auth-cli")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ad760c968521b241a805cb34bbba35fc4bfa9ab4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+399b982a7e63b4e041c7fb835d7db95b6209a753")]
 [assembly: System.Reflection.AssemblyProductAttribute("windows-hello-auth-cli")]
 [assembly: System.Reflection.AssemblyTitleAttribute("windows-hello-auth-cli")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

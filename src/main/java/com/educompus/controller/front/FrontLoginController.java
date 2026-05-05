@@ -7,6 +7,7 @@ import com.educompus.model.AuthUser;
 import com.educompus.nav.Navigator;
 import com.educompus.service.DbAuthService;
 import com.educompus.service.SavedAccountService;
+import com.educompus.service.SmtpMailer;
 import com.educompus.service.WindowsHelloAuthService;
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
@@ -24,7 +25,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -53,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.prefs.Preferences;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -165,6 +169,7 @@ public final class FrontLoginController {
     private String captchaToken = "";
     private String recaptchaSecretKey = "";
     private final SavedAccountService savedAccountService = new SavedAccountService();
+    private final Random random = new java.security.SecureRandom();
 
     @FXML
     private void initialize() {
@@ -978,24 +983,119 @@ public final class FrontLoginController {
 
         try {
             boolean exists = DbAuthService.emailExists(mail);
-            if (forgotInfoLabel != null) {
-                forgotInfoLabel.setText(exists
-                    ? "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony)."
-                    : "Si ce compte existe, un lien de réinitialisation sera envoyé (à brancher sur Symfony).");
-                forgotInfoLabel.setManaged(true);
-                forgotInfoLabel.setVisible(true);
+            if (!exists) {
+                showForgotInfo("Aucun compte trouvé avec cet email.");
+                return;
+            }
+
+            String verificationCode = generateVerificationCode(8);
+            sendVerificationCodeByEmail(mail, verificationCode);
+            showForgotInfo("Code de verification envoye. Verifiez votre email.");
+
+            if (showResetPasswordDialog(mail, verificationCode)) {
+                backFromForgot(event);
             }
         } catch (Exception e) {
-            if (forgotInfoLabel != null) {
-                String msg = String.valueOf(e.getMessage());
-                if (msg.length() > 120) {
-                    msg = msg.substring(0, 120) + "...";
-                }
-                forgotInfoLabel.setText("DB: " + msg);
-                forgotInfoLabel.setManaged(true);
-                forgotInfoLabel.setVisible(true);
+            String msg = String.valueOf(e.getMessage());
+            if (msg.length() > 120) {
+                msg = msg.substring(0, 120) + "...";
             }
+            showForgotInfo("Erreur: " + msg);
             e.printStackTrace();
+        }
+    }
+
+    private void showForgotInfo(String message) {
+        if (forgotInfoLabel == null) {
+            return;
+        }
+        forgotInfoLabel.setText(message == null ? "" : message);
+        forgotInfoLabel.setManaged(true);
+        forgotInfoLabel.setVisible(true);
+    }
+
+    private String generateVerificationCode(int size) {
+        String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        StringBuilder code = new StringBuilder(Math.max(1, size));
+        for (int i = 0; i < size; i++) {
+            int index = random.nextInt(alphabet.length());
+            code.append(alphabet.charAt(index));
+        }
+        return code.toString();
+    }
+
+    private void sendVerificationCodeByEmail(String recipient, String code) throws IOException {
+        SmtpMailer mailer = new SmtpMailer();
+        SmtpMailer.MailConfig config = mailer.loadConfig();
+        if (!config.isConfigured()) {
+            throw new IllegalStateException(config.summary());
+        }
+
+        String subject = "Code de verification EduCampus";
+        String body = "Bonjour,\n\n"
+                + "Voici votre code de verification: " + code + "\n\n"
+                + "Utilisez ce code pour reinitialiser votre mot de passe.\n"
+                + "Si vous n'etes pas a l'origine de cette demande, ignorez cet email.";
+        mailer.send(config, recipient, subject, body);
+    }
+
+    private boolean showResetPasswordDialog(String emailAddress, String expectedCode) {
+        TextInputDialog codeDialog = new TextInputDialog();
+        codeDialog.setTitle("Verification");
+        codeDialog.setHeaderText("Entrez le code envoye a " + emailAddress);
+        codeDialog.setContentText("Code:");
+        Optional<String> typedCode = codeDialog.showAndWait();
+        if (typedCode.isEmpty()) {
+            showForgotInfo("Verification annulee.");
+            return false;
+        }
+
+        String provided = typedCode.get().trim().toUpperCase();
+        if (!expectedCode.equalsIgnoreCase(provided)) {
+            showForgotInfo("Code incorrect.");
+            return false;
+        }
+
+        Dialog<ButtonType> resetDialog = new Dialog<>();
+        resetDialog.setTitle("Reinitialisation du mot de passe");
+        resetDialog.setHeaderText("Choisissez un nouveau mot de passe");
+        resetDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        PasswordField newPasswordField = new PasswordField();
+        newPasswordField.setPromptText("Nouveau mot de passe");
+        PasswordField confirmPasswordField = new PasswordField();
+        confirmPasswordField.setPromptText("Confirmer le mot de passe");
+        VBox content = new VBox(10, newPasswordField, confirmPasswordField);
+        resetDialog.getDialogPane().setContent(content);
+
+        Optional<ButtonType> decision = resetDialog.showAndWait();
+        if (decision.isEmpty() || decision.get() != ButtonType.OK) {
+            showForgotInfo("Reinitialisation annulee.");
+            return false;
+        }
+
+        String p1 = String.valueOf(newPasswordField.getText());
+        String p2 = String.valueOf(confirmPasswordField.getText());
+        if (p1.isBlank() || p2.isBlank()) {
+            showForgotInfo("Le mot de passe est obligatoire.");
+            return false;
+        }
+        if (!p1.equals(p2)) {
+            showForgotInfo("Les mots de passe ne correspondent pas.");
+            return false;
+        }
+        if (p1.length() < 6) {
+            showForgotInfo("Le mot de passe doit contenir au moins 6 caracteres.");
+            return false;
+        }
+
+        try {
+            DbAuthService.updatePasswordByEmail(emailAddress, p1);
+            showForgotInfo("Mot de passe reinitialise avec succes.");
+            return true;
+        } catch (Exception e) {
+            showForgotInfo("Mise a jour impossible: " + summarizeThrowable(e));
+            return false;
         }
     }
 
