@@ -252,7 +252,7 @@ public final class SessionNotificationService {
     private static void ouvrirLien(String lien) {
         if (lien == null || lien.isBlank()) return;
         try {
-            java.awt.Desktop.getDesktop().browse(java.net.URI.create(lien));
+            JcefBrowserService.getInstance().openMeetingDialog("Session live", lien);
         } catch (Exception ex) {
             javafx.scene.input.Clipboard cb = javafx.scene.input.Clipboard.getSystemClipboard();
             javafx.scene.input.ClipboardContent cc = new javafx.scene.input.ClipboardContent();

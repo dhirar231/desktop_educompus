@@ -2,6 +2,7 @@ package com.educompus.controller;
 
 import com.educompus.model.NotificationType;
 import com.educompus.model.SessionLive;
+import com.educompus.service.JcefBrowserService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -12,8 +13,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.awt.Desktop;
-import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Logger;
 
@@ -194,8 +193,7 @@ public final class NotificationPopupController {
                 return;
             }
             
-            // Ouvrir le lien dans le navigateur
-            Desktop.getDesktop().browse(URI.create(lien));
+            JcefBrowserService.getInstance().openMeetingDialog("Session - " + safe(session.getNomCours()), lien);
             
             logger.info(String.format("Session %d ouverte depuis la notification popup", session.getId()));
             
@@ -323,5 +321,9 @@ public final class NotificationPopupController {
                       .severe("Erreur lors du test de notification: " + e.getMessage());
             }
         });
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 }

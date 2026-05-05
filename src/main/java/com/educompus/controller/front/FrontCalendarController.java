@@ -4,6 +4,7 @@ import com.educompus.app.AppState;
 import com.educompus.model.SessionLive;
 import com.educompus.model.SessionStatut;
 import com.educompus.repository.SessionLiveRepository;
+import com.educompus.service.JcefBrowserService;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -411,13 +412,10 @@ public final class FrontCalendarController {
         return card;
     }
 
-    /**
-     * Ouvre une session live dans le navigateur.
-     */
     private void ouvrirSession(SessionLive session) {
         if (!session.aLienValide()) return;
         try {
-            java.awt.Desktop.getDesktop().browse(java.net.URI.create(session.getLien()));
+            JcefBrowserService.getInstance().openMeetingDialog("Session - " + safe(session.getNomCours()), session.getLien());
         } catch (Exception e) {
             e.printStackTrace();
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
@@ -425,7 +423,7 @@ public final class FrontCalendarController {
             );
             alert.setTitle("Erreur");
             alert.setHeaderText("Impossible d'ouvrir la session");
-            alert.setContentText("Lien : " + session.getLien() + "\n\nErreur : " + e.getMessage());
+            alert.setContentText("Lien : " + session.getLien() + "\n\nErreur JCEF : " + e.getMessage());
             alert.showAndWait();
         }
     }

@@ -12,9 +12,7 @@ import javafx.util.Duration;
 import javafx.animation.Timeline;
 import javafx.animation.KeyFrame;
 
-import java.awt.Desktop;
 import java.io.File;
-import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Logger;
 
@@ -216,8 +214,7 @@ public final class NotificationService {
                 return;
             }
             
-            // Tentative d'ouverture du lien
-            Desktop.getDesktop().browse(URI.create(session.getLienSession()));
+            JcefBrowserService.getInstance().openMeetingDialog("Session - " + safe(session.getNomCours()), session.getLienSession());
             
             logger.info(String.format("Session %d ouverte depuis la notification", session.getId()));
             
@@ -327,5 +324,9 @@ public final class NotificationService {
             logger.warning(String.format("NOTIFICATION MANQUÉE - Session: %s à %s", 
                                        session.getTitre(), session.getDateDebut()));
         }
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 }

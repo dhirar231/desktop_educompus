@@ -3,6 +3,7 @@ package com.educompus.controller.back;
 import com.educompus.model.SessionLive;
 import com.educompus.model.SessionStatut;
 import com.educompus.repository.SessionLiveRepository;
+import com.educompus.service.JcefBrowserService;
 import com.educompus.service.SessionNotificationService;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -228,11 +229,10 @@ public final class BackCalendarController {
         );
         javafx.scene.control.Tooltip.install(chip, tip);
 
-        // Clic → ouvrir le lien si EN_COURS
         chip.setOnMouseClicked(e -> {
             if (session.getStatut() == SessionStatut.EN_COURS && session.aLienValide()) {
                 try {
-                    java.awt.Desktop.getDesktop().browse(java.net.URI.create(session.getLien()));
+                    JcefBrowserService.getInstance().openMeetingDialog("Session - " + safe(session.getNomCours()), session.getLien());
                 } catch (Exception ex) { ex.printStackTrace(); }
             }
         });

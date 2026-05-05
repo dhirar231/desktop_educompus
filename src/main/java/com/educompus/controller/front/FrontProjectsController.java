@@ -7,6 +7,7 @@ import com.educompus.model.Project;
 import com.educompus.model.ProjectSubmission;
 import com.educompus.model.ProjectSubmissionView;
 import com.educompus.service.ProjectMeetingService;
+import com.educompus.service.JcefBrowserService;
 import com.educompus.repository.KanbanTaskRepository;
 import com.educompus.repository.NotificationRepository;
 import com.educompus.repository.ProjectRepository;
@@ -1108,12 +1109,17 @@ public final class FrontProjectsController {
         }
         try {
             String joinUrl = projectMeetingService.joinUrl(project, muted);
-            if (!openExternalUrl(joinUrl)) {
-                copyTextToClipboard(joinUrl);
-                info("Meeting", "Impossible d'ouvrir le navigateur automatiquement. Le lien a ete copie.");
-            }
+            JcefBrowserService.getInstance().openMeetingDialog("Meeting - " + safe(project.getTitle()), joinUrl);
             updateMeetingPanel(project);
         } catch (Exception e) {
+            Project projectForCopy = selectedProject;
+            if (projectForCopy != null) {
+                try {
+                    copyTextToClipboard(projectMeetingService.joinUrl(projectForCopy, muted));
+                } catch (Exception ignored) {
+                    // ignore
+                }
+            }
             error("Meeting", e);
         }
     }
