@@ -83,6 +83,25 @@
   -fx-fill: -edu-primary;
 }
 
+.notification-badge {
+  -fx-background-color: #dc2626;
+  -fx-background-radius: 999px;
+  -fx-border-color: -edu-card;
+  -fx-border-radius: 999px;
+  -fx-border-width: 1.5;
+  -fx-min-width: 17px;
+  -fx-min-height: 17px;
+  -fx-pref-width: 17px;
+  -fx-pref-height: 17px;
+  -fx-padding: 0 4 0 4;
+  -fx-alignment: CENTER;
+  -fx-text-fill: white;
+  -fx-font-size: 10px;
+  -fx-font-weight: 900;
+  -fx-translate-x: 8px;
+  -fx-translate-y: -7px;
+}
+
 .sidebar {
   -fx-background-color: transparent;
   -fx-background-insets: 0;
