@@ -6,11 +6,11 @@ import com.educompus.model.ProjectSubmissionView;
 import com.educompus.repository.ProjectRepository;
 import com.educompus.repository.ProjectSubmissionRepository;
 import com.educompus.service.FormValidator;
+import com.educompus.service.JcefBrowserService;
 import com.educompus.service.ProjectMeetingService;
 import com.educompus.service.ProjectValidationService;
 import com.educompus.service.ValidationResult;
 import com.educompus.util.Theme;
-import com.educompus.util.UrlOpener;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -525,11 +525,13 @@ public final class BackProjectsController {
     private void joinMeeting(Project project) {
         try {
             String url = meetingService.joinUrl(project, false);
-            if (!UrlOpener.openSilent(url)) {
-                copyText(url);
-                info("Meeting", "Ouverture navigateur impossible. Le lien a été copié.");
-            }
+            JcefBrowserService.getInstance().openMeetingDialog("Meeting - " + safe(project.getTitle()), url);
         } catch (Exception e) {
+            try {
+                copyText(meetingService.joinUrl(project, false));
+            } catch (Exception ignored) {
+                // ignore
+            }
             error("Meeting", e);
         }
     }

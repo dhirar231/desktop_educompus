@@ -14,6 +14,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <javafx.version>17.0.10</javafx.version>
         <commons-io.version>2.16.1</commons-io.version>
+        <jcefmaven.version>141.0.10</jcefmaven.version>
     </properties>
 
     <dependencyManagement>
@@ -155,6 +156,11 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-swing</artifactId>
             <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.friwi</groupId>
+            <artifactId>jcefmaven</artifactId>
+            <version>${jcefmaven.version}</version>
         </dependency>
 
         <!-- ZXing QR code generation -->
