@@ -132,6 +132,21 @@
                 </content>
             </Tab>
 
+            <!-- Sessions Live -->
+            <Tab text="🔴  Sessions Live">
+                <content>
+                    <VBox spacing="12" styleClass="card">
+                        <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <TextField fx:id="sessionSearchField" promptText="🔍  Rechercher une session..." styleClass="field" HBox.hgrow="ALWAYS"/>
+                            <ComboBox fx:id="sessionSortCombo" styleClass="combo-rgb" prefWidth="160"/>
+                            <Button text="➕  Créer une session live" onAction="#createSessionLive" styleClass="btn-rgb"/>
+                        </HBox>
+                        <ListView fx:id="sessionListView" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </content>
+            </Tab>
+
             <!-- Vidéos -->
             <Tab text="🎬  Vidéos">
                 <content>

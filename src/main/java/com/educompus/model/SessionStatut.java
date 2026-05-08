@@ -7,8 +7,7 @@ package com.educompus.model;
 public enum SessionStatut {
     PLANIFIEE,
     EN_COURS,
-    TERMINEE,
-    ANNULEE;
+    TERMINEE;
 
     /**
      * Retourne le libellé français du statut pour l'affichage dans l'interface utilisateur.
@@ -19,7 +18,6 @@ public enum SessionStatut {
             case PLANIFIEE -> "Planifiée";
             case EN_COURS  -> "En cours";
             case TERMINEE  -> "Terminée";
-            case ANNULEE   -> "Annulée";
         };
     }
 
@@ -32,7 +30,6 @@ public enum SessionStatut {
             case PLANIFIEE -> "badge-planifiee";
             case EN_COURS  -> "badge-en-cours";
             case TERMINEE  -> "badge-terminee";
-            case ANNULEE   -> "badge-annulee";
         };
     }
 
@@ -45,7 +42,6 @@ public enum SessionStatut {
             case PLANIFIEE -> "📅";
             case EN_COURS  -> "🔴";
             case TERMINEE  -> "✅";
-            case ANNULEE   -> "❌";
         };
     }
 
@@ -59,7 +55,6 @@ public enum SessionStatut {
         return switch (value.toUpperCase().trim()) {
             case "EN_COURS", "EN COURS" -> EN_COURS;
             case "TERMINEE", "TERMINÉE" -> TERMINEE;
-            case "ANNULEE", "ANNULÉE"   -> ANNULEE;
             default                     -> PLANIFIEE;
         };
     }
@@ -71,10 +66,9 @@ public enum SessionStatut {
      */
     public boolean peutTransitionnerVers(SessionStatut nouveauStatut) {
         return switch (this) {
-            case PLANIFIEE -> nouveauStatut == EN_COURS || nouveauStatut == ANNULEE;
-            case EN_COURS  -> nouveauStatut == TERMINEE || nouveauStatut == ANNULEE;
+            case PLANIFIEE -> nouveauStatut == EN_COURS;
+            case EN_COURS  -> nouveauStatut == TERMINEE;
             case TERMINEE  -> false; // Une session terminée ne peut plus changer
-            case ANNULEE   -> false; // Une session annulée ne peut plus changer
         };
     }
 

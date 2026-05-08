@@ -125,7 +125,7 @@ public final class DatabaseSetup {
                     lien             VARCHAR(512) NOT NULL,
                     date             DATE         NOT NULL,
                     heure            TIME         NOT NULL,
-                    statut           ENUM('PLANIFIEE','EN_COURS','TERMINEE','ANNULEE') NOT NULL DEFAULT 'PLANIFIEE',
+                    statut           ENUM('PLANIFIEE','EN_COURS','TERMINEE') NOT NULL DEFAULT 'PLANIFIEE',
                     cours_id         INT          NULL,
                     google_event_id  VARCHAR(255) NULL,
                     date_creation    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

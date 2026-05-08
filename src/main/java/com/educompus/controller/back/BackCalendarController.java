@@ -4,7 +4,6 @@ import com.educompus.model.SessionLive;
 import com.educompus.model.SessionStatut;
 import com.educompus.repository.SessionLiveRepository;
 import com.educompus.service.JcefBrowserService;
-import com.educompus.service.SessionNotificationService;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;

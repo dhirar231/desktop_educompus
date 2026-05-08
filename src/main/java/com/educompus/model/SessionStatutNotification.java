@@ -7,8 +7,7 @@ package com.educompus.model;
 public enum SessionStatutNotification {
     PROGRAMMEE("Programmée"),
     EN_COURS("En cours"),
-    TERMINEE("Terminée"),
-    ANNULEE("Annulée");
+    TERMINEE("Terminée");
     
     private final String libelle;
     
@@ -41,7 +40,6 @@ public enum SessionStatutNotification {
             case PLANIFIEE -> PROGRAMMEE;
             case EN_COURS -> EN_COURS;
             case TERMINEE -> TERMINEE;
-            case ANNULEE -> ANNULEE;
         };
     }
     
@@ -55,7 +53,6 @@ public enum SessionStatutNotification {
             case PROGRAMMEE -> SessionStatut.PLANIFIEE;
             case EN_COURS -> SessionStatut.EN_COURS;
             case TERMINEE -> SessionStatut.TERMINEE;
-            case ANNULEE -> SessionStatut.ANNULEE;
         };
     }
     

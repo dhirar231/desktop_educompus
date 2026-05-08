@@ -13,21 +13,12 @@ import javafx.util.Duration;
 
 import com.educompus.controller.front.SplashController;
 import com.educompus.nav.Navigator;
-import com.educompus.service.SessionNotificationService;
-import com.educompus.service.NotificationSchedulerService;
-import com.educompus.service.NotificationService;
-import com.educompus.repository.NotificationRepository;
-import com.educompus.repository.SessionLiveRepository;
 import com.educompus.util.DatabaseSetup;
 import com.educompus.util.Theme;
-import com.educompus.util.NotificationTester;
-import com.educompus.debug.TestNotificationInApp;
 
 import java.io.File;
 
 public final class PreviewApp extends Application {
-    
-    private NotificationSchedulerService notificationScheduler;
     
     @Override
     public void start(Stage stage) throws Exception {
@@ -63,7 +54,6 @@ public final class PreviewApp extends Application {
             stage.setMinHeight(680);
             stage.show();
             
-            SessionNotificationService.getInstance().demarrer(stage);
             startNotificationScheduler();
             
             return;
@@ -103,7 +93,6 @@ public final class PreviewApp extends Application {
                     mainStage.setMinHeight(680);
                     mainStage.show();
 
-                    SessionNotificationService.getInstance().demarrer(mainStage);
                     startNotificationScheduler();
                 } finally {
                     stage.close();
@@ -118,60 +107,14 @@ public final class PreviewApp extends Application {
     }
     
     private void startNotificationScheduler() {
-        try {
-            NotificationService notificationService = new NotificationService();
-            SessionLiveRepository sessionRepository = new SessionLiveRepository();
-            NotificationRepository notificationRepository = new NotificationRepository();
-            
-            notificationScheduler = new NotificationSchedulerService(
-                notificationService, 
-                sessionRepository, 
-                notificationRepository
-            );
-            
-            notificationScheduler.start();
-            System.out.println("[NotificationScheduler] Nouveau système de notifications démarré");
-            
-            if (Boolean.parseBoolean(System.getProperty("test.notifications", "false"))) {
-                System.out.println("🧪 Mode test activé - Envoi de notifications de test...");
-                Platform.runLater(() -> {
-                    try {
-                        Thread.sleep(3000);
-                        NotificationTester.testBothNotifications();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                });
-            }
-            
-            System.out.println("🚨 DÉCLENCHEMENT AUTOMATIQUE DU TEST DE NOTIFICATION URGENTE DANS 5 SECONDES...");
-            Platform.runLater(() -> {
-                try {
-                    Thread.sleep(5000);
-                    System.out.println("🚨 LANCEMENT DU TEST NOTIFICATION URGENTE...");
-                    TestNotificationInApp.testUrgentNotificationNow();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            });
-            
-        } catch (Exception e) {
-            System.err.println("[NotificationScheduler] Erreur lors du démarrage: " + e.getMessage());
-            e.printStackTrace();
-        }
+        // ❌ DÉSACTIVÉ - Notifications des sessions live supprimées
+        // Les rappels sont gérés par Google Calendar uniquement
+        System.out.println("[NotificationScheduler] Notifications désactivées - Utiliser Google Calendar pour les rappels");
     }
     
     @Override
     public void stop() throws Exception {
-        try {
-            if (notificationScheduler != null) {
-                notificationScheduler.stop();
-                System.out.println("[NotificationScheduler] Système de notifications arrêté");
-            }
-        } catch (Exception e) {
-            System.err.println("[NotificationScheduler] Erreur lors de l'arrêt: " + e.getMessage());
-        }
-        
+        // Plus de notificationScheduler à arrêter
         super.stop();
     }
 }

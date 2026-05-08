@@ -13,7 +13,8 @@ import com.educompus.service.FormValidator;
 import com.educompus.service.SessionLiveMetierService;
 import com.educompus.service.SessionLiveValidationService;
 import com.educompus.service.GoogleCalendarService;
-import com.educompus.service.SessionNotificationService;
+import com.educompus.service.GoogleMeetService;
+import com.educompus.service.SessionLiveService;
 import com.educompus.service.ValidationResult;
 import com.educompus.service.AIVideoGenerationService;
 import com.educompus.util.Dialogs;
@@ -29,11 +30,15 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.Dialog;
@@ -45,13 +50,18 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import java.awt.Desktop;
 import java.io.File;
@@ -76,12 +86,14 @@ public final class BackCoursesController {
     private final ObservableList<Chapitre> chapitreItems = FXCollections.observableArrayList();
     private final ObservableList<Td> tdItems = FXCollections.observableArrayList();
     private final ObservableList<VideoExplicative> videoItems = FXCollections.observableArrayList();
+    private final ObservableList<SessionLive> sessionItems = FXCollections.observableArrayList();
 
     @FXML private Label statsCoursLabel;
     @FXML private Label statsChapitreLabel;
     @FXML private Label statsTdLabel;
     @FXML private Label statsVideoLabel;
     @FXML private TabPane mainTabPane;
+    @FXML private Button googleDriveSelectBtn;
 
     @FXML private TextField coursSearchField;
     @FXML private ComboBox<String> coursSortCombo;
@@ -99,8 +111,16 @@ public final class BackCoursesController {
     @FXML private ComboBox<String> videoSortCombo;
     @FXML private ListView<VideoExplicative> videoListView;
 
+    // Sessions Live
+    @FXML private TextField sessionSearchField;
+    @FXML private ComboBox<String> sessionSortCombo;
+    @FXML private ListView<SessionLive> sessionListView;
+
     @FXML
     private void initialize() {
+        if (googleDriveSelectBtn != null) {
+            googleDriveSelectBtn.setOnAction(e -> openGoogleDriveManager());
+        }
         setupListViews();
         setupSorts();
         if (chapitreListView != null) {
@@ -137,6 +157,146 @@ public final class BackCoursesController {
 
     @FXML
     private void openGoogleDriveManager() {
+        showGoogleDriveSelectionStage();
+    }
+
+    private void showGoogleDriveSelectionStage() {
+        try {
+            Stage stage = new Stage();
+            Window owner = googleDriveSelectBtn != null && googleDriveSelectBtn.getScene() != null
+                    ? googleDriveSelectBtn.getScene().getWindow()
+                    : (mainTabPane != null && mainTabPane.getScene() != null ? mainTabPane.getScene().getWindow() : null);
+            if (owner != null) {
+                stage.initOwner(owner);
+                stage.initModality(Modality.WINDOW_MODAL);
+            } else {
+                stage.initModality(Modality.APPLICATION_MODAL);
+            }
+
+            stage.setTitle("Gerer Google Drive");
+
+            Label header = new Label("Choisissez le cours a sauvegarder sur Google Drive");
+            header.setStyle("-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #173f6b;");
+
+            Label hint = new Label("Le cours choisi sera sauvegarde avec ses chapitres et ses TDs pour que les etudiants puissent ensuite l'ouvrir depuis leurs cartes.");
+            hint.setWrapText(true);
+            hint.setStyle("-fx-font-size: 12px; -fx-text-fill: #4e6682; -fx-background-color: rgba(32, 110, 202, 0.08); -fx-background-radius: 12px; -fx-padding: 12;");
+
+            ListView<Cours> listView = new ListView<>(FXCollections.observableArrayList());
+            listView.setPrefHeight(340);
+            listView.setStyle("-fx-background-color: white; -fx-background-radius: 14px; -fx-border-color: #cfe0f6; -fx-border-radius: 14px; -fx-padding: 6;");
+            listView.setCellFactory(lv -> new ListCell<>() {
+                @Override
+                protected void updateItem(Cours item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                        return;
+                    }
+
+                    Label title = new Label(safe(item.getTitre()));
+                    title.setStyle("-fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: #143a63;");
+
+                    Label meta = new Label(
+                            (safe(item.getDomaine()).isBlank() ? "General" : safe(item.getDomaine())) + "  •  " +
+                            (safe(item.getNiveau()).isBlank() ? "Tous niveaux" : safe(item.getNiveau())) + "  •  " +
+                            item.getChapitreCount() + " chapitres"
+                    );
+                    meta.setStyle("-fx-font-size: 11px; -fx-text-fill: #5f7691;");
+
+                    Label badge = new Label((item.getDriveLink() != null && !item.getDriveLink().isBlank())
+                            ? "Deja sur Drive"
+                            : "Pret a sauvegarder");
+                    badge.setStyle((item.getDriveLink() != null && !item.getDriveLink().isBlank())
+                            ? "-fx-background-color: #dff3e4; -fx-text-fill: #1d6b38; -fx-background-radius: 999px; -fx-padding: 5 10 5 10; -fx-font-size: 10px; -fx-font-weight: 800;"
+                            : "-fx-background-color: #e7f1ff; -fx-text-fill: #1f5fa8; -fx-background-radius: 999px; -fx-padding: 5 10 5 10; -fx-font-size: 10px; -fx-font-weight: 800;");
+
+                    Region spacer = new Region();
+                    HBox.setHgrow(spacer, Priority.ALWAYS);
+                    HBox topRow = new HBox(10, title, spacer, badge);
+                    topRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+                    VBox box = new VBox(6, topRow, meta);
+                    box.setPadding(new Insets(10, 12, 10, 12));
+                    setText(null);
+                    setGraphic(box);
+                }
+            });
+
+            ProgressIndicator loading = new ProgressIndicator();
+            loading.setMaxSize(38, 38);
+
+            Label loadingLabel = new Label("Chargement des cours...");
+            loadingLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #5f7691;");
+
+            HBox loadingBox = new HBox(10, loading, loadingLabel);
+            loadingBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+            Button saveBtn = new Button("Sauvegarder");
+            saveBtn.setStyle("-fx-background-color: linear-gradient(to right, #1f78ff, #28a0f0); -fx-text-fill: white; -fx-font-weight: 800; -fx-background-radius: 10px;");
+            saveBtn.disableProperty().bind(listView.getSelectionModel().selectedItemProperty().isNull());
+            saveBtn.setOnAction(e -> {
+                Cours selected = listView.getSelectionModel().getSelectedItem();
+                stage.close();
+                if (selected != null) {
+                    startGoogleDriveSyncForCours(selected);
+                }
+            });
+
+            Button cancelBtn = new Button("Annuler");
+            cancelBtn.getStyleClass().add("btn-rgb-outline");
+            cancelBtn.setOnAction(e -> stage.close());
+
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            HBox actions = new HBox(10, spacer, cancelBtn, saveBtn);
+
+            VBox root = new VBox(14, header, hint, loadingBox, listView, actions);
+            root.setPadding(new Insets(18));
+            root.setStyle("-fx-background-color: linear-gradient(to bottom, #f8fbff, #eef6ff);");
+
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 620, 520);
+            stage.setScene(scene);
+            stage.show();
+
+            Task<List<Cours>> loadTask = new Task<>() {
+                @Override
+                protected List<Cours> call() {
+                    return repository.listCours("");
+                }
+            };
+
+            loadTask.setOnSucceeded(e -> {
+                List<Cours> coursDisponibles = loadTask.getValue();
+                loadingBox.setVisible(false);
+                loadingBox.setManaged(false);
+
+                if (coursDisponibles == null || coursDisponibles.isEmpty()) {
+                    loadingLabel.setText("Aucun cours disponible.");
+                    loadingBox.setVisible(true);
+                    loadingBox.setManaged(true);
+                    loading.setVisible(false);
+                    return;
+                }
+
+                listView.setItems(FXCollections.observableArrayList(coursDisponibles));
+                listView.getSelectionModel().selectFirst();
+            });
+
+            loadTask.setOnFailed(e -> {
+                loading.setVisible(false);
+                loadingLabel.setText("Impossible de charger les cours.");
+                error("Erreur - Google Drive", loadTask.getException() instanceof Exception ex ? ex : new Exception(loadTask.getException()));
+            });
+
+            Thread thread = new Thread(loadTask, "drive-cours-loader");
+            thread.setDaemon(true);
+            thread.start();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            error("Erreur - Google Drive", ex);
+        }
     }
 
     private void setupListViews() {
@@ -402,6 +562,138 @@ public final class BackCoursesController {
                 }
             });
         }
+
+        // ── Sessions Live ──
+        if (sessionListView != null) {
+            sessionListView.setCellFactory(lv -> new ListCell<>() {
+                private final Label titleLbl = new Label();
+                private final Label metaLbl = new Label();
+                private final Label statusLbl = new Label();
+                private final Button calendarBtn = new Button("📅");
+                private final Button planifierBtn = new Button("📋");
+                private final Button demarrerBtn = new Button("▶️");
+                private final Button terminerBtn = new Button("✅");
+                private final HBox row;
+                {
+                    titleLbl.getStyleClass().add("project-card-title");
+                    metaLbl.getStyleClass().add("page-subtitle");
+                    metaLbl.setStyle("-fx-font-size: 11px;");
+                    statusLbl.getStyleClass().add("chip");
+                    statusLbl.setStyle("-fx-font-size: 10px; -fx-font-weight: 700;");
+                    
+                    calendarBtn.getStyleClass().add("btn-rgb-compact");
+                    calendarBtn.setTooltip(new javafx.scene.control.Tooltip("Ouvrir dans Google Calendar"));
+                    planifierBtn.getStyleClass().add("btn-rgb-outline");
+                    planifierBtn.setTooltip(new javafx.scene.control.Tooltip("Planifier"));
+                    demarrerBtn.getStyleClass().add("btn-rgb-compact");
+                    demarrerBtn.setTooltip(new javafx.scene.control.Tooltip("Démarrer"));
+                    terminerBtn.getStyleClass().add("btn-rgb-outline");
+                    terminerBtn.setTooltip(new javafx.scene.control.Tooltip("Terminer"));
+                    
+                    VBox info = new VBox(2, titleLbl, metaLbl);
+                    HBox.setHgrow(info, Priority.ALWAYS);
+                    row = new HBox(10, info, statusLbl, planifierBtn, demarrerBtn, terminerBtn, calendarBtn);
+                    row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                    row.setPadding(new javafx.geometry.Insets(8, 12, 8, 12));
+                    
+                    calendarBtn.setOnAction(e -> {
+                        SessionLive session = getItem();
+                        if (session != null && session.getGoogleEventId() != null && !session.getGoogleEventId().isBlank()) {
+                            try {
+                                // Ouvrir Google Calendar (page principale)
+                                // Note: L'API Google Calendar ne permet pas d'ouvrir directement un événement spécifique via URL
+                                // On ouvre donc la page principale du calendrier
+                                String calendarUrl = "https://calendar.google.com/calendar/u/0/r";
+                                com.educompus.util.UrlOpener.open(calendarUrl);
+                                
+                                // Copier l'ID de l'événement dans le presse-papiers pour faciliter la recherche
+                                ClipboardContent content = new ClipboardContent();
+                                content.putString(session.getGoogleEventId());
+                                Clipboard.getSystemClipboard().setContent(content);
+                                
+                                info("Google Calendar", 
+                                    "Google Calendar a été ouvert.\n\n" +
+                                    "ID de l'événement copié dans le presse-papiers:\n" +
+                                    session.getGoogleEventId() + "\n\n" +
+                                    "Vous pouvez le coller dans la recherche de Google Calendar.");
+                            } catch (Exception ex) {
+                                error("Erreur ouverture Calendar", ex);
+                            }
+                        } else {
+                            info("Google Calendar", "Cette session n'est pas encore synchronisée avec Google Calendar.");
+                        }
+                    });
+                    
+                    planifierBtn.setOnAction(e -> {
+                        SessionLive session = getItem();
+                        if (session != null) {
+                            try {
+                                SessionLiveService sessionService = new SessionLiveService();
+                                session.setStatut(SessionStatut.PLANIFIEE);
+                                sessionService.modifierSession(session);
+                                info("✅ Session planifiée", "La session a été planifiée avec succès.");
+                                refreshAll();
+                            } catch (Exception ex) {
+                                error("Erreur planification", ex);
+                            }
+                        }
+                    });
+                    
+                    demarrerBtn.setOnAction(e -> {
+                        SessionLive session = getItem();
+                        if (session != null) {
+                            try {
+                                SessionLiveService sessionService = new SessionLiveService();
+                                session.setStatut(SessionStatut.EN_COURS);
+                                sessionService.modifierSession(session);
+                                info("✅ Session démarrée", "La session est maintenant en cours.");
+                                refreshAll();
+                            } catch (Exception ex) {
+                                error("Erreur démarrage", ex);
+                            }
+                        }
+                    });
+                    
+                    terminerBtn.setOnAction(e -> {
+                        SessionLive session = getItem();
+                        if (session != null) {
+                            try {
+                                SessionLiveService sessionService = new SessionLiveService();
+                                session.setStatut(SessionStatut.TERMINEE);
+                                sessionService.modifierSession(session);
+                                info("✅ Session terminée", "La session a été terminée avec succès.");
+                                refreshAll();
+                            } catch (Exception ex) {
+                                error("Erreur terminaison", ex);
+                            }
+                        }
+                    });
+                }
+                @Override protected void updateItem(SessionLive s, boolean empty) {
+                    super.updateItem(s, empty);
+                    if (empty || s == null) { setGraphic(null); return; }
+                    titleLbl.setText(safe(s.getNomCours()));
+                    metaLbl.setText(s.getDateHeureFormatee() + "  •  " + safe(s.getLien()));
+                    
+                    // Statut
+                    statusLbl.setText(s.getLibelleStatut());
+                    statusLbl.getStyleClass().removeAll("chip-success", "chip-danger", "chip-warning", "chip-info");
+                    switch (s.getStatut()) {
+                        case EN_COURS -> statusLbl.getStyleClass().add("chip-success");
+                        case PLANIFIEE -> statusLbl.getStyleClass().add("chip-info");
+                        case TERMINEE -> statusLbl.getStyleClass().add("chip-warning");
+                    }
+                    
+                    // Activer/désactiver les boutons selon le statut
+                    planifierBtn.setDisable(s.getStatut() == SessionStatut.PLANIFIEE || s.getStatut() == SessionStatut.EN_COURS || s.getStatut() == SessionStatut.TERMINEE);
+                    demarrerBtn.setDisable(s.getStatut() == SessionStatut.EN_COURS || s.getStatut() == SessionStatut.TERMINEE);
+                    terminerBtn.setDisable(s.getStatut() == SessionStatut.TERMINEE);
+                    calendarBtn.setDisable(s.getGoogleEventId() == null || s.getGoogleEventId().isBlank());
+                    
+                    setGraphic(row);
+                }
+            });
+        }
     }
 
     @FXML
@@ -442,6 +734,16 @@ public final class BackCoursesController {
     }
 
     private void reloadSessions() {
+        try {
+            SessionLiveRepository sessionRepo = new SessionLiveRepository();
+            sessionItems.setAll(sessionRepo.getAllSessions());
+            if (sessionListView != null) {
+                sessionListView.setItems(sessionItems);
+                sessionListView.refresh();
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur chargement sessions: " + e.getMessage());
+        }
     }
 
     private void setupSorts() {
@@ -449,6 +751,7 @@ public final class BackCoursesController {
         initSearchAndSort(chapitreSearchField, chapitreSortCombo, List.of("Titre A-Z", "Ordre"), this::reloadChapitres, this::applyChapitreSort);
         initSearchAndSort(tdSearchField, tdSortCombo, List.of("Titre A-Z", "Cours"), this::reloadTds, this::applyTdSort);
         initSearchAndSort(videoSearchField, videoSortCombo, List.of("Titre A-Z"), this::reloadVideos, this::applyVideoSort);
+        initSearchAndSort(sessionSearchField, sessionSortCombo, List.of("Date", "Statut"), this::reloadSessions, this::applySessionSort);
     }
 
     private void initSearchAndSort(TextField search, ComboBox<String> sortCombo, List<String> items, Runnable reload, Runnable sortOnly) {
@@ -480,6 +783,15 @@ public final class BackCoursesController {
 
     private void applyVideoSort() {
         videoItems.sort(Comparator.comparing(c -> safe(c.getTitre()), String.CASE_INSENSITIVE_ORDER));
+    }
+
+    private void applySessionSort() {
+        String sort = sessionSortCombo != null ? sessionSortCombo.getValue() : "Date";
+        if ("Statut".equals(sort)) {
+            sessionItems.sort(Comparator.comparing(SessionLive::getStatut));
+        } else {
+            sessionItems.sort(Comparator.comparing(SessionLive::getDate).reversed());
+        }
     }
 
 
@@ -571,6 +883,28 @@ public final class BackCoursesController {
             info("✅ Vidéo ajoutée", "La vidéo « " + safe(result.value().getTitre()) + " » a été ajoutée avec succès.");
             refreshAll();
         } catch (Exception e) { error("Erreur ajout vidéo", e); }
+    }
+
+    @FXML
+    private void createSessionLive() {
+        FormResult<SessionLive> result = showSessionLiveForm(null);
+        if (!result.saved()) return;
+        try {
+            SessionLiveService sessionService = new SessionLiveService();
+            sessionService.ajouterSession(result.value());
+            
+            if (result.value().estSynchroniseeCalendar()) {
+                info("✅ Session créée", 
+                    "La session « " + result.value().getNomCours() + " » a été créée et synchronisée avec Google Calendar !");
+            } else {
+                info("✅ Session créée", 
+                    "La session « " + result.value().getNomCours() + " » a été créée.");
+            }
+            
+            refreshAll();
+        } catch (Exception e) {
+            error("Erreur création session", e);
+        }
     }
 
     private void editCours(Cours cours) {
@@ -673,6 +1007,36 @@ public final class BackCoursesController {
         menu.show(coursListView, 100, 100);
     }
 
+    private void startGoogleDriveSyncForCours(Cours cours) {
+        if (cours == null) return;
+
+        if (cours.getDriveLink() != null && !cours.getDriveLink().isBlank()) {
+            if (!confirm("Cours deja sur Google Drive",
+                    "Le cours « " + safe(cours.getTitre()) + " » est deja associe a Google Drive.\n\n" +
+                    "Voulez-vous relancer la sauvegarde complete des chapitres et TDs ?")) {
+                return;
+            }
+        } else if (!confirm("Ajouter dans Google Drive",
+                "Voulez-vous ajouter le cours « " + safe(cours.getTitre()) + " » dans Google Drive ?\n\n" +
+                "Le cours, ses chapitres et ses TDs seront sauvegardes automatiquement.")) {
+            return;
+        }
+
+        try {
+            cours.setDriveFolderId("EN_ATTENTE");
+            repository.updateCours(cours);
+
+            info("Sauvegarde en cours",
+                    "Le cours « " + safe(cours.getTitre()) + " » est en cours d'envoi vers Google Drive.\n\n" +
+                    "Ses chapitres et ses TDs seront aussi sauvegardes.");
+
+            lancerSynchronisationGoogleDrive(cours);
+            refreshAll();
+        } catch (Exception ex) {
+            error("Erreur - Ajout Google Drive", ex);
+        }
+    }
+
     private void lancerSynchronisationGoogleDrive(Cours cours) {
         javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
             @Override
@@ -723,8 +1087,8 @@ public final class BackCoursesController {
                             }
                         }
 
-                        // Uploader les TDs du chapitre
-                        java.util.List<Td> allTds = repository.listTds("");
+                        // Uploader les TDs du cours liés à ce chapitre
+                        java.util.List<Td> allTds = repository.listTdsByCoursId(cours.getId());
                         for (Td td : allTds) {
                             if (td.getChapitreId() == chapitre.getId()) {
                                 if (td.getFichier() != null && !td.getFichier().isBlank()) {
@@ -1389,6 +1753,114 @@ public final class BackCoursesController {
         }
 
         return FormResult.saved(video, aiGenerateCheck.isSelected()); // Le flag indique si c'est une génération AI
+    }
+
+    private FormResult<SessionLive> showSessionLiveForm(SessionLive source) {
+        ComboBox<Cours> coursCombo = comboCours();
+        TextField linkField = field();
+        linkField.setPromptText("https://meet.google.com/xxx-yyyy-zzz");
+        
+        Button generateMeetBtn = new Button("🔗 Générer Google Meet");
+        generateMeetBtn.getStyleClass().add("btn-rgb-outline");
+        generateMeetBtn.setOnAction(ev -> {
+            GoogleMeetService meetService = new GoogleMeetService();
+            String meetLink = meetService.generateMeetLink("Session Live");
+            linkField.setText(meetLink);
+            
+            // Copier dans le presse-papiers
+            ClipboardContent content = new ClipboardContent();
+            content.putString(meetLink);
+            Clipboard.getSystemClipboard().setContent(content);
+            
+            info("Lien copié", "Le lien Google Meet a été copié dans le presse-papiers !");
+        });
+        
+        HBox linkBox = new HBox(8, linkField, generateMeetBtn);
+        linkBox.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(linkField, Priority.ALWAYS);
+        
+        DatePicker datePicker = new DatePicker(LocalDate.now());
+        datePicker.getStyleClass().add("field");
+        
+        Spinner<Integer> hourSpinner = new Spinner<>(0, 23, LocalTime.now().getHour());
+        hourSpinner.getStyleClass().add("field");
+        hourSpinner.setPrefWidth(80);
+        hourSpinner.setEditable(true);
+        
+        Spinner<Integer> minuteSpinner = new Spinner<>(0, 59, 0, 15);
+        minuteSpinner.getStyleClass().add("field");
+        minuteSpinner.setPrefWidth(80);
+        minuteSpinner.setEditable(true);
+        
+        Label separatorLabel = new Label(":");
+        separatorLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        
+        HBox timeBox = new HBox(8, hourSpinner, separatorLabel, minuteSpinner);
+        timeBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        
+        if (source != null) {
+            selectCours(coursCombo, source.getCoursId());
+            linkField.setText(safe(source.getLien()));
+            datePicker.setValue(source.getDate());
+            if (source.getHeure() != null) {
+                hourSpinner.getValueFactory().setValue(source.getHeure().getHour());
+                minuteSpinner.getValueFactory().setValue(source.getHeure().getMinute());
+            }
+        }
+        
+        GridPane grid = formGrid();
+        Label errCours = addRow(grid, 0, "Cours *", coursCombo);
+        Label errLien = addRow(grid, 1, "Lien Google Meet *", linkBox);
+        Label errDate = addRow(grid, 2, "Date *", datePicker);
+        Label errHeure = addRow(grid, 3, "Heure *", timeBox);
+        
+        liveValidate(linkField, errLien, () -> {
+            ValidationResult r = new ValidationResult();
+            String v = linkField.getText().trim();
+            if (v.isBlank()) {
+                r.addError("Obligatoire.");
+            } else if (!v.startsWith("http://") && !v.startsWith("https://")) {
+                r.addError("Doit commencer par http:// ou https://");
+            }
+            return r;
+        });
+        
+        Dialog<ButtonType> dialog = buildFormDialog(source == null ? "Créer une session live" : "Modifier une session live", grid);
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            boolean err = false;
+            if (coursCombo.getValue() == null) {
+                FormValidator.markError(coursCombo, "Obligatoire");
+                errCours.setText("⚠ Cours obligatoire.");
+                err = true;
+            }
+            if (linkField.getText().trim().isBlank()) {
+                FormValidator.markError(linkField, "Obligatoire");
+                errLien.setText("⚠ Lien obligatoire.");
+                err = true;
+            }
+            if (datePicker.getValue() == null) {
+                FormValidator.markError(datePicker, "Obligatoire");
+                errDate.setText("⚠ Date obligatoire.");
+                err = true;
+            }
+            if (err) ev.consume();
+        });
+        
+        Optional<ButtonType> answer = dialog.showAndWait();
+        if (answer.isEmpty() || answer.get().getButtonData() != ButtonBar.ButtonData.OK_DONE) return FormResult.cancelled();
+        
+        SessionLive session = source == null ? new SessionLive() : source;
+        session.setNomCours(coursCombo.getValue().getTitre());
+        session.setCoursId(coursCombo.getValue().getId());
+        session.setLien(text(linkField));
+        session.setDate(datePicker.getValue());
+        session.setHeure(LocalTime.of(hourSpinner.getValue(), minuteSpinner.getValue()));
+        if (source == null) {
+            session.setStatut(SessionStatut.PLANIFIEE);
+        }
+        
+        return FormResult.saved(session);
     }
 
 
