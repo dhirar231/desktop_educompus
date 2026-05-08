@@ -46,9 +46,11 @@ public class PollinationsImageService {
             throw new IOException("Pollinations erreur HTTP " + code);
         }
 
-        // Sauvegarder l'image dans un fichier temporaire
-        File dest = File.createTempFile("produit_ia_", ".png");
-        dest.deleteOnExit();
+        // Sauvegarder l'image dans un dossier persistant du projet (var/images)
+        File imagesDir = new File("var/images");
+        if (!imagesDir.exists()) imagesDir.mkdirs();
+        String filename = "produit_ia_" + System.currentTimeMillis() + ".png";
+        File dest = new File(imagesDir, filename);
 
         try (InputStream is = conn.getInputStream();
              FileOutputStream fos = new FileOutputStream(dest)) {

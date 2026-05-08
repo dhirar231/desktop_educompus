@@ -11,6 +11,10 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
 import java.awt.Color;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -57,9 +61,27 @@ public class FacturePNGService {
         doc.close();
 
         String nom = "Facture_EduCampus_" + cmd.getId() + ".png";
-        File dest = new File(System.getProperty("user.home") + "/Downloads/" + nom);
-        javax.imageio.ImageIO.write(image, "PNG", dest);
+        File dest = resolveOutputFile(nom);
+        if (!javax.imageio.ImageIO.write(image, "PNG", dest)) {
+            throw new IOException("Aucun writer PNG disponible pour creer " + dest.getAbsolutePath());
+        }
         return dest;
+    }
+
+    private File resolveOutputFile(String fileName) throws IOException {
+        Path downloads = Paths.get(System.getProperty("user.home"), "Downloads");
+        try {
+            Files.createDirectories(downloads);
+            if (Files.isDirectory(downloads) && Files.isWritable(downloads)) {
+                return downloads.resolve(fileName).toFile();
+            }
+        } catch (IOException ignored) {
+            // Fallback below.
+        }
+
+        Path fallback = Paths.get(System.getProperty("user.dir"), "var", "marketplace", "factures");
+        Files.createDirectories(fallback);
+        return fallback.resolve(fileName).toFile();
     }
 
     // ── Dessin principal ──────────────────────────────────────────────────────
