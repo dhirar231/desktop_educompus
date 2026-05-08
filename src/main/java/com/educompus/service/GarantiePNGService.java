@@ -9,6 +9,10 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -42,9 +46,27 @@ public class GarantiePNGService {
         g.dispose();
 
         String nom = "Garantie_" + produit.getId() + "_cmd" + cmd.getId() + ".png";
-        File dest = new File(System.getProperty("user.home") + "/Downloads/" + nom);
-        ImageIO.write(img, "PNG", dest);
+        File dest = resolveOutputFile(nom);
+        if (!ImageIO.write(img, "PNG", dest)) {
+            throw new IOException("Aucun writer PNG disponible pour creer " + dest.getAbsolutePath());
+        }
         return dest;
+    }
+
+    private File resolveOutputFile(String fileName) throws IOException {
+        Path downloads = Paths.get(System.getProperty("user.home"), "Downloads");
+        try {
+            Files.createDirectories(downloads);
+            if (Files.isDirectory(downloads) && Files.isWritable(downloads)) {
+                return downloads.resolve(fileName).toFile();
+            }
+        } catch (IOException ignored) {
+            // Fallback below.
+        }
+
+        Path fallback = Paths.get(System.getProperty("user.dir"), "var", "marketplace", "garanties");
+        Files.createDirectories(fallback);
+        return fallback.resolve(fileName).toFile();
     }
 
     private void dessiner(Graphics2D g, Commande cmd, LigneCommande lc, Produit produit) {

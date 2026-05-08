@@ -203,8 +203,8 @@ public class BackCalendrierCommandesController {
         for (Commande c : cmds) {
             String statut = statutsLivraison.getOrDefault(c.getId(), "en_attente");
             String heure  = c.getDateCommande() != null ? c.getDateCommande().format(FMT_HEURE) : "—";
-            listeDetailCommandes.getItems().add(
-                    emojiStatut(statut) + "  #" + c.getId()
+                listeDetailCommandes.getItems().add(
+                    emojiStatut(statut) + "  #" + c.getDisplayReference()
                     + "  |  " + String.format("%.2f TND", c.getTotal())
                     + "  |  " + heure + "  |  " + statut.replace("_", " "));
         }
