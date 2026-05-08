@@ -102,7 +102,7 @@ public class FrontMesCommandesController {
         VBox titreBox = new VBox(3);
         HBox.setHgrow(titreBox, Priority.ALWAYS);
 
-        Label lblNum = new Label("Commande #" + cmd.getId());
+        Label lblNum = new Label("Commande #" + cmd.getDisplayReference());
         lblNum.setStyle("-fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: -edu-text;");
 
         Label lblDate = new Label(cmd.getDateCommande() != null

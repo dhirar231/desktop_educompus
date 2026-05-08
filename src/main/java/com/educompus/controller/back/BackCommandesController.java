@@ -225,7 +225,7 @@ public class BackCommandesController {
             HBox headerTop = new HBox(12);
             headerTop.setAlignment(Pos.CENTER_LEFT);
 
-            Label lblTitre = new Label("Commande #" + String.format("%06d", cmd.getId()));
+            Label lblTitre = new Label("Commande #" + cmd.getDisplayReference());
             lblTitre.setStyle("-fx-font-size: 18px; -fx-font-weight: 900; -fx-text-fill: white;");
             HBox.setHgrow(lblTitre, Priority.ALWAYS);
 
@@ -437,7 +437,7 @@ public class BackCommandesController {
 
             // Dialog avec rgb-dialog
             Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle("Commande #" + cmd.getId());
+            dialog.setTitle("Commande #" + cmd.getDisplayReference());
             ScrollPane sp = new ScrollPane(content);
             sp.setFitToWidth(true); sp.setPrefViewportHeight(560);
             sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -513,7 +513,7 @@ public class BackCommandesController {
 
     private String construireMessageSms(Commande cmd, Livraison liv, List<LigneCommande> lignes) {
         StringBuilder sb = new StringBuilder();
-        sb.append("EduCampus - Commande #").append(cmd.getId()).append("\n");
+        sb.append("EduCampus - Commande #").append(cmd.getDisplayReference()).append("\n");
         sb.append("Total : ").append(String.format("%.2f TND", cmd.getTotal())).append("\n");
         sb.append("Statut livraison : ").append(liv.getStatusLivraison()).append("\n");
         sb.append("Adresse : ").append(liv.getAdresse()).append(", ").append(liv.getVille()).append("\n");

@@ -272,7 +272,7 @@ public class FrontCommandeController {
                     btnConfirmer.setText("✔  Confirmer la commande");
                     Alert ok = new Alert(Alert.AlertType.INFORMATION);
                     ok.setTitle("Commande confirmée");
-                    ok.setHeaderText("Commande #" + commande.getId() + " enregistrée !");
+                    ok.setHeaderText("Commande #" + commande.getDisplayReference() + " enregistrée !");
                     ok.setContentText("Total : " + String.format("%.2f TND", commande.getTotal())
                             + "\nStatut : En attente de traitement.");
                     styleAlert(ok);
@@ -401,7 +401,7 @@ public class FrontCommandeController {
                     }
                     Alert ok = new Alert(Alert.AlertType.INFORMATION);
                     ok.setTitle("Commande confirmée");
-                    ok.setHeaderText("Commande #" + commande.getId() + " enregistrée !");
+                    ok.setHeaderText("Commande #" + commande.getDisplayReference() + " enregistrée !");
                     ok.setContentText("Statut : En attente de traitement.");
                     styleAlert(ok);
                     ok.showAndWait();

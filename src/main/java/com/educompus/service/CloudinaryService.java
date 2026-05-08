@@ -24,6 +24,9 @@ public class CloudinaryService {
         this.cloudName = MarketplaceConfig.get("CLOUDINARY_CLOUD_NAME");
         this.apiKey    = MarketplaceConfig.get("CLOUDINARY_API_KEY");
         this.apiSecret = MarketplaceConfig.get("CLOUDINARY_API_SECRET");
+        if (cloudName.isBlank() || apiKey.isBlank() || apiSecret.isBlank()) {
+            throw new IllegalStateException("Configuration Cloudinary incomplete.");
+        }
     }
 
     /**
@@ -33,8 +36,11 @@ public class CloudinaryService {
      * @return URL publique sécurisée (https://res.cloudinary.com/...)
      */
     public String uploader(File fichier, String dossier) throws Exception {
+        if (fichier == null || !fichier.isFile() || fichier.length() == 0) {
+            throw new FileNotFoundException("Fichier Cloudinary invalide : " + fichier);
+        }
         String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
-        String publicId  = dossier + "/" + fichier.getName().replaceAll("\\.[^.]+$", "");
+        String publicId  = fichier.getName().replaceAll("\\.[^.]+$", "");
 
         // Signature Cloudinary : paramètres triés alphabétiquement + secret
         // Format : "folder=...&public_id=...&timestamp=...{secret}"

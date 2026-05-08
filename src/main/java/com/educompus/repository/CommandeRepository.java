@@ -25,6 +25,33 @@ public class CommandeRepository {
             ResultSet keys = ps.getGeneratedKeys();
             try { if (keys.next()) c.setId(keys.getInt(1)); }
             finally { keys.close(); }
+
+            // Générer une référence professionnelle basée sur l'ID en hex (ex: REF-F pour id=15)
+            String ref = "REF-" + Integer.toHexString(Math.max(0, c.getId())).toUpperCase();
+            c.setReference(ref);
+
+            // Tenter d'enregistrer la référence en base ; si la colonne manque, essayer de la créer puis réessayer.
+            try {
+                PreparedStatement ps2 = conn.prepareStatement("UPDATE commande SET reference=? WHERE id=?");
+                try {
+                    ps2.setString(1, ref);
+                    ps2.setInt(2, c.getId());
+                    ps2.executeUpdate();
+                } finally { ps2.close(); }
+            } catch (SQLException ex) {
+                // Si la colonne 'reference' n'existe pas, créer la colonne puis retenter l'update.
+                String msg = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
+                if (msg.contains("unknown column") || msg.contains("column 'reference'") || msg.contains("field 'reference'")) {
+                    try (PreparedStatement psAlter = conn.prepareStatement("ALTER TABLE commande ADD COLUMN reference VARCHAR(64)")) {
+                        psAlter.execute();
+                    } catch (Exception ignore) {}
+                    try (PreparedStatement ps3 = conn.prepareStatement("UPDATE commande SET reference=? WHERE id=?")) {
+                        ps3.setString(1, ref);
+                        ps3.setInt(2, c.getId());
+                        ps3.executeUpdate();
+                    } catch (Exception ignore) {}
+                }
+            }
         } finally { ps.close(); }
     }
 
@@ -74,9 +101,21 @@ public class CommandeRepository {
     }
 
     private Commande mapRow(ResultSet rs) throws SQLException {
+        String ref = null;
+        try {
+            // Vérifier si la colonne 'reference' existe dans le ResultSet (pour compatibilité avec anciennes bases)
+            java.sql.ResultSetMetaData md = rs.getMetaData();
+            int cols = md.getColumnCount();
+            for (int i = 1; i <= cols; i++) {
+                if ("reference".equalsIgnoreCase(md.getColumnLabel(i)) || "reference".equalsIgnoreCase(md.getColumnName(i))) {
+                    ref = rs.getString("reference");
+                    break;
+                }
+            }
+        } catch (SQLException ignored) {}
         return new Commande(
                 rs.getInt("id"), rs.getDouble("total"),
                 rs.getTimestamp("date_commande").toLocalDateTime(),
-                rs.getInt("user_id"));
+                rs.getInt("user_id"), ref);
     }
 }
