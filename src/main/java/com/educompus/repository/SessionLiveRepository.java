@@ -105,7 +105,7 @@ public final class SessionLiveRepository {
      */
     public List<SessionLive> getAllSessions() {
         String sql = """
-                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id, sl.google_event_id,
                        sl.date_creation, sl.date_modification, c.titre AS cours_titre
                 FROM session_live sl
                 LEFT JOIN cours c ON c.id = sl.cours_id
@@ -133,7 +133,7 @@ public final class SessionLiveRepository {
      */
     public SessionLive getSessionById(int id) {
         String sql = """
-                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id, sl.google_event_id,
                        sl.date_creation, sl.date_modification, c.titre AS cours_titre
                 FROM session_live sl
                 LEFT JOIN cours c ON c.id = sl.cours_id
@@ -161,7 +161,7 @@ public final class SessionLiveRepository {
      */
     public List<SessionLive> getSessionsByStatut(SessionStatut statut) {
         String sql = """
-                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id, sl.google_event_id,
                        sl.date_creation, sl.date_modification, c.titre AS cours_titre
                 FROM session_live sl
                 LEFT JOIN cours c ON c.id = sl.cours_id
@@ -192,7 +192,7 @@ public final class SessionLiveRepository {
      */
     public List<SessionLive> getSessionsByCoursId(int coursId) {
         String sql = """
-                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id, sl.google_event_id,
                        sl.date_creation, sl.date_modification, c.titre AS cours_titre
                 FROM session_live sl
                 LEFT JOIN cours c ON c.id = sl.cours_id
@@ -224,7 +224,7 @@ public final class SessionLiveRepository {
      */
     public List<SessionLive> getSessionsByDate(LocalDate date) {
         String sql = """
-                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id, sl.google_event_id,
                        sl.date_creation, sl.date_modification, c.titre AS cours_titre
                 FROM session_live sl
                 LEFT JOIN cours c ON c.id = sl.cours_id
@@ -281,7 +281,7 @@ public final class SessionLiveRepository {
         }
 
         String sql = """
-                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id, sl.google_event_id,
                        sl.date_creation, sl.date_modification, c.titre AS cours_titre
                 FROM session_live sl
                 LEFT JOIN cours c ON c.id = sl.cours_id
@@ -332,7 +332,7 @@ public final class SessionLiveRepository {
      */
     public List<SessionLive> findUpcomingSessions(java.time.LocalDateTime from, java.time.LocalDateTime to) {
         String sql = """
-                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id,
+                SELECT sl.id, sl.nom_cours, sl.lien, sl.date, sl.heure, sl.statut, sl.cours_id, sl.google_event_id,
                        sl.date_creation, sl.date_modification, c.titre AS cours_titre
                 FROM session_live sl
                 LEFT JOIN cours c ON c.id = sl.cours_id
@@ -414,7 +414,7 @@ public final class SessionLiveRepository {
                         lien             VARCHAR(512) NOT NULL,
                         date             DATE         NOT NULL,
                         heure            TIME         NOT NULL,
-                        statut           ENUM('PLANIFIEE','EN_COURS','TERMINEE','ANNULEE')
+                        statut           ENUM('PLANIFIEE','EN_COURS','TERMINEE')
                                              NOT NULL DEFAULT 'PLANIFIEE',
                         cours_id         INT          NULL,
                         date_creation    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

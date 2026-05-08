@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS session_live (
     statut           ENUM('PLANIFIEE','EN_COURS','TERMINEE','ANNULEE')
                          NOT NULL DEFAULT 'PLANIFIEE',
     cours_id         INT NULL     COMMENT 'FK vers cours (optionnel)',
+    google_event_id  VARCHAR(255) NULL COMMENT 'ID événement Google Calendar (NULL si non synchronisé)',
     date_creation    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_modification DATETIME   NULL ON UPDATE CURRENT_TIMESTAMP,
 

@@ -10,6 +10,7 @@ import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -19,7 +20,9 @@ import javafx.scene.layout.*;
 import javafx.scene.shape.SVGPath;
 import javafx.util.Duration;
 
+import java.awt.Desktop;
 import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -102,7 +105,8 @@ public final class FrontFavoritesController {
         card.getStyleClass().add("project-card");
         card.setPrefWidth(270);
         card.setMaxWidth(270);
-        card.setStyle("-fx-cursor: hand;");
+        card.setStyle("-fx-cursor: hand; -fx-background-color: linear-gradient(to bottom, #ffffff, #f8fbff); -fx-background-radius: 18px; -fx-border-color: rgba(13, 71, 161, 0.10); -fx-border-radius: 18px; -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 18, 0.18, 0, 6);");
+        installCardInteractions(card);
 
         // ── Bannière ─────────────────────────────────────────────────────────
         StackPane banner = new StackPane();
@@ -141,8 +145,8 @@ public final class FrontFavoritesController {
         favBar.getChildren().add(favBtn);
 
         // ── Corps ────────────────────────────────────────────────────────────
-        VBox body = new VBox(8);
-        body.setPadding(new Insets(6, 16, 14, 16));
+        VBox body = new VBox(10);
+        body.setPadding(new Insets(8, 16, 14, 16));
 
         Label title = new Label(safe(cours.getTitre()));
         title.getStyleClass().add("project-card-title");
@@ -181,6 +185,38 @@ public final class FrontFavoritesController {
 
         card.getChildren().addAll(banner, favBar, body);
         return card;
+    }
+
+    private HBox buildDriveRow(Cours cours) {
+        String driveUrl = resolveDriveUrl(cours);
+        if (driveUrl == null) return null;
+
+        Button driveBtn = new Button("Voir sur Google Drive");
+        driveBtn.getStyleClass().add("btn-rgb-outline");
+        driveBtn.setStyle("-fx-font-size: 11px; -fx-padding: 6 12 6 12; -fx-background-radius: 999px; -fx-border-radius: 999px;");
+        driveBtn.setOnAction(e -> {
+            e.consume();
+            openGoogleDrive(driveUrl);
+        });
+
+        Label helper = new Label("Ouvrir le dossier partage par votre enseignant");
+        helper.setWrapText(true);
+        helper.setStyle("-fx-font-size: 10px; -fx-text-fill: #59708a;");
+
+        VBox left = new VBox(4, helper);
+        left.setAlignment(Pos.CENTER_LEFT);
+
+        HBox row = new HBox(10, left, driveBtn);
+        row.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(left, Priority.ALWAYS);
+        row.setPadding(new Insets(10, 12, 10, 12));
+        row.setStyle("-fx-background-color: linear-gradient(to right, rgba(46, 125, 50, 0.12), rgba(3, 169, 244, 0.08)); -fx-background-radius: 14px; -fx-border-color: rgba(46, 125, 50, 0.18); -fx-border-radius: 14px;");
+        return row;
+    }
+
+    private void installCardInteractions(VBox card) {
+        card.setOnMouseEntered(e -> card.setStyle("-fx-cursor: hand; -fx-background-color: linear-gradient(to bottom, #ffffff, #f3f9ff); -fx-background-radius: 18px; -fx-border-color: rgba(6, 106, 201, 0.18); -fx-border-radius: 18px; -fx-effect: dropshadow(gaussian, rgba(6, 106, 201, 0.18), 26, 0.24, 0, 10);"));
+        card.setOnMouseExited(e -> card.setStyle("-fx-cursor: hand; -fx-background-color: linear-gradient(to bottom, #ffffff, #f8fbff); -fx-background-radius: 18px; -fx-border-color: rgba(13, 71, 161, 0.10); -fx-border-radius: 18px; -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 18, 0.18, 0, 6);"));
     }
 
     // ── Bouton cœur ──────────────────────────────────────────────────────────────
@@ -282,5 +318,39 @@ public final class FrontFavoritesController {
 
     private static String safe(String v) {
         return v == null ? "" : v.trim();
+    }
+
+    private String resolveDriveUrl(Cours cours) {
+        if (cours == null) return null;
+
+        String driveLink = safe(cours.getDriveLink());
+        if (!driveLink.isBlank()) return driveLink;
+
+        String driveFolderId = safe(cours.getDriveFolderId());
+        if (!driveFolderId.isBlank() && !"EN_ATTENTE".equalsIgnoreCase(driveFolderId)) {
+            return "https://drive.google.com/drive/folders/" + driveFolderId;
+        }
+        return null;
+    }
+
+    private void openGoogleDrive(String driveLink) {
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(driveLink));
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Navigateur non disponible");
+                alert.setHeaderText("Impossible d'ouvrir le navigateur");
+                alert.setContentText("Copiez ce lien dans votre navigateur:\n" + driveLink);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Erreur");
+            alert.setHeaderText("Impossible d'ouvrir Google Drive");
+            alert.setContentText("Erreur: " + e.getMessage());
+            e.printStackTrace();
+            alert.showAndWait();
+        }
     }
 }

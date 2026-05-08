@@ -220,7 +220,6 @@ public final class FrontSessionLiveController {
             case EN_COURS  -> statutBadge.getStyleClass().add("chip-success");
             case PLANIFIEE -> statutBadge.getStyleClass().add("chip-info");
             case TERMINEE  -> statutBadge.getStyleClass().add("chip-warning");
-            case ANNULEE   -> statutBadge.getStyleClass().add("chip-danger");
         }
 
         // Infos
