@@ -45,7 +45,7 @@ public class GarantiePNGService {
         dessiner(g, cmd, lc, produit);
         g.dispose();
 
-        String nom = "Garantie_" + produit.getId() + "_cmd" + cmd.getId() + ".png";
+        String nom = "Garantie_" + produit.getId() + "_cmd" + cmd.getDisplayReference() + ".png";
         File dest = resolveOutputFile(nom);
         if (!ImageIO.write(img, "PNG", dest)) {
             throw new IOException("Aucun writer PNG disponible pour creer " + dest.getAbsolutePath());
@@ -139,7 +139,7 @@ public class GarantiePNGService {
         int rowY = iy + 56;
 
         // Colonne gauche
-        infoRow(g, col1x, rowY,      "N° Commande",   "#" + cmd.getId());
+        infoRow(g, col1x, rowY,      "N° Commande",   "#" + cmd.getDisplayReference());
         infoRow(g, col1x, rowY + 36, "Produit ID",    "#" + produit.getId());
         infoRow(g, col1x, rowY + 72, "Prix d'achat",  String.format("%.2f TND", lc.getPrixUnitaire()));
         infoRow(g, col1x, rowY + 108,"Quantite",      "x" + lc.getQuantite());

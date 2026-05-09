@@ -60,7 +60,7 @@ public class FacturePNGService {
                 0, 300, org.apache.pdfbox.rendering.ImageType.RGB);
         doc.close();
 
-        String nom = "Facture_EduCampus_" + cmd.getId() + ".png";
+        String nom = "Facture_EduCampus_" + cmd.getDisplayReference() + ".png";
         File dest = resolveOutputFile(nom);
         if (!javax.imageio.ImageIO.write(image, "PNG", dest)) {
             throw new IOException("Aucun writer PNG disponible pour creer " + dest.getAbsolutePath());
@@ -120,7 +120,7 @@ public class FacturePNGService {
 
         cs.setNonStrokingColor(new Color(196, 181, 253)); // violet-300
         cs.beginText(); cs.setFont(PDType1Font.HELVETICA_BOLD, 13);
-        cs.newLineAtOffset(mD - 130, H - 56); cs.showText("#" + String.format("%06d", cmd.getId())); cs.endText();
+        cs.newLineAtOffset(mD - 130, H - 56); cs.showText("#" + cmd.getDisplayReference()); cs.endText();
 
         y = H - 110;
 
@@ -216,7 +216,7 @@ public class FacturePNGService {
 
         // Données col 1
         String[][] d1 = {
-            {"Commande", "#" + cmd.getId()},
+            {"Commande", "#" + cmd.getDisplayReference()},
             {"Date", cmd.getDateCommande() != null ? cmd.getDateCommande().format(FMT) : "—"},
             {"Paiement", "Stripe"},
             {"Statut", "Confirme"}
@@ -398,8 +398,8 @@ public class FacturePNGService {
         cs.setNonStrokingColor(new Color(148, 163, 184));
         cs.beginText(); cs.setFont(PDType1Font.HELVETICA, 7.5f);
         cs.newLineAtOffset(45, 12);
-        cs.showText("EduCampus  |  Facture #" + String.format("%06d", cmd.getId())
-                + "  |  Document genere automatiquement  |  Non contractuel");
+        cs.showText("EduCampus  |  Facture #" + cmd.getDisplayReference()
+            + "  |  Document genere automatiquement  |  Non contractuel");
         cs.endText();
 
         // Accent coloré
