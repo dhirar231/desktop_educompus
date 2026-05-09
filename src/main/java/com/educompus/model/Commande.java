@@ -40,7 +40,8 @@ public class Commande {
     /** Retourne la référence affichable : si `reference` absent, formate l'ID en 6 chiffres. */
     public String getDisplayReference() {
         if (reference != null && !reference.isBlank()) return reference;
-        return String.format("%06d", Math.max(0, id));
+        // Fallback : générer une référence lisible en hex (ex: REF-F) pour compatibilité
+        return "REF-" + Integer.toHexString(Math.max(0, id)).toUpperCase();
     }
 
     @Override
