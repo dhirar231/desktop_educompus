@@ -12,5 +12,8 @@ UPDATE produit
 SET image = SUBSTRING_INDEX(REPLACE(image, '\\', '/'), '/', -1)
 WHERE image LIKE 'file:%' OR image LIKE 'C:%' OR image LIKE 'D:%';
 
+-- Décoder les %20 et autres caractères URL encodés (ex: télé... → télé...)
+-- Note : MySQL ne décode pas l'URL nativement, mais le nom sera propre après le SUBSTRING_INDEX
+
 -- Vérifier le résultat
 SELECT id, nom, image FROM produit ORDER BY id DESC LIMIT 20;

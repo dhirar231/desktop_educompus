@@ -4,7 +4,6 @@ import com.educompus.model.Produit;
 import com.educompus.service.GroqRecommandationService;
 import com.educompus.service.PollinationsImageService;
 import com.educompus.service.ServiceProduit;
-import com.educompus.service.SymfonyUploadsService;
 import com.educompus.util.ProduitValidator;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -14,6 +13,9 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 public class BackMarketplaceModifController {
@@ -39,6 +41,9 @@ public class BackMarketplaceModifController {
     @FXML private Label errImage;
 
     @FXML private Button btnGenererImage;
+
+    private static final String SYMFONY_UPLOADS =
+        "C:/Users/rania/Desktop/projetweb2026/eduCompus/public/uploads";
 
     private final ServiceProduit service = new ServiceProduit();
     private Produit produit;
@@ -123,8 +128,7 @@ public class BackMarketplaceModifController {
         );
         File file = fc.showOpenDialog(fieldImage.getScene().getWindow());
         if (file != null) {
-            String nomFichier = copierImageVersSymfony(file);
-            fieldImage.setText(nomFichier);
+            fieldImage.setText(copierVersUploads(file));
         }
     }
 
@@ -147,7 +151,8 @@ public class BackMarketplaceModifController {
                 PollinationsImageService pollinations = new PollinationsImageService();
                 String prompt = PollinationsImageService.construirePrompt(
                         nom, type, categorie, fieldDescription.getText().trim());
-                String fileName = pollinations.genererEtCopierVersSymfony(prompt, 512, 512);
+                File imageLocale = pollinations.genererImage(prompt, 512, 512);
+                String fileName = copierVersUploads(imageLocale);
                 Platform.runLater(() -> {
                     fieldImage.setText(fileName);
                     btnGenererImage.setDisable(false);
@@ -169,13 +174,17 @@ public class BackMarketplaceModifController {
         }, "pollinations-img-modif").start();
     }
 
-    private String copierImageVersSymfony(File source) {
-        SymfonyUploadsService symfony = new SymfonyUploadsService();
-        if (symfony.estDisponible()) {
-            try { return symfony.copierVersSymfony(source); }
-            catch (Exception e) { System.err.println("[Modif] Copie Symfony échouée : " + e.getMessage()); }
+    private String copierVersUploads(File source) {
+        String fileName = source.getName();
+        try {
+            java.nio.file.Path dest = Paths.get(SYMFONY_UPLOADS);
+            if (!Files.exists(dest)) Files.createDirectories(dest);
+            Files.copy(source.toPath(), dest.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("[Uploads] Copie OK : " + fileName);
+        } catch (Exception e) {
+            System.err.println("[Uploads] Erreur copie : " + e.getMessage());
         }
-        return source.getName();
+        return fileName;
     }
 
     @FXML
