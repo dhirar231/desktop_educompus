@@ -74,9 +74,12 @@ public final class ProduitValidator {
         attachCombo(fieldCategorie, errCategorie, val ->
                 val == null ? "Veuillez sélectionner une catégorie." : null);
 
-        // Image : optionnel, mais si renseigné doit être URL ou chemin valide
+        // Image : optionnel, mais si renseigné doit être URL, chemin valide, ou nom de fichier image
         attachTexte(fieldImage, errImage, val -> {
             if (val.isBlank()) return null; // optionnel
+            // Nom de fichier simple (ex: produit_ia_xxx.png)
+            boolean isSimpleFileName = val.matches("[^/\\\\]+\\.(png|jpg|jpeg|gif|webp|PNG|JPG|JPEG|GIF|WEBP)");
+            if (isSimpleFileName) return null;
             boolean isUrl  = val.startsWith("http://") || val.startsWith("https://")
                           || val.startsWith("file:/");
             boolean isPath = val.contains("/") || val.contains("\\");
@@ -141,16 +144,19 @@ public final class ProduitValidator {
         // Image optionnelle
         String img = fieldImage.getText().trim();
         if (!img.isBlank()) {
+            boolean isSimpleFileName = img.matches("[^/\\\\]+\\.(png|jpg|jpeg|gif|webp|PNG|JPG|JPEG|GIF|WEBP)");
             boolean isUrl  = img.startsWith("http://") || img.startsWith("https://") || img.startsWith("file:/");
             boolean isPath = img.contains("/") || img.contains("\\");
-            if (!isUrl && !isPath) {
+            if (isSimpleFileName || isUrl || isPath) {
+                if (!isSimpleFileName && !img.matches(".*\\.(png|jpg|jpeg|gif|webp|PNG|JPG|JPEG|GIF|WEBP).*")) {
+                    afficher(errImage, fieldImage, "Extension non reconnue — utilisez png, jpg, jpeg, gif ou webp.");
+                    ok = false;
+                } else {
+                    cacher(errImage, fieldImage);
+                }
+            } else {
                 afficher(errImage, fieldImage, "Format invalide — entrez une URL ou un chemin de fichier.");
                 ok = false;
-            } else if (!img.matches(".*\\.(png|jpg|jpeg|gif|webp|PNG|JPG|JPEG|GIF|WEBP).*")) {
-                afficher(errImage, fieldImage, "Extension non reconnue — utilisez png, jpg, jpeg, gif ou webp.");
-                ok = false;
-            } else {
-                cacher(errImage, fieldImage);
             }
         } else {
             cacher(errImage, fieldImage);

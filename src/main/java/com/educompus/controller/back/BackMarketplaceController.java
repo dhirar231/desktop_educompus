@@ -464,7 +464,7 @@ public class BackMarketplaceController {
             fc.getExtensionFilters().add(
                     new FileChooser.ExtensionFilter("Images", "*.png","*.jpg","*.jpeg","*.gif","*.webp"));
             File f = fc.showOpenDialog(listeProduits.getScene().getWindow());
-            if (f != null) fieldImage.setText(f.toURI().toString());
+            if (f != null) fieldImage.setText(copierVersUploads(f));
         });
 
         Button btnIA = new Button("🎨 Générer IA");
@@ -557,13 +557,14 @@ public class BackMarketplaceController {
 
                 PollinationsImageService svc = new PollinationsImageService();
                 java.io.File img = svc.genererImage(prompt, 512, 512);
+                String fileName = copierVersUploads(img);
 
                 javafx.application.Platform.runLater(() -> {
-                    fieldImage.setText(img.toURI().toString());
+                    fieldImage.setText(fileName);
                     btnIA.setDisable(false);
                     btnIA.setText("🎨 Générer IA");
                     showAlert(Alert.AlertType.INFORMATION, "Image générée",
-                            "Image créée avec succès par Pollinations AI !");
+                            "Image créée : " + fileName);
                 });
             } catch (Exception ex) {
                 javafx.application.Platform.runLater(() -> {
@@ -577,6 +578,23 @@ public class BackMarketplaceController {
     }
 
     // ── Helpers alert ─────────────────────────────────────────────────────────
+
+    private static final String SYMFONY_UPLOADS =
+        "C:/Users/rania/Desktop/projetweb2026/eduCompus/public/uploads";
+
+    private String copierVersUploads(java.io.File source) {
+        String fileName = source.getName();
+        try {
+            java.nio.file.Path dest = java.nio.file.Paths.get(SYMFONY_UPLOADS);
+            if (!java.nio.file.Files.exists(dest)) java.nio.file.Files.createDirectories(dest);
+            java.nio.file.Files.copy(source.toPath(), dest.resolve(fileName),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("[Uploads] Copie OK : " + fileName);
+        } catch (Exception e) {
+            System.err.println("[Uploads] Erreur copie : " + e.getMessage());
+        }
+        return fileName;
+    }
 
     private void showAlert(Alert.AlertType type, String title, String msg) {
         Alert a = new Alert(type);
