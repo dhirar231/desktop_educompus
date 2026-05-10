@@ -6,7 +6,6 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-
 /**
  * Génération d'images via Pollinations AI (gratuit, sans clé API).
  * Utilise https://image.pollinations.ai/prompt/{prompt}
@@ -62,6 +61,30 @@ public class PollinationsImageService {
         System.out.println("[Pollinations] Image sauvegardée : " + dest.getAbsolutePath()
                 + " (" + dest.length() + " bytes)");
         return dest;
+    }
+
+    /**
+     * Génère une image et la copie automatiquement dans public/uploads/ de Symfony.
+     * @return le nom du fichier à stocker dans la colonne image (ex: produit_ia_xxx.png)
+     */
+    public String genererEtCopierVersSymfony(String prompt, int width, int height) throws Exception {
+        File imageLocale = genererImage(prompt, width, height);
+
+        SymfonyUploadsService symfony = new SymfonyUploadsService();
+        if (!symfony.estDisponible()) {
+            System.err.println("[Pollinations] Dossier Symfony non disponible — image gardée localement : "
+                    + imageLocale.getAbsolutePath());
+            return imageLocale.getName();
+        }
+
+        try {
+            String fileName = symfony.copierVersSymfony(imageLocale);
+            System.out.println("[Pollinations] Image synchronisée avec Symfony : " + fileName);
+            return fileName;
+        } catch (Exception e) {
+            System.err.println("[Pollinations] Erreur copie Symfony : " + e.getMessage());
+            return imageLocale.getName();
+        }
     }
 
     /**

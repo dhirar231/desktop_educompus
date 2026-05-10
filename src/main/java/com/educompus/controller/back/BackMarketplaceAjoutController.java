@@ -3,7 +3,9 @@ package com.educompus.controller.back;
 import com.educompus.app.AppState;
 import com.educompus.model.Produit;
 import com.educompus.service.GroqRecommandationService;
+import com.educompus.service.PollinationsImageService;
 import com.educompus.service.ServiceProduit;
+import com.educompus.service.SymfonyUploadsService;
 import com.educompus.util.ProduitValidator;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -34,6 +36,8 @@ public class BackMarketplaceAjoutController {
     @FXML private Label errType;
     @FXML private Label errCategorie;
     @FXML private Label errImage;
+
+    @FXML private Button btnGenererImage;
 
     private final ServiceProduit service = new ServiceProduit();
     private Runnable onSuccess;
@@ -97,13 +101,62 @@ public class BackMarketplaceAjoutController {
     }
 
     @FXML
-    private void onParcourir(ActionEvent event) {        FileChooser fc = new FileChooser();
+    private void onParcourir(ActionEvent event) {
+        FileChooser fc = new FileChooser();
         fc.setTitle("Choisir une image");
         fc.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp")
         );
         File file = fc.showOpenDialog(fieldImage.getScene().getWindow());
-        if (file != null) fieldImage.setText(file.toURI().toString());
+        if (file != null) {
+            String nomFichier = copierImageVersSymfony(file);
+            fieldImage.setText(nomFichier);
+        }
+    }
+
+    @FXML
+    private void onGenererImage(ActionEvent event) {
+        String nom       = fieldNom.getText().trim();
+        String type      = fieldType.getValue();
+        String categorie = fieldCategorie.getValue();
+
+        if (nom.isBlank() || type == null || categorie == null) {
+            showAlert("Remplissez d'abord le nom, le type et la catégorie avant de générer l'image.");
+            return;
+        }
+
+        btnGenererImage.setDisable(true);
+        btnGenererImage.setText("⏳ Génération…");
+
+        new Thread(() -> {
+            try {
+                PollinationsImageService pollinations = new PollinationsImageService();
+                String prompt = PollinationsImageService.construirePrompt(
+                        nom, type, categorie, fieldDescription.getText().trim());
+                String fileName = pollinations.genererEtCopierVersSymfony(prompt, 512, 512);
+                Platform.runLater(() -> {
+                    fieldImage.setText(fileName);
+                    btnGenererImage.setDisable(false);
+                    btnGenererImage.setText("🎨  Générer image IA");
+                    showInfo("Image générée : " + fileName + "\nElle sera visible dans la marketplace Symfony.");
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    btnGenererImage.setDisable(false);
+                    btnGenererImage.setText("🎨  Générer image IA");
+                    showAlert("Erreur génération image : " + ex.getMessage());
+                });
+            }
+        }, "pollinations-img").start();
+    }
+
+    private String copierImageVersSymfony(File source) {
+        SymfonyUploadsService symfony = new SymfonyUploadsService();
+        if (symfony.estDisponible()) {
+            try { return symfony.copierVersSymfony(source); }
+            catch (Exception e) { System.err.println("[Ajout] Copie Symfony échouée : " + e.getMessage()); }
+        }
+        return source.getName();
     }
 
     @FXML
@@ -145,6 +198,16 @@ public class BackMarketplaceAjoutController {
     private void showAlert(String msg) {
         Alert a = new Alert(Alert.AlertType.ERROR);
         a.setTitle("Erreur");
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        if (fieldNom.getScene() != null)
+            a.getDialogPane().getStylesheets().addAll(fieldNom.getScene().getStylesheets());
+        a.showAndWait();
+    }
+
+    private void showInfo(String msg) {
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle("Image générée");
         a.setHeaderText(null);
         a.setContentText(msg);
         if (fieldNom.getScene() != null)

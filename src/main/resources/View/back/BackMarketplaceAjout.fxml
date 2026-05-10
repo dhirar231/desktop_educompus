@@ -163,6 +163,14 @@
                             <Button text="📁  Parcourir" styleClass="btn-ghost"
                                     onAction="#onParcourir"/>
                         </HBox>
+                        <Button fx:id="btnGenererImage" text="🎨  Générer image IA"
+                                style="-fx-background-color: linear-gradient(to right, #059669, #0891b2);
+                                       -fx-text-fill: white; -fx-background-radius: 8px;
+                                       -fx-font-weight: 700; -fx-font-size: 11px;
+                                       -fx-padding: 7 14 7 14; -fx-cursor: hand;"
+                                onAction="#onGenererImage"/>
+                        <Label text="L'image sera automatiquement copiée dans la marketplace Symfony."
+                               style="-fx-font-size: 10px; -fx-text-fill: -edu-text-muted;"/>
                         <Label fx:id="errImage" text="" styleClass="field-error"
                                managed="false" visible="false"/>
                     </VBox>
